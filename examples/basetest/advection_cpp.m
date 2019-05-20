@@ -184,26 +184,27 @@ status = phreeqc_rm.RM_RunCells();
 % 
 % std::vector<double> bc_conc, bc_f1;
 % std::vector<int> bc1, bc2;
-% int nbound = 1;
-% bc1.resize(nbound, 0);                      % solution 0 from Initial IPhreeqc instance
-% bc2.resize(nbound, -1);                     % no bc2 solution for mixing
-% bc_f1.resize(nbound, 1.0);                  % mixing fraction for bc1
-% status = phreeqc_rm.RM_InitialPhreeqc2Concentrations(bc_conc, bc1, bc2, bc_f1);
+nbound = 1;
+bc1 = zeros(nbound, 1);                      % solution 0 from Initial IPhreeqc instance
+bc2 = -1*ones(nbound, 1);                     % no bc2 solution for mixing
+bc_f1 = ones(nbound, 1);                  % mixing fraction for bc1 = 1
+bc_conc = zeros(ncomps*nbound, 1); 
+[status, bc_conc] = phreeqc_rm.RM_InitialPhreeqc2Concentrations(bc_conc, nbound, bc1, bc2, bc_f1);
 % 
 % % --------------------------------------------------------------------------
 % % Transient loop
 % % --------------------------------------------------------------------------
 % 
-% int nsteps = 10;
+nsteps = 10;
 % std::vector<double> initial_density, temperature, pressure;
-% initial_density.resize(nxyz, 1.0);
-% temperature.resize(nxyz, 20.0);
-% pressure.resize(nxyz, 2.0);
-% phreeqc_rm.RM_SetDensity(initial_density);
-% phreeqc_rm.RM_SetTemperature(temperature);
-% phreeqc_rm.RM_SetPressure(pressure);
-% time_step = 86400.;
-% status = phreeqc_rm.RM_SetTimeStep(time_step);
+initial_density = ones(nxyz, 1);
+temperature = 20.0*ones(nxyz, 1);
+pressure = 2.0*ones(nxyz, 1);
+phreeqc_rm.RM_SetDensity(initial_density);
+phreeqc_rm.RM_SetTemperature(temperature);
+phreeqc_rm.RM_SetPressure(pressure);
+time_step = 86400.0;
+status = phreeqc_rm.RM_SetTimeStep(time_step);
 % for (int steps = 0; steps < nsteps; steps++)
 % {
 %     % Transport calculation here
