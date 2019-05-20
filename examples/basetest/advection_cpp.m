@@ -205,111 +205,108 @@ phreeqc_rm.RM_SetTemperature(temperature);
 phreeqc_rm.RM_SetPressure(pressure);
 time_step = 86400.0;
 status = phreeqc_rm.RM_SetTimeStep(time_step);
-% for (int steps = 0; steps < nsteps; steps++)
-% {
-%     % Transport calculation here
-%     {
-%         std::ostringstream strm;
-%         strm << 'Beginning transport calculation             ' <<   phreeqc_rm.RM_GetTime() * phreeqc_rm.RM_GetTimeConversion() << ' days\n';
-%         strm << '          Time step                         ' <<   phreeqc_rm.RM_GetTimeStep() * phreeqc_rm.RM_GetTimeConversion() << ' days\n';
-%         phreeqc_rm.RM_LogMessage(strm.str());
-%         phreeqc_rm.RM_SetScreenOn(true);
-%         phreeqc_rm.RM_ScreenMessage(strm.str());
-%     }
-%     AdvectCpp(c, bc_conc, ncomps, nxyz, nbound);
-%     % Transfer data to PhreeqcRM for reactions
-%     bool print_selected_output_on = (steps == nsteps - 1) ? true : false;
-%     bool print_chemistry_on = (steps == nsteps - 1) ? true : false;
-%     status = phreeqc_rm.RM_SetSelectedOutputOn(print_selected_output_on);
-%     status = phreeqc_rm.RM_SetPrintChemistryOn(print_chemistry_on, false, false); % workers, initial_phreeqc, utility
-%     status = phreeqc_rm.RM_SetPorosity(por);             % If pororosity changes due to compressibility
-%     status = phreeqc_rm.RM_SetSaturation(sat);           % If saturation changes
-%     status = phreeqc_rm.RM_SetTemperature(temperature);  % If temperature changes
-%     status = phreeqc_rm.RM_SetPressure(pressure);        % If pressure changes
-%     status = phreeqc_rm.RM_SetConcentrations(c);         % Transported concentrations
-%     status = phreeqc_rm.RM_SetTimeStep(time_step);		  % Time step for kinetic reactions
-%     time += time_step;
-%     status = phreeqc_rm.RM_SetTime(time);
-%     % Run cells with transported conditions
-%     {
-%         std::ostringstream strm;
-%         strm << 'Beginning reaction calculation              ' << time * phreeqc_rm.RM_GetTimeConversion() << ' days\n';
-%         phreeqc_rm.RM_LogMessage(strm.str());
-%         phreeqc_rm.RM_ScreenMessage(strm.str());
-%     }
-%     status = phreeqc_rm.RM_RunCells();
-%     % Transfer data from PhreeqcRM for transport
-%     status = phreeqc_rm.RM_GetConcentrations(c);
-%     std::vector<double> density;
-%     status = phreeqc_rm.RM_GetDensity(density);
-%     const std::vector<double> &volume = phreeqc_rm.RM_GetSolutionVolume();
-%     % Print results at last time step
-%     if (print_chemistry_on != 0)
-%     {
-%         {
-%             std::ostringstream oss;
-%             fprintf('Current distribution of cells for workers\n';
-%             fprintf('Worker      First cell        Last Cell\n';
-%             int n;
-%             n = phreeqc_rm.RM_GetThreadCount() * phreeqc_rm.RM_GetMpiTasks();
-%             for (int i = 0; i < n; i++)
-%             {
-%                 oss << i << '           ' << phreeqc_rm.RM_GetStartCell()[i] << '                 '
-%                     << phreeqc_rm.RM_GetEndCell()[i]);
-%             }
-%             phreeqc_rm.RM_OutputMessage(oss.str());
-%         }
-%         for (int isel = 0; isel < phreeqc_rm.RM_GetSelectedOutputCount(); isel++)
-%         {
-%             % Loop through possible multiple selected output definitions
-%             int n_user = phreeqc_rm.RM_GetNthSelectedOutputUserNumber(isel);
-%             status = phreeqc_rm.RM_SetCurrentSelectedOutputUserNumber(n_user);
-%             std::cerr << 'Selected output sequence number: ' << isel);
-%             std::cerr << 'Selected output user number:     ' << n_user);
-%             % Get double array of selected output values
-%             std::vector<double> so;
-%             int col = phreeqc_rm.RM_GetSelectedOutputColumnCount();
-%             status = phreeqc_rm.RM_GetSelectedOutput(so);
-%             % Print results
-%             for (int i = 0; i < phreeqc_rm.RM_GetSelectedOutputRowCount()/2; i++)
-%             {
-%                 std::cerr << 'Cell number ' << i);
-%                 std::cerr << '     Density: ' << density[i]);
-%                 std::cerr << '     Volume:  ' << volume[i]);
-%                 std::cerr << '     Components: ');
-%                 for (int j = 0; j < ncomps; j++)
-%                 {
-%                     std::cerr << '          ' << j << ' ' << components[j] << ': ' << c[j*nxyz + i]);
-%                 }
-%                 std::vector<std::string> headings;
-%                 headings.resize(col);
-%                 std::cerr << '     Selected output: ');
-%                 for (int j = 0; j < col; j++)
-%                 {
-%                     status = phreeqc_rm.RM_GetSelectedOutputHeading(j, headings[j]);
-%                     std::cerr << '          ' << j << ' ' << headings[j] << ': ' << so[j*nxyz + i]);
-%                 }
-%             }
-%         }
-%     }
-% }
-% 
-% % --------------------------------------------------------------------------
-% % Additional features and finalize
-% % --------------------------------------------------------------------------
-% 
-% % Use utility instance of PhreeqcRM to calculate pH of a mixture
-% std::vector <double> c_well;
-% c_well.resize(1*ncomps, 0.0);
-% for (int i = 0; i < ncomps; i++)
-% {
-%     c_well[i] = 0.5 * c[0 + nxyz*i] + 0.5 * c[9 + nxyz*i];
-% }
-% std::vector<double> tc, p_atm;
-% tc.resize(1, 15.0);
-% p_atm.resize(1, 3.0);
-% IPhreeqc * util_ptr = phreeqc_rm.RM_Concentrations2Utility(c_well, tc, p_atm);
-% input = 'SELECTED_OUTPUT 5; -pH;RUN_CELLS; -cells 1';
+for steps = 1:nsteps
+    % Transport calculation here
+    
+    strm =['Beginning transport calculation             ' num2str(phreeqc_rm.RM_GetTime()*phreeqc_rm.RM_GetTimeConversion()) ' days \n'];
+    strm =[strm '          Time step                         ' num2str(phreeqc_rm.RM_GetTimeStep() * phreeqc_rm.RM_GetTimeConversion()) ' days \n'];
+    phreeqc_rm.RM_LogMessage(strm);
+    phreeqc_rm.RM_SetScreenOn(true);
+    phreeqc_rm.RM_ScreenMessage(strm);
+    
+    c = simple_advect(c, bc_conc, ncomps, nxyz); % boundary only at the injection side
+    % Transfer data to PhreeqcRM for reactions
+    if steps == nsteps   
+        print_selected_output_on = true;
+        print_chemistry_on = true;
+    else
+        print_selected_output_on = false;
+        print_chemistry_on = false;
+    end
+    
+    status = phreeqc_rm.RM_SetSelectedOutputOn(print_selected_output_on);
+    status = phreeqc_rm.RM_SetPrintChemistryOn(print_chemistry_on, false, false); % workers, initial_phreeqc, utility
+    status = phreeqc_rm.RM_SetPorosity(por);             % If pororosity changes due to compressibility
+    status = phreeqc_rm.RM_SetSaturation(sat);           % If saturation changes
+    status = phreeqc_rm.RM_SetTemperature(temperature);  % If temperature changes
+    status = phreeqc_rm.RM_SetPressure(pressure);        % If pressure changes
+    status = phreeqc_rm.RM_SetConcentrations(c);         % Transported concentrations
+    status = phreeqc_rm.RM_SetTimeStep(time_step);		  % Time step for kinetic reactions
+    t = t + time_step;
+    status = phreeqc_rm.RM_SetTime(t);
+    % Run cells with transported conditions
+
+    strm = ['Beginning reaction calculation              ' num2str(t * phreeqc_rm.RM_GetTimeConversion()) ' days\n'];
+    phreeqc_rm.RM_LogMessage(strm);
+    phreeqc_rm.RM_ScreenMessage(strm);
+
+    status = phreeqc_rm.RM_RunCells();
+    % Transfer data from PhreeqcRM for transport
+    [status, c] = phreeqc_rm.RM_GetConcentrations(c);
+    density = zeros(nxyz, 1);
+    [status, density] = phreeqc_rm.RM_GetDensity(density);
+    volume = zeros(nxyz, 1);
+    [status, volume] = phreeqc_rm.RM_GetSolutionVolume(volume);
+    % Print results at last time step
+    c = reshape(c, nxyz, ncomps);
+    if (print_chemistry_on ~= 0)
+        
+        for isel = 0:phreeqc_rm.RM_GetSelectedOutputCount()-1
+            % Loop through possible multiple selected output definitions
+            n_user = phreeqc_rm.RM_GetNthSelectedOutputUserNumber(isel);
+            status = phreeqc_rm.RM_SetCurrentSelectedOutputUserNumber(n_user);
+            fprintf(['Selected output sequence number: ' num2str(isel) '\n']);
+            fprintf(['Selected output user number:     ' num2str(n_user) '\n']);
+            % Get double array of selected output values
+            
+            col = phreeqc_rm.RM_GetSelectedOutputColumnCount();
+            so = zeros(col*nxyz, 1);
+            so = reshape(so, nxyz, col);
+            [status, so] = phreeqc_rm.RM_GetSelectedOutput(so);
+            % Print results
+            for i = 1:phreeqc_rm.RM_GetSelectedOutputRowCount()/2
+                disp(['Cell number ' num2str(i)]);
+                disp(['     Density: ' num2str(density(i+1))]);
+                disp(['     Volume:  ' num2str(volume(i+1))]);
+                disp('     Components: ');
+                for j = 1:ncomps
+                    disp(['          ' num2str(j) ' ' components{j} ': ' c(i, j)]);
+                end
+                headings = cell(col, 1);
+                
+                disp('     Selected output: ');
+                for j = 1:col
+                    headings{j} = '000000000000000';
+                    [status, headings{j}] = phreeqc_rm.RM_GetSelectedOutputHeading(j-1, headings{j}, length(headings{j}));
+                    disp(['          ' num2str(j) ' ' headings{j} ': ' num2str(so(i,j))]);
+                end
+            end
+        end
+    end
+end
+
+c = c(:);
+
+status = phreeqc_rm.RM_CloseFiles();
+status = phreeqc_rm.RM_Destroy();
+
+
+% ============= The rest will not work until I wrap IPhreeqc library =====
+% --------------------------------------------------------------------------
+% Additional features and finalize
+% --------------------------------------------------------------------------
+
+% Use utility instance of PhreeqcRM to calculate pH of a mixture
+
+% c_well = zeros(ncomps, 1);
+% for i = 1:ncomps
+%     c_well(i) = 0.5 * c(1 + nxyz*i) + 0.5 * c(10 + nxyz*i);
+% end
+% % std::vector<double> tc, p_atm;
+% tc = 15.0*ones(1,1);
+% p_atm = 3.0*ones(1,1);
+% iphreeqc_id = phreeqc_rm.RM_Concentrations2Utility(c_well, tc, p_atm);
+% input_str = 'SELECTED_OUTPUT 5; -pH;RUN_CELLS; -cells 1';
 % int iphreeqc_result;
 % util_ptr->SetOutputFileName('utility_cpp.txt');
 % util_ptr->SetOutputFileOn(true);

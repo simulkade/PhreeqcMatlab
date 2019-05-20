@@ -312,7 +312,7 @@ classdef PhreeqcRM
                   }
                 }
             %}
-            [status, h_out] = calllib('libphreeqcrm','RM_GetSelectedOutputCount', obj.id, icol, heading, l);
+            [status, h_out] = calllib('libphreeqcrm','RM_GetSelectedOutputHeading', obj.id, icol, heading, l);
         end
         
         function n = RM_GetSelectedOutputRowCount(obj)
