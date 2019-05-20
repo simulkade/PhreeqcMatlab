@@ -196,7 +196,6 @@ Reading input data for simulation 4.
 ------------------------------------
 
 ---------------------------------
-End of Run after 227.178 Seconds.
+End of Run after 126.153 Seconds.
 ---------------------------------
 
-The message is written

@@ -128,29 +128,28 @@ for i=1:ncomps
 %     phreeqc_rm.RM_OutputMessage(strm.str());
 end
 
-status = phreeqc_rm.RM_CloseFiles();
-phreeqc_rm.RM_Destroy();
+% status = phreeqc_rm.RM_CloseFiles();
+% phreeqc_rm.RM_Destroy();
 
 % phreeqc_rm.RM_OutputMessage('\n');
-% % Set array of initial conditions
-% std::vector<int> ic1, ic2;
-% ic1.resize(nxyz*7, -1);
-% ic2.resize(nxyz*7, -1);
-% std::vector<double> f1;
-% f1.resize(nxyz*7, 1.0);
-% for (int i = 0; i < nxyz; i++)
-% {
-%     ic1[i] = 1;              % Solution 1
-%     ic1[nxyz + i] = -1;      % Equilibrium phases none
-%     ic1[2*nxyz + i] = 1;     % Exchange 1
-%     ic1[3*nxyz + i] = -1;    % Surface none
-%     ic1[4*nxyz + i] = -1;    % Gas phase none
-%     ic1[5*nxyz + i] = -1;    % Solid solutions none
-%     ic1[6*nxyz + i] = -1;    % Kinetics none
-% }
-% status = phreeqc_rm.RM_InitialPhreeqc2Module(ic1, ic2, f1);
-% % No mixing is defined, so the following is equivalent
-% % status = phreeqc_rm.RM_InitialPhreeqc2Module(ic1.data());
+% Set array of initial conditions
+ic1 = -1*ones(nxyz*7, 1);
+ic2 = -1*ones(nxyz*7, 1);
+f1 = ones(nxyz*7, 1);
+for i = 1:nxyz
+    ic1(i) = 1;              % Solution 1
+    ic1(nxyz + i) = -1;      % Equilibrium phases none
+    ic1(2*nxyz + i) = 1;     % Exchange 1
+    ic1(3*nxyz + i) = -1;    % Surface none
+    ic1(4*nxyz + i) = -1;    % Gas phase none
+    ic1(5*nxyz + i) = -1;    % Solid solutions none
+    ic1(6*nxyz + i) = -1;    % Kinetics none
+end
+status = phreeqc_rm.RM_InitialPhreeqc2Module(ic1, ic2, f1);
+
+% ==== I'm not sure how to convert this part or whether it's necessary
+% No mixing is defined, so the following is equivalent
+% status = phreeqc_rm.RM_InitialPhreeqc2Module(ic1.data());
 % 
 % % alternative for setting initial conditions
 % % cell number in first argument (-1 indicates last solution, 40 in this case)
@@ -161,21 +160,24 @@ phreeqc_rm.RM_Destroy();
 % module_cells.push_back(18);
 % module_cells.push_back(19);
 % status = phreeqc_rm.RM_InitialPhreeqcCell2Module(-1, module_cells);
-% % Get temperatures
-% const std::vector<double> &  tempc = phreeqc_rm.RM_GetTemperature();
-% % get current saturation
-% std::vector<double> current_sat;
-% status = phreeqc_rm.RM_GetSaturation(current_sat);
-% % Initial equilibration of cells
-% double time = 0.0;
-% double time_step = 0.0;
-% std::vector<double> c;
-% c.resize(nxyz * components.size());
-% status = phreeqc_rm.RM_SetTime(time);
-% status = phreeqc_rm.RM_SetTimeStep(time_step);
-% status = phreeqc_rm.RM_RunCells();
-% status = phreeqc_rm.RM_GetConcentrations(c);
-% 
+
+
+% Get temperatures
+tempc = zeros(nxyz, 1);
+% [status, tempc] = phreeqc_rm.RM_GetTemperature(tempc); not available in C
+% interface
+% get current saturation
+current_sat = zeros(nxyz, 1);
+[status, current_sat] = phreeqc_rm.RM_GetSaturation(current_sat);
+% Initial equilibration of cells
+t = 0.0;
+time_step = 0.0;
+c = zeros(nxyz * length(components), 1);
+status = phreeqc_rm.RM_SetTime(t);
+status = phreeqc_rm.RM_SetTimeStep(time_step);
+status = phreeqc_rm.RM_RunCells();
+[status, c] = phreeqc_rm.RM_GetConcentrations(c);
+
 % % --------------------------------------------------------------------------
 % % Set boundary condition
 % % --------------------------------------------------------------------------
