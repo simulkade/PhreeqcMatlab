@@ -178,6 +178,10 @@ status = phreeqc_rm.RM_SetTimeStep(time_step);
 status = phreeqc_rm.RM_RunCells();
 [status, c] = phreeqc_rm.RM_GetConcentrations(c);
 
+c_out2 = phreeqc_rm.GetConcentrations();
+
+
+
 % % --------------------------------------------------------------------------
 % % Set boundary condition
 % % --------------------------------------------------------------------------

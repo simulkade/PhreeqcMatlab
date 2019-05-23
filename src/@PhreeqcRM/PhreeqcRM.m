@@ -136,6 +136,20 @@ classdef PhreeqcRM
             [status, c_out] = calllib('libphreeqcrm','RM_GetConcentrations', obj.id, c);
         end
         
+        function c = GetConcentrations(obj)
+            %{
+            Transfer solution concentrations from each reaction cell to the concentration array given in the argument list (c). Units of concentration for c are defined by RM_SetUnitsSolution. For concentration units of per liter, the solution volume is used to calculate the concentrations for c. For mass fraction concentration units, the solution mass is used to calculate concentrations for c. Two options are available for the volume and mass of solution that are used in converting to transport concentrations: (1) the volume and mass of solution are calculated by PHREEQC, or (2) the volume of solution is the product of saturation (RM_SetSaturation), porosity (RM_SetPorosity), and representative volume (RM_SetRepresentativeVolume), and the mass of solution is volume times density as defined by RM_SetDensity. RM_UseSolutionDensityVolume determines which option is used. For option 1, the databases that have partial molar volume definitions needed to accurately calculate solution volume are phreeqc.dat, Amm.dat, and pitzer.dat.
+
+            c	returns the concentrations in each cell [nxyz x ncomps]
+            matrix
+            %}
+            nxyz = obj.ncells;
+            ncomps = obj.RM_FindComponents();
+            c = zeros(nxyz, ncomps);
+            [~, c] = calllib('libphreeqcrm','RM_GetConcentrations', obj.id, c);
+        end
+        
+        
         function [status, density_out] = RM_GetDensity(obj, density)
             %{
             density	Array to receive the densities. Dimension of the array is nxyz, where nxyz is the number of user grid cells (RM_GetGridCellCount). Values for inactive cells are set to 1e30. 
@@ -206,6 +220,19 @@ classdef PhreeqcRM
             [status, gfw_out] = calllib('libphreeqcrm','RM_GetGfw', obj.id, gfw);
         end
         
+        function gfw = GetGfw(obj)
+            %{
+            Returns the gram formula weights (g/mol) for the components in the reaction-module component list.
+
+            Parameters
+                id	The instance id returned from RM_Create.
+                gfw	Array to receive the gram formula weights. Dimension of the array is ncomps, where ncomps is the number of components in the component list. 
+            %}
+            ncomps = obj.RM_FindComponents();
+            gfw = zeros(ncomps, 1);
+            [~, gfw] = calllib('libphreeqcrm','RM_GetGfw', obj.id, gfw);
+        end
+        
         function n = RM_GetGridCellCount(obj)
             %{
             Returns the number of grid cells in the user's model, which is defined in the call to RM_Create. The mapping from grid cells to reaction cells is defined by RM_CreateMapping. The number of reaction cells may be less than the number of grid cells if there are inactive regions or symmetry in the model definition. 
@@ -223,7 +250,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 l	The number of the IPhreeqc instance to be retrieved (0 based). 
             %}
-            status = calllib('libphreeqcrm','', obj.id, l);
+            status = calllib('libphreeqcrm','RM_GetIPhreeqcId', obj.id, l);
         end
         
         function status = RM_GetNthSelectedOutputUserNumber(obj, n)
@@ -274,6 +301,32 @@ classdef PhreeqcRM
             [status, s_out] = calllib('libphreeqcrm','RM_GetSelectedOutput', obj.id, so);
         end
         
+        function s_out = GetSelectedOutput(obj, n_user)
+            %{
+            Populates an array with values from the current selected-output definition. RM_SetCurrentSelectedOutputUserNumber determines which of the selected-output definitions is used to populate the array.
+
+            s_out the output matrix of of selected output with selected
+            output number n_user
+            C Example:
+
+                for (isel = 0; isel < RM_GetSelectedOutputCount(id); isel++)
+                {
+                  n_user = RM_GetNthSelectedOutputUserNumber(id, isel);
+                  status = RM_SetCurrentSelectedOutputUserNumber(id, n_user);
+                  col = RM_GetSelectedOutputColumnCount(id);
+                  selected_out = (double *) malloc((size_t) (col * nxyz * sizeof(double)));
+                  status = RM_GetSelectedOutput(id, selected_out);
+                  // Process results here
+                  free(selected_out);
+                }
+            %}
+            status = obj.RM_SetCurrentSelectedOutputUserNumber(n_user);
+            col = obj.RM_GetSelectedOutputColumnCount();
+            nxyz = obj.ncells;
+            s_out = zeros(nxyz, col);
+            [~, s_out] = calllib('libphreeqcrm','RM_GetSelectedOutput', obj.id, s_out);
+        end
+        
         function n = RM_GetSelectedOutputColumnCount(obj)
             %{
             Returns the number of columns in the current selected-output definition. RM_SetCurrentSelectedOutputUserNumber determines which of the selected-output definitions is used. 
@@ -313,6 +366,36 @@ classdef PhreeqcRM
                 }
             %}
             [status, h_out] = calllib('libphreeqcrm','RM_GetSelectedOutputHeading', obj.id, icol, heading, l);
+        end
+        
+        function headings = GetSelectedOutputHeadings(obj, n_user)
+            %{
+            Returns a selected output heading. The number of headings is determined by RM_GetSelectedOutputColumnCount. RM_SetCurrentSelectedOutputUserNumber determines which of the selected-output definitions is used.
+
+            n_user   selected output user number
+            C Example:
+
+                char heading[100];
+                for (isel = 0; isel < RM_GetSelectedOutputCount(id); isel++)
+                {
+                  n_user = RM_GetNthSelectedOutputUserNumber(id, isel);
+                  status = RM_SetCurrentSelectedOutputUserNumber(id, n_user);
+                  col = RM_GetSelectedOutputColumnCount(id);
+                  for (j = 0; j < col; j++)
+                  {
+                    status = RM_GetSelectedOutputHeading(id, j, heading, 100);
+                    fprintf(stderr, "          %2d %10s\n", j, heading);
+                  }
+                }
+            %}
+            status = obj.RM_SetCurrentSelectedOutputUserNumber(n_user);
+            col = obj.RM_GetSelectedOutputColumnCount();
+            headings = cell(col, 1);
+            
+            for j = 1:col
+                headings{j} = '000000000000000000000';
+                [~, headings{j}] = calllib('libphreeqcrm','RM_GetSelectedOutputHeading', obj.id, j-1, headings{j}, length(headings{j}));
+            end
         end
         
         function n = RM_GetSelectedOutputRowCount(obj)
