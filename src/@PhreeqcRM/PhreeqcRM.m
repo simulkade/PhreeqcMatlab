@@ -157,6 +157,14 @@ classdef PhreeqcRM
             [status, density_out] = calllib('libphreeqcrm','RM_GetDensity', obj.id, density);
         end
         
+        function density = GetDensity(obj)
+            %{
+            density	Array to receive the densities. Dimension of the array is nxyz, where nxyz is the number of user grid cells (RM_GetGridCellCount). Values for inactive cells are set to 1e30. 
+            %}
+            density = zeros(obj.ncells, 1);
+            density = calllib('libphreeqcrm','RM_GetDensity', obj.id, density);
+        end
+        
         function [status, ec_out] = RM_GetEndCell(obj, ec)
             %{
             Returns an array with the ending cell numbers from the range of cell numbers assigned to each worker.
@@ -276,6 +284,18 @@ classdef PhreeqcRM
                 sat_calc	Vector to receive the saturations. Dimension of the array is set to nxyz, where nxyz is the number of user grid cells (RM_GetGridCellCount). Values for inactive cells are set to 1e30. 
             %}
             [status, sat_out] = calllib('libphreeqcrm','RM_GetSaturation', obj.id, sat_calc);
+        end
+        
+        function sat = GetSaturation(obj)
+            %{
+            Returns a vector of saturations (sat) as calculated by the reaction module. Reactions will change the volume of solution in a cell. The transport code must decide whether to ignore or account for this change in solution volume due to reactions. Following reactions, the cell saturation is calculated as solution volume (RM_GetSolutionVolume) divided by the product of representative volume (RM_SetRepresentativeVolume) and the porosity (RM_SetPorosity). The cell saturation returned by RM_GetSaturation may be less than or greater than the saturation set by the transport code (RM_SetSaturation), and may be greater than or less than 1.0, even in fully saturated simulations. Only the following databases distributed with PhreeqcRM have molar volume information needed to accurately calculate solution volume and saturation: phreeqc.dat, Amm.dat, and pitzer.dat.
+
+            Parameters
+                id	The instance id returned from RM_Create.
+                sat_calc	Vector to receive the saturations. Dimension of the array is set to nxyz, where nxyz is the number of user grid cells (RM_GetGridCellCount). Values for inactive cells are set to 1e30. 
+            %}
+            sat = zeros(obj.ncells, 1);
+            [status, sat] = calllib('libphreeqcrm','RM_GetSaturation', obj.id, sat);
         end
         
         function [status, s_out] = RM_GetSelectedOutput(obj, so)
@@ -436,6 +456,14 @@ classdef PhreeqcRM
             [status, v_out] = calllib('libphreeqcrm','RM_GetSolutionVolume', obj.id, vol);
         end
         
+        function v_out = GetSolutionVolume(obj)
+            %{
+            Transfer solution volumes from the reaction cells to the array given in the argument list (vol). Solution volumes are those calculated by the reaction module. Only the following databases distributed with PhreeqcRM have molar volume information needed to accurately calculate solution volume: phreeqc.dat, Amm.dat, and pitzer.dat.
+            %}
+            v_out = zeros(obj.ncells, 1);
+            v_out = calllib('libphreeqcrm','RM_GetSolutionVolume', obj.id, v_out);
+        end
+        
         function [status, c_out] = RM_GetSpeciesConcentrations(obj, species_conc)
             %{
             Transfer concentrations of aqueous species to the array argument (species_conc) This method is intended for use with multicomponent-diffusion transport calculations, and RM_SetSpeciesSaveOn must be set to true. The list of aqueous species is determined by RM_FindComponents and includes all aqueous species that can be made from the set of components. Solution volumes used to calculate mol/L are calculated by the reaction module. Only the following databases distributed with PhreeqcRM have molar volume information needed to accurately calculate solution volume: phreeqc.dat, Amm.dat, and pitzer.dat.
@@ -445,6 +473,22 @@ classdef PhreeqcRM
                 species_conc	Array to receive the aqueous species concentrations. Dimension of the array is (nxyz, nspecies), where nxyz is the number of user grid cells (RM_GetGridCellCount), and nspecies is the number of aqueous species (RM_GetSpeciesCount). Concentrations are moles per liter. Values for inactive cells are set to 1e30. 
             %}
             [status, c_out] = calllib('libphreeqcrm','RM_GetSpeciesConcentrations', obj.id, species_conc);
+        end
+        
+        function c_out = GetSpeciesConcentrations(obj)
+            %{
+            Transfer concentrations of aqueous species to the array argument (species_conc) This method is intended for use with multicomponent-diffusion transport calculations, and RM_SetSpeciesSaveOn must be set to true. The list of aqueous species is determined by RM_FindComponents and includes all aqueous species that can be made from the set of components. Solution volumes used to calculate mol/L are calculated by the reaction module. Only the following databases distributed with PhreeqcRM have molar volume information needed to accurately calculate solution volume: phreeqc.dat, Amm.dat, and pitzer.dat.
+
+            Parameters
+                id	The instance id returned from RM_Create.
+                species_conc	Array to receive the aqueous species concentrations. Dimension of the array is (nxyz, nspecies), where nxyz is the number of user grid cells (RM_GetGridCellCount), and nspecies is the number of aqueous species (RM_GetSpeciesCount). Concentrations are moles per liter. Values for inactive cells are set to 1e30. 
+            %}
+            
+            status = obj.RM_SetSpeciesSaveOn(1); % to make sure that it is on
+            ncomps = obj.RM_FindComponents(); % must run to update species list
+            nspecies = obj.RM_GetSpeciesCount();
+            c_out = zeros(obj.ncells, nspecies);
+            c_out = calllib('libphreeqcrm','RM_GetSpeciesConcentrations', obj.id, c_out);
         end
         
         function status = RM_GetSpeciesCount(obj)
@@ -488,6 +532,39 @@ classdef PhreeqcRM
                 }
             %}
             [status, name] = calllib('libphreeqcrm','RM_GetSpeciesName', obj.id, i, name, l);
+        end
+        
+        function name = GetSpeciesNames(obj)
+            %{
+            Transfers the name of the ith aqueous species to the character argument (name). This method is intended for use with multicomponent-diffusion transport calculations, and RM_SetSpeciesSaveOn must be set to true. The list of aqueous species is determined by RM_FindComponents and includes all aqueous species that can be made from the set of components.
+
+            Parameters
+                id	The instance id returned from RM_Create.
+                i	Sequence number of the species in the species list. C, 0 based.
+                name	Character array to receive the species name.
+                length	Maximum length of string that can be stored in the character array. 
+            
+            C Example:
+
+                char name[100];
+                ...
+                status = RM_SetSpeciesSaveOn(id, 1);
+                ncomps = RM_FindComponents(id);
+                nspecies = RM_GetSpeciesCount(id);
+                for (i = 0; i < nspecies; i++)
+                {
+                  status = RM_GetSpeciesName(id, i, name, 100);
+                  fprintf(stderr, "%s\n", name);
+                }
+            %}
+            status = obj.RM_SetSpeciesSaveOn(1);
+            ncomps = obj.RM_FindComponents(); % must run to update species list
+            nspecies = obj.RM_GetSpeciesCount();
+            name = cell(nspecies, 1);
+            for i=1:nspecies
+                name{i} = '00000000000000000000';
+                [status, name{i}] = calllib('libphreeqcrm','RM_GetSpeciesName', obj.id, i-1, name{i}, length(name{i}));
+            end
         end
         
         function status = RM_GetSpeciesSaveOn(obj)
