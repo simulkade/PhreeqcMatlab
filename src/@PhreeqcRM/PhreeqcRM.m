@@ -1323,6 +1323,25 @@ classdef PhreeqcRM
                 obj.id, num, name, l);
         end
         
+        function ex_name = GetExchangeSpeciesNames(obj)
+            %{
+            Retrieves an item from the exchange species list. The list of exchange species (such as "NaX") is derived from the list of components (RM_FindComponents) and the list of all exchange names (such as "X") that are included in EXCHANGE definitions in the initial-phreeqc module. RM_FindComponents must be called before RM_GetExchangeSpeciesName. This method may be useful when generating selected output definitions related to exchangers.
+
+            Parameters
+                id	The instance id returned from RM_Create.
+                num	The number of the exchange species to be retrieved. Fortran, 1 based.
+                name	The exchange species name at number num.
+                l1	The length of the maximum number of characters for name. 
+            %}
+            n_ex_species = obj.RM_GetExchangeSpeciesCount();
+            ex_name = cell(n_ex_species, 1);
+            for i = 1:n_ex_species
+                ex_name{i} = '00000000000000000000';
+                [status, ex_name{i}] = calllib('libphreeqcrm','RM_GetExchangeSpeciesName', ...
+                    obj.id, i, ex_name{i}, length(ex_name{i}));
+            end
+        end
+        
         function [status, ex_name] = RM_GetExchangeName(obj, num, name, l)
             %{
             Retrieves an item from the exchange name list. RM_FindComponents must be called before RM_GetExchangeName. The exchange names vector is the same length as the exchange species names vector and provides the corresponding exchange site (for example, X corresponing to NaX). This method may be useful when generating selected output definitions related to exchangers.
@@ -1336,6 +1355,26 @@ classdef PhreeqcRM
             [status, ex_name] = calllib('libphreeqcrm','RM_GetExchangeName', ...
                 obj.id, num, name, l);
         end
+        
+        function ex_name = GetExchangeNames(obj)
+            %{
+            Retrieves an item from the exchange name list. RM_FindComponents must be called before RM_GetExchangeName. The exchange names vector is the same length as the exchange species names vector and provides the corresponding exchange site (for example, X corresponing to NaX). This method may be useful when generating selected output definitions related to exchangers.
+
+            Parameters
+                id	The instance id returned from RM_Create.
+                num	The number of the exchange name to be retrieved. Fortran, 1 based.
+                name	The exchange name associated with exchange species num.
+                l1	The length of the maximum number of characters for name. 
+            %}
+            n_ex_species = obj.RM_GetExchangeSpeciesCount();
+            ex_name = cell(n_ex_species, 1);
+            for i = 1:n_ex_species
+                ex_name{i} = '00000000000000000000';
+                [status, ex_name{i}] = calllib('libphreeqcrm','RM_GetExchangeName', ...
+                    obj.id, i, ex_name{i}, length(ex_name{i}));
+            end
+        end
+
         
         function status = RM_GetEquilibriumPhasesCount(obj)
             %{
@@ -1468,6 +1507,20 @@ classdef PhreeqcRM
                 obj.id, species_log10gammas);
         end
         
+        function log10_gamma = GetSpeciesLog10Gammas(obj)
+            %{
+            Transfer aqueous-species log10 activity coefficients to the array argument (species_log10gammas) This method is intended for use with multicomponent-diffusion transport calculations, and RM_SetSpeciesSaveOn must be set to true. The list of aqueous species is determined by RM_FindComponents and includes all aqueous species that can be made from the set of components.
+
+            Parameters
+                id	The instance id returned from RM_Create.
+                species_log10gammas	Array to receive the aqueous species concentrations. Dimension of the array is (nxyz, nspecies), where nxyz is the number of user grid cells (RM_GetGridCellCount), and nspecies is the number of aqueous species (RM_GetSpeciesCount). Values for inactive cells are set to 1e30. 
+            %}
+            nspecies = obj.RM_GetSpeciesCount();
+            log10_gamma = zeros(obj.ncells, nspecies);
+            [status, log10_gamma] = calllib('libphreeqcrm','RM_GetSpeciesLog10Gammas', ...
+                obj.id, log10_gamma);
+        end
+        
         function [status, name_out] = RM_GetSurfaceName(obj, num, name, l)
             %{
             Retrieves the surface name (such as "Hfo") that corresponds with the surface species name. The lists of surface species names and surface names are the same length. RM_FindComponents must be called before RM_GetSurfaceName. This method may be useful when generating selected output definitions related to surfaces.
@@ -1523,6 +1576,19 @@ classdef PhreeqcRM
                 obj.id, num, name, l);
         end
         
+        function name_out = GetSurfaceSpeciesNames(obj)
+            %{
+            Retrieves an item from the surface species list. The list of surface species (for example, "Hfo_wOH") is derived from the list of components (RM_FindComponents) and the list of all surface types (such as "Hfo_w") that are included in SURFACE definitions in the initial-phreeqc module. RM_FindComponents must be called before RM_GetSurfaceSpeciesName. This method may be useful when generating selected output definitions related to surfaces.
+            %}
+            n_surf_species = obj.RM_GetSurfaceSpeciesCount();
+            name_out = cell(n_surf_species, 1);
+            for i=1:n_surf_species
+                name_out{i} = '00000000000000000000';
+                [status, name_out{i}] = calllib('libphreeqcrm','RM_GetSurfaceSpeciesName', ...
+                obj.id, i, name_out{i}, length(name_out{i}));
+            end
+        end
+        
         function [status, name_out] = RM_GetSurfaceType(obj, num, name, l)
             %{
             Retrieves the surface site type (such as "Hfo_w") that corresponds with the surface species name. The lists of surface species names and surface species types are the same length. RM_FindComponents must be called before RM_GetSurfaceType. This method may be useful when generating selected output definitions related to surfaces.
@@ -1535,6 +1601,19 @@ classdef PhreeqcRM
             %}
             [status, name_out] = calllib('libphreeqcrm','RM_GetSurfaceType', ...
                 obj.id, num, name, l);
+        end
+        
+        function name_out = GetSurfaceTypes(obj)
+            %{
+            Retrieves the surface site type (such as "Hfo_w") that corresponds with the surface species name. The lists of surface species names and surface species types are the same length. RM_FindComponents must be called before RM_GetSurfaceType. This method may be useful when generating selected output definitions related to surfaces.
+            %}
+            n_surf_species = obj.RM_GetSurfaceSpeciesCount();
+            name_out = cell(n_surf_species, 1);
+            for i=1:n_surf_species
+                name_out{i} = '00000000000000000000';
+                [status, name_out{i}] = calllib('libphreeqcrm','RM_GetSurfaceType', ...
+                obj.id, i, name_out{i}, length(name_out{i}));
+            end
         end
 % Helper functions: will be added soon               
         
