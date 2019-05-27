@@ -24,14 +24,58 @@ classdef PhreeqcRM
 		end
 		
 		function status = RM_Abort(obj, result, err_str)
+            %{
+            Abort the program. Result will be interpreted as an IRM_RESULT value and decoded; err_str will be printed; and the reaction module will be destroyed. If using MPI, an MPI_Abort message will be sent before the reaction module is destroyed. If the id is an invalid instance, RM_Abort will return a value of IRM_BADINSTANCE, otherwise the program will exit with a return code of 4.
+
+            Parameters
+            id	The instance id returned from RM_Create.
+            result	Integer treated as an IRM_RESULT return code.
+            err_str	String to be printed as an error message.
+            Return values
+            IRM_RESULT	Program will exit before returning unless id is an invalid reaction module id.
+            See also
+            RM_Destroy, RM_ErrorMessage.
+            C Example:
+                iphreeqc_id = RM_Concentrations2Utility(id, c_well, 1, tc, p_atm);
+                strcpy(str, "SELECTED_OUTPUT 5; -pH; RUN_CELLS; -cells 1");
+                status = RunString(iphreeqc_id, str);
+                if (status != 0) status = RM_Abort(id, status, "IPhreeqc RunString failed");
+            %}
 			status = calllib('libphreeqcrm', 'RM_Abort', obj.id, result, err_str);
         end
         
         function status = RM_CloseFiles(obj)
+            % Close the output and log files.
             status = calllib('libphreeqcrm','RM_CloseFiles', obj.id);
         end
         
         function status = RM_Concentrations2Utility(obj, c,	n, tc, p_atm)
+            %{
+            N sets of component concentrations are converted to SOLUTIONs numbered 1-n in the Utility IPhreeqc. The solutions can be reacted and manipulated with the methods of IPhreeqc. If solution concentration units (RM_SetUnitsSolution) are per liter, one liter of solution is created in the Utility instance; if solution concentration units are mass fraction, one kilogram of solution is created in the Utility instance. The motivation for this method is the mixing of solutions in wells, where it may be necessary to calculate solution properties (pH for example) or react the mixture to form scale minerals. The code fragments below make a mixture of concentrations and then calculate the pH of the mixture.
+
+            Parameters
+            id	The instance id returned from RM_Create.
+            c	Array of concentrations to be made SOLUTIONs in Utility IPhreeqc. Array storage is equivalent to Fortran (n,ncomps).
+            n	The number of sets of concentrations.
+            tc	Array of temperatures to apply to the SOLUTIONs, in degree C. Array of size n.
+            p_atm	Array of pressures to apply to the SOLUTIONs, in atm. Array of size n.
+            
+            C Example:
+                c_well = (double *) malloc((size_t) ((size_t) (1 * ncomps * sizeof(double))));
+                for (i = 0; i < ncomps; i++)
+                {
+                  c_well[i] = 0.5 * c[0 + nxyz*i] + 0.5 * c[9 + nxyz*i];
+                }
+                tc = (double *) malloc((size_t) (1 * sizeof(double)));
+                p_atm = (double *) malloc((size_t) (1 * sizeof(double)));
+                tc[0] = 15.0;
+                p_atm[0] = 3.0;
+                iphreeqc_id = RM_Concentrations2Utility(id, c_well, 1, tc, p_atm);
+                strcpy(str, "SELECTED_OUTPUT 5; -pH; RUN_CELLS; -cells 1");
+                status = RunString(iphreeqc_id, str);
+                status = SetCurrentSelectedOutputUserNumber(iphreeqc_id, 5);
+                status = GetSelectedOutputValue2(iphreeqc_id, 1, 0, &vtype, &pH, svalue, 100);
+            %}
             status = calllib('libphreeqcrm','RM_Concentrations2Utility', ...
                 obj.id, c, n, tc, p_atm);
         end
