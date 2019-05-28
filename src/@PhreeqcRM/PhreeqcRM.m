@@ -17,10 +17,21 @@ classdef PhreeqcRM
             if ~libisloaded('libphreeqcrm')
                 loadlibrary('libphreeqcrm','RM_interface_C.h');
             end
-			id = calllib('libphreeqcrm','RM_Create',n_cells,n_threads);
 			phrm.ncells = n_cells;
 			phrm.nthreads = n_threads;
-            phrm.id = id;
+        end
+        
+        function phrm = RM_Create(obj)
+            %{
+            phrm = RM_Create() 
+            %}
+            phrm = obj;
+            if isempty(obj.id)
+    			id_out= calllib('libphreeqcrm','RM_Create', obj.ncells, obj.nthreads);
+                phrm.id = id_out;
+            else
+                warning('The PhreeqcRM object is already created. Please call this function with an empty PhreeqcRM object');
+            end
 		end
 		
 		function status = RM_Abort(obj, result, err_str)

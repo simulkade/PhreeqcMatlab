@@ -9,5 +9,6 @@ EQUILIBRIUM_PHASES 1
 END
 
 SELECTED_OUTPUT 1
+        -reset false
         -si     Anhydrite  Gypsum
 END

@@ -6,6 +6,7 @@ nxyz = 40;
 nthreads = 2;
 
 phreeqc_rm = PhreeqcRM(nxyz, nthreads);
+phreeqc_rm = phreeqc_rm.RM_Create();
 
 status = phreeqc_rm.RM_SetErrorHandlerMode(1);
 status = phreeqc_rm.RM_SetComponentH2O(false);
