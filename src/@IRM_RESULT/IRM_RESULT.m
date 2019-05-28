@@ -1,12 +1,4 @@
-classdef IRM_RESULT
-    properties
-        IRM_VAL = 0;
-    end
-    methods
-        function IRM = IRM_RESULT(x)
-            IRM.IRM_VAL = x;
-        end
-    end
+classdef IRM_RESULT <int32
     enumeration
         IRM_OK            (0)   % Success
         IRM_OUTOFMEMORY   (-1)  % Failure, Out of memory
