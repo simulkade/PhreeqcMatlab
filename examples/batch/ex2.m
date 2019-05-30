@@ -49,6 +49,8 @@ legend(string(h_out));
 xlabel('T (C)');
 ylabel('SI');
 
+% M = phreeqc_rm.GetSelectedOutputTable(1);
+
 status = phreeqc_rm.RM_Destroy();
 
 

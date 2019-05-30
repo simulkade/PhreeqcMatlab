@@ -473,6 +473,20 @@ classdef PhreeqcRM
             end
         end
         
+        function tab_out = GetSelectedOutputTable(obj, n_user)
+            % GetSelectedOutputTable returns the selected output with user
+            % number n_user in the form of a container map
+            %SEE ALSO GetSelectedOutput, GetSelectedOutputHeadings
+            h_out = obj.GetSelectedOutputHeadings(n_user);
+            s_out = obj.GetSelectedOutput(n_user);
+            [~, n] = size(s_out);
+            S_out_cell = cell(n, 1);
+            for i=1:n
+                S_out_cell{i}= s_out(:, i);
+            end
+            tab_out = containers.Map(h_out, S_out_cell);
+        end
+        
         function n = RM_GetSelectedOutputRowCount(obj)
             %{
             Returns the number of rows in the current selected-output definition. However, the method is included only for convenience; the number of rows is always equal to the number of grid cells in the user's model, and is equal to RM_GetGridCellCount. 
