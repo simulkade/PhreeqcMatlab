@@ -5,7 +5,7 @@ clc
 phreeqc_rm = PhreeqcRM(1, 1); % one cell, one thread
 phreeqc_rm = phreeqc_rm.RM_Create();
 phreeqc_rm.RM_UseSolutionDensityVolume(true);
-status = phreeqc_rm.RM_LoadDatabase('../../database/phreeqc.dat');
+status = phreeqc_rm.RM_LoadDatabase(database_file('phreeqc.dat'));
 status = phreeqc_rm.RM_RunFile(true, true, true, 'ex2_input.pqc');
 
 ncomps = phreeqc_rm.RM_FindComponents();
