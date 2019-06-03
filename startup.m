@@ -1,5 +1,4 @@
-% function startup()
-
+function startup()
 %{
 startup
 

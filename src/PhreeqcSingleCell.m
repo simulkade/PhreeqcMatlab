@@ -8,6 +8,14 @@ function phreeqc_rm = PhreeqcSingleCell(input_file, data_base)
 
 phreeqc_rm = PhreeqcRM(1, 1); % one cell, one thread
 phreeqc_rm = phreeqc_rm.RM_Create(); % create a PhreeqcRM instance
+status = phreeqc_rm.RM_SetComponentH2O(false);
+status = phreeqc_rm.RM_SetUnitsSolution(2);           % 1, mg/L; 2, mol/L; 3, kg/kgs
+status = phreeqc_rm.RM_SetUnitsPPassemblage(1);       % 0, mol/L cell; 1, mol/L water; 2 mol/L rock
+status = phreeqc_rm.RM_SetUnitsExchange(1);           % 0, mol/L cell; 1, mol/L water; 2 mol/L rock
+status = phreeqc_rm.RM_SetUnitsSurface(1);            % 0, mol/L cell; 1, mol/L water; 2 mol/L rock
+status = phreeqc_rm.RM_SetUnitsGasPhase(1);           % 0, mol/L cell; 1, mol/L water; 2 mol/L rock
+status = phreeqc_rm.RM_SetUnitsSSassemblage(1);       % 0, mol/L cell; 1, mol/L water; 2 mol/L rock
+status = phreeqc_rm.RM_SetUnitsKinetics(1);           % 0, mol/L cell; 1, mol/L water; 2 mol/L rock
 phreeqc_rm.RM_UseSolutionDensityVolume(true);
 status = phreeqc_rm.RM_LoadDatabase(database_file(data_base)); % load the database
 status = phreeqc_rm.RM_RunFile(true, true, true, input_file); % run the input file
