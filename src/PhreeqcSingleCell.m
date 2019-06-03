@@ -17,6 +17,10 @@ status = phreeqc_rm.RM_SetUnitsGasPhase(1);           % 0, mol/L cell; 1, mol/L 
 status = phreeqc_rm.RM_SetUnitsSSassemblage(1);       % 0, mol/L cell; 1, mol/L water; 2 mol/L rock
 status = phreeqc_rm.RM_SetUnitsKinetics(1);           % 0, mol/L cell; 1, mol/L water; 2 mol/L rock
 phreeqc_rm.RM_UseSolutionDensityVolume(true);
+
+status = phreeqc_rm.RM_SetPorosity(1.0);             % If pororosity changes due to compressibility
+status = phreeqc_rm.RM_SetSaturation(1.0);           % If saturation changes
+    
 status = phreeqc_rm.RM_LoadDatabase(database_file(data_base)); % load the database
 status = phreeqc_rm.RM_RunFile(true, true, true, input_file); % run the input file
 

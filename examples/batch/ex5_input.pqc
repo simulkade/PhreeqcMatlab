@@ -3,11 +3,12 @@ SOLUTION 1  PURE WATER
         pH      7.0
         temp    25.0
 EQUILIBRIUM_PHASES 1
-        Pyrite          0.0
-        Goethite        0.0
-        Calcite         0.0
-        CO2(g)         -3.5
+        Pyrite          0.0     10.0
+        Goethite        0.0     10.0
+        Calcite         0.0     10.0
+        CO2(g)         -3.5     10.0
         Gypsum          0.0     0.0
+        Halite          0.0     0.0
 SELECTED_OUTPUT
         -reset  false
         -pH     true

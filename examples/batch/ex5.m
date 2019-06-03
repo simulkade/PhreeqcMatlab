@@ -4,6 +4,10 @@
 clc
 phreeqc_rm = PhreeqcSingleCell('ex5_input.pqc', 'phreeqc.dat');
 
+status = phreeqc_rm.RM_SetFilePrefix('Advect_cpp');
+phreeqc_rm.RM_OpenFiles();
+phreeqc_rm.RM_SetPrintChemistryOn(true, true, true);
+
 comp_name = phreeqc_rm.GetComponents();
 ind_Na = find(contains(comp_name, 'Na'), 1);
 ind_Cl = find(contains(comp_name, 'Cl'), 1);
@@ -37,8 +41,22 @@ for i = 1:length(c_Na)
     d_gypsum(i) = so('d_gypsum');
     si_Gypsum(i) = so('si_Gypsum');
 end
-plotyy(c_Na, -1000*[d_CO2, d_calcite, d_pyrite, d_geothite, d_gypsum]', ...
-    c_Na, si_Gypsum)
+
+yyaxis left
+plot(c_Na, -1000*[d_CO2, d_calcite, d_pyrite, d_geothite, d_gypsum]');
+yyaxis right
+plot(c_Na, si_Gypsum);
+
+phreeqc_rm.RM_CloseFiles();
 status = phreeqc_rm.RM_Destroy();
 
-
+%% Load the phreeqc result
+pqc_res = readtable('../phreeqc/ex5.csv');
+hold on
+yyaxis left
+solubility = 1000*[pqc_res.d_CO2_g_, pqc_res.d_calcite, pqc_res.d_pyrite, pqc_res.d_goethite ...
+, pqc_res.d_gypsum];
+plot(c_Na, solubility(2:end,:), 'o');
+yyaxis right
+plot(c_Na, pqc_res.si_Gypsum(2:end), 's');
+hold off
