@@ -32,14 +32,7 @@ ic2 = -1*ones(7, 1);
 f1 = ones(7, 1);
 
 % look for the keywords in the inputfile
-fid = fopen(input_file, 'r');
-C = textscan(fid, '%s','Delimiter',''); % read the input file into a cell array
-fclose(fid);
-C = C{:}; % get rid of cells in cell C
-
-% clean the comments:
-ind_comment = cellfun(@(x)(x(1)=='#'), C);
-C(ind_comment) = {' '};
+C = ReadPhreeqcFile(input_file); % read and clean the input file
 
 if any(contains(C, 'SELECTED_OUTPUT')) % Surface 1
     status = phreeqc_rm.RM_SetSelectedOutputOn(true);
