@@ -17,6 +17,8 @@ elseif any(contains(C, 'TRANSPORT'))
     ind_cells = contains(C, 'cells');
     nxyz = sscanf(K, 'cells %f');
 end
+
+
 % status = phreeqc_rm.RM_LoadDatabase(database_file(data_base)); % load the database
 % status = phreeqc_rm.RM_RunFile(true, true, true, input_file); % run the input file
 end
