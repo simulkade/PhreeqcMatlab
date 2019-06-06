@@ -19,16 +19,7 @@ EXCHANGE 1-40
         -equilibrate 1
         X                0.0011
 END
-ADVECTION
-        -cells           40
-        -shifts          100
-        -punch_cells     40
-        -punch_frequency 1
-        -print_cells     40
-        -print_frequency 20
-PRINT; -reset false; -status false
 SELECTED_OUTPUT
-        -file            ex11adv.sel
         -reset           false
         -step
         -totals          Na Cl K Ca

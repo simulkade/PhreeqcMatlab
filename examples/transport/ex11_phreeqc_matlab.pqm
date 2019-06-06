@@ -5,12 +5,14 @@ ADVECTION
     time_step       1.0
     initial_saturation 1.0
     initial_porosity   0.2
+    representative_volume    1.0
 END
 
 PhreeqcMatlab
     threads         2
-    representative_volume    1.0
     component_water    0
+    error_handler_mode  1
+    partition_uz_solids  0
     rebalance_fraction  0.5
     rebalance_by_cell   1
     use_solution_density_volume  0
