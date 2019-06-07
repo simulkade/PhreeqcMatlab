@@ -5,7 +5,10 @@ function phreeqc_rm = PhreeqcAdvection(phreeqc_input_file, advection_input_file,
 %example folder.
 %TODO: simple 2D cases based on modified phreeqc input files.
 %   
-nthreads = 1; % provide as an input later
+
+% Create the phreeqc instance based on the advection file
+phreeqc_rm = ReadAdvectionFile(advection_input_file);
+
 % Read the input file
 C = ReadPhreeqcFile(advection_input_file); % read and clean the input file
 
