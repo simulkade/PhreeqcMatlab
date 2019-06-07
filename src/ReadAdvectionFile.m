@@ -1,4 +1,4 @@
-function phreeqc_rm = ReadAdvectionFile(advection_input_file)
+function [phreeqc_rm, shifts, dt] = ReadAdvectionFile(advection_input_file)
 %READADVECTIONFILE Reads a PhreeqcMatlab advection input file (with the
 %special PhreeqcMatlab keywords and creates and initializes a PhreeqcRM
 %instance. See the documents and examples for the PhreeqcMatlab keywords.
@@ -105,5 +105,8 @@ status = phreeqc_rm.RM_SetPorosity(por);
 sat = initial_saturation*ones(nxyz, 1);
 status = phreeqc_rm.RM_SetSaturation(sat);
 
+
+dt = sscanf(C{contains(C, 'time_step')}, 'time_step %f');
+shifts = sscanf(C{contains(C, 'shifts')}, 'shifts %f');
 end
 

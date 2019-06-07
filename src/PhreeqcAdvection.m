@@ -1,4 +1,5 @@
-function phreeqc_rm = PhreeqcAdvection(phreeqc_input_file, advection_input_file, data_base)
+function phreeqc_rm = PhreeqcAdvection(phreeqc_input_file, ...
+                                advection_input_file, data_base)
 %PHREEQCTRANSPORT Reads a phreeqc input file (with the transport key) and
 %creates a reactive transport simulation in FVTool and PhreeqcMatlab. This
 %function works only on 1D domains. For the 2D and 3D domains, see the
@@ -7,7 +8,7 @@ function phreeqc_rm = PhreeqcAdvection(phreeqc_input_file, advection_input_file,
 %   
 
 % Create the phreeqc instance based on the advection file
-phreeqc_rm = ReadAdvectionFile(advection_input_file);
+[phreeqc_rm, shifts, dt] = ReadAdvectionFile(advection_input_file);
 
 % Read the input file
 C = ReadPhreeqcFile(advection_input_file); % read and clean the input file
