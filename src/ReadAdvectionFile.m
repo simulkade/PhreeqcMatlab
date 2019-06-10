@@ -72,6 +72,8 @@ if isempty(time_conversion)
     time_conversion = 1.0;
 end
 
+data_base = sscanf(C{contains(C, 'data_base')}, 'data_base %s');
+
 status = phreeqc_rm.RM_SetErrorHandlerMode(error_handler_mode);
 status = phreeqc_rm.RM_SetComponentH2O(component_water);
 status = phreeqc_rm.RM_SetRebalanceFraction(rebalance_fraction);
@@ -105,6 +107,7 @@ status = phreeqc_rm.RM_SetPorosity(por);
 sat = initial_saturation*ones(nxyz, 1);
 status = phreeqc_rm.RM_SetSaturation(sat);
 
+status = phreeqc_rm.RM_LoadDatabase(database_file(data_base)); % load the database
 
 dt = sscanf(C{contains(C, 'time_step')}, 'time_step %f');
 shifts = sscanf(C{contains(C, 'shifts')}, 'shifts %f');

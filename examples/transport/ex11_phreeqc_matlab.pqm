@@ -24,4 +24,5 @@ PhreeqcMatlab
     units_ss_assemblage  1
     units_kinetics    1
     time_conversion    1.0
+    data_base     phreeqc.dat
 END
