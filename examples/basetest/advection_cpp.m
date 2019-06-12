@@ -164,7 +164,7 @@ status = phreeqc_rm.RM_InitialPhreeqc2Module(ic1, ic2, f1);
 
 
 % Get temperatures
-tempc = zeros(nxyz, 1);
+% tempc = zeros(nxyz, 1);
 % [status, tempc] = phreeqc_rm.RM_GetTemperature(tempc); not available in C
 % interface
 % get current saturation

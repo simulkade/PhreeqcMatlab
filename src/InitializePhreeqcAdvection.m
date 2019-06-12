@@ -1,6 +1,10 @@
-function phreeqc_rm = InitializePhreeqcAdvection(phreeqc_rm, input_file)
+function [phreeqc_rm, bc_conc, c_init] = InitializePhreeqcAdvection(phreeqc_rm, input_file)
 %INITIALIZEPHREEQCADVECTION Initializes a phreeqc instance with the phreeqc
 %input file for inital and boundary conditions
+% Returns:
+%   phreeqc_rm: updated phreeqc_rm object
+%   bc_conc:    boundary condition concentration
+%   c_init:     initial concentrations
 
 % map transport grid to the reaction cells (1 to 1 since it is only 1D)
 nxyz = phreeqc_rm.ncells;
@@ -84,6 +88,12 @@ bc_conc = zeros(ncomps*nbound, 1);
 % initializing other parameters (porosity, representative volume are set
 % already)
 % Set the process parameters; think about a better approach later
+t = 0.0;
+time_step = 0.0;
+status = phreeqc_rm.RM_SetTime(t);
+status = phreeqc_rm.RM_SetTimeStep(time_step);
+status = phreeqc_rm.RM_RunCells();
+c_init = phreeqc_rm.GetConcentrations();
 
 end
 
