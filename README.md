@@ -1,5 +1,7 @@
 # PhreeqcMatlab
-Easily calling PhreeqcRM from Matlab  
+[Documents (work in progress)](https://github.com/simulkade/PhreeqcMatlab/wiki)
+
+## Easily calling PhreeqcRM from Matlab  
 `PhreeqcMatlab` is a wrapper for the [PhreeqcRM](https://www.usgs.gov/software/phreeqc-version-3) [C interface](https://wwwbrr.cr.usgs.gov/projects/GWC_coupled/phreeqcrm/_r_m__interface___c_8h.html). Most of the functions are wrapped, with the exception of MPI function (that I neither use nor know how to wrap). In general, the C++ interface of PhreeqcRM has more functionality and is easier to call. Therefore, I have implemented several functions to make the usage of this package more convenient. All the original PhreeqcRM functions start with `RM_`. The additional utility functions that I have added do not have this extra `RM_`.
 
 # Installation
@@ -14,8 +16,8 @@ I'm writing several examples that calls this package from my finite volume packa
 # Other packages you might like
 There are at least two more packages that have some of the functionalities of `PhreeqcMatlab`, and inspired me to write this package.
 
-  + (TReacLab)[https://github.com/TReacLab/TReacLab]
-  + (CRP)[https://github.com/nbengdahl/CRP]
+  + [TReacLab](https://github.com/TReacLab/TReacLab)
+  + [CRP](https://github.com/nbengdahl/CRP)
 
 # To do list
 This package probably won't be broken by sudden changes. So you can start using it. Here's a list of near future activities. You contributions/suggestions are more than welcome :-)  
