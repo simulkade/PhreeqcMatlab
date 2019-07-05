@@ -1,0 +1,159 @@
+TITLE chalk chromatographic test
+SURFACE_MASTER_SPECIES
+  Chalk_a Chalk_aOH-0.667
+  Chalk_c Chalk_cH+0.667
+  Oil_n      Oil_nH
+  Oil_c      Oil_cOH
+SURFACE_SPECIES
+  # chalk reactions
+  Chalk_cH+0.667 = Chalk_cH+0.667
+  log_k 0.0 
+  -cd_music 0 0 0 0 0
+  Chalk_aOH-0.667 = Chalk_aOH-0.667 
+  log_k 0.0 
+  -cd_music 0 0 0 0 0
+  Chalk_cH+0.667 = Chalk_c-0.333 + H+ 
+  log_k -3.58 # -3.58
+  delta_h      0.0
+  -cd_music -1 0 0 0 0    
+  Chalk_cH+0.667 + Ca+2 = Chalk_cCa+1.667 + H+ 
+  log_k -2.8 # -2.8
+  delta_h      0.0
+  -cd_music -1 2 0 0 0
+  Chalk_cH+0.667 + Mg+2 = Chalk_cMg+1.667 + H+ 
+  log_k -2.2 # -2.6
+  delta_h      0.0
+  -cd_music -1 2 0 0 0
+  Chalk_aOH-0.667 + H+ = Chalk_aOH2+0.333 
+  log_k 12.85 # 12.85
+  delta_h      0.0
+  -cd_music 1 0 0 0 0
+  Chalk_aOH-0.667 = Chalk_aO-1.667 + H+
+  log_k -24.73 # -24.73
+  delta_h      0.0
+  -cd_music -1 0 0 0 0
+  Chalk_aOH-0.667 + CO3-2 + H+ = Chalk_aHCO3-0.667 + OH-
+  log_k 10.15 # 10.15
+  delta_h      0.0
+  -cd_music 0.6 -0.6 0 0 0  
+  Chalk_aOH-0.667 + CO3-2 = Chalk_aCO3-1.667 + OH-
+  log_k 1.55 # 1.55
+  delta_h      0.0
+  -cd_music 0.6 -1.6 0 0 0
+  Chalk_aOH-0.667 + SO4-2 = Chalk_aSO4-1.667 + OH- 
+  log_k 0.35 # 1.55
+  delta_h      0.0
+  -cd_music 0.6 -1.6 0 0 0
+  # oil reactions
+  Oil_nH = Oil_nH
+  log_k   0.0
+  Oil_cOH = Oil_cOH
+  log_k   0.0
+  # Oil surface (LLNL database for acetate)
+  #oil 1 (assumed parameters)
+  Oil_nH + H+ = Oil_nH2+
+  -cd_music 1 0 0
+  log_k   5.5
+  delta_h 30.0
+  #oil 2, parametrs from Takeya 2019
+  Oil_cOH = Oil_cO- + H+
+  -cd_music -1 0 0
+  log_k   -4.7572
+  delta_h 0.0
+  #oil 3 (assumed parameters)
+  Oil_cOH + Na+ = Oil_cONa + H+
+  -cd_music -1 1 0
+  log_k   -4.8606
+  delta_h -0.029288
+  #oil 4
+  Oil_cOH + K+ = Oil_cOK + H+
+  -cd_music -1 1 0
+  log_k   -5.0211
+  delta_h 4.8116
+  #oil 5, parameters from Takeya 2019
+  Oil_cOH + Ca+2 = Oil_cOCa+ + H+
+  -cd_music -1 2 0
+  log_k   -3.8263
+  delta_h 1.17152
+  #oil 6, parametrs from Takeya 2019
+  Oil_cOH + Mg+2 = Oil_cOMg+ + H+
+  -cd_music -1 2 0
+  log_k   -3.4781
+  delta_h -8.42239
+  #oil 7
+  Oil_cOH + Ba+2 = Oil_cOBa+ + H+
+  -cd_music -1 2 0
+  log_k   -3.7677
+  delta_h 7.322
+END
+
+SOLUTION 0  CaCl2
+        units            mmol/kgw
+        temp             25.0
+        pH               7.0     charge
+        Ca               0.3
+        Mg               0.3
+        Cl               1.2
+SOLUTION 1-40  Initial solution for column
+        units            mmol/kgw
+        temp             25.0
+        pH               7.0     charge
+        Na               1.0
+        Cl               1.0
+END
+
+EQUILIBRIUM_PHASES 1-40
+    Calcite  0.0 10.84
+END
+
+
+SURFACE 1-40
+  # -equilibrate 1
+  -sites_units density
+  -cd_music
+  Chalk_aOH      4.95      2.0    1084
+  Chalk_cOH      4.95
+  -capacitances  100 100
+  # Oil_cOH        2.7575570409982166      7.393715341959336    470.3454000000001
+  # Oil_nH        0.0
+  # -capacitances  3.1  2.25
+  # -diffuse_layer
+  -donnan
+END
+
+ADVECTION
+        -cells           40
+        -shifts          100
+        -punch_cells     40
+        -punch_frequency 1
+        -print_cells     40
+        -print_frequency 120
+PRINT; -reset false; #-status false
+
+SELECTED_OUTPUT
+        -file            ex11adv.sel
+        -reset           false
+        -step
+        -totals          Na Cl K Ca Mg
+	
+USER_PUNCH
+  -heading  Pore_vol
+  10 PUNCH (STEP_NO + .5) / 40.
+USER_GRAPH 1 Example 11
+  -chart_title "Using ADVECTION Data Block"
+  -headings Cl Na K Ca
+  -axis_titles "PORE VOLUMES" "MILLIMOLES PER KILOGRAM WATER"
+  -axis_scale x_axis 0 2.5
+  -axis_scale y_axis 0 1.4
+  -plot_concentration_vs time
+  -start
+  10 x = (STEP_NO + 0.5) / cell_no
+  20 PLOT_XY x, TOT("Cl")*1000, symbol = None
+  30 PLOT_XY x, TOT("Na")*1000, symbol = None
+  40 PLOT_XY x, TOT("K")*1000, symbol = None
+  50 PLOT_XY x, TOT("Ca")*1000, symbol = None
+  51 PLOT_XY x, TOT("Mg")*1000, symbol = None
+  60 PUT(1, 1)
+  -end
+END
+

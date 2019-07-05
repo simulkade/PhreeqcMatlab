@@ -1,0 +1,28 @@
+# PhreeqcMatlab input file for advection calculations for chalk scm
+ADVECTION
+    cells           40
+    shifts          100
+    time_step       1.0
+    initial_saturation 1.0
+    initial_porosity   0.4
+    representative_volume    1.0
+END
+
+PhreeqcMatlab
+    threads   2
+    component_water    1
+    error_handler_mode  1
+    partition_uz_solids  0
+    rebalance_fraction  0.5
+    rebalance_by_cell   1
+    use_solution_density_volume  0
+    units_solution    2
+    units_pp_assemblage  1
+    units_exchange    1
+    units_surface     1
+    units_gas_phase   1
+    units_ss_assemblage  1
+    units_kinetics    1
+    time_conversion    1.0
+    data_base     phreeqc.dat
+END

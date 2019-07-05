@@ -1,0 +1,309 @@
+   Input file: chalk_transport.phr
+  Output file: chalk_transport.phr.out
+Using PHREEQC: version 3.4.6, compiled June 20, 2018
+Database file: c:\phreeqc\database\phreeqc.dat
+
+------------------
+Reading data base.
+------------------
+
+	SOLUTION_MASTER_SPECIES
+	SOLUTION_SPECIES
+	PHASES
+	EXCHANGE_MASTER_SPECIES
+	EXCHANGE_SPECIES
+	SURFACE_MASTER_SPECIES
+	SURFACE_SPECIES
+	RATES
+	END
+------------------------------------
+Reading input data for simulation 1.
+------------------------------------
+
+	TITLE chalk chromatographic test
+	SURFACE_MASTER_SPECIES
+	  Chalk_a Chalk_aOH-0.667
+	  Chalk_c Chalk_cH+0.667
+	  Oil_n      Oil_nH
+	  Oil_c      Oil_cOH
+	SURFACE_SPECIES
+	  Chalk_cH+0.667 = Chalk_cH+0.667
+	  log_k 0.0 
+	  cd_music 0 0 0 0 0
+	  Chalk_aOH-0.667 = Chalk_aOH-0.667 
+	  log_k 0.0 
+	  cd_music 0 0 0 0 0
+	  Chalk_cH+0.667 = Chalk_c-0.333 + H+ 
+	  log_k -3.58 # -3.58
+	  delta_h      0.0
+	  cd_music -1 0 0 0 0    
+	  Chalk_cH+0.667 + Ca+2 = Chalk_cCa+1.667 + H+ 
+	  log_k -2.8 # -2.8
+	  delta_h      0.0
+	  cd_music -1 2 0 0 0
+	  Chalk_cH+0.667 + Mg+2 = Chalk_cMg+1.667 + H+ 
+	  log_k -2.2 # -2.6
+	  delta_h      0.0
+	  cd_music -1 2 0 0 0
+	  Chalk_aOH-0.667 + H+ = Chalk_aOH2+0.333 
+	  log_k 12.85 # 12.85
+	  delta_h      0.0
+	  cd_music 1 0 0 0 0
+	  Chalk_aOH-0.667 = Chalk_aO-1.667 + H+
+	  log_k -24.73 # -24.73
+	  delta_h      0.0
+	  cd_music -1 0 0 0 0
+	  Chalk_aOH-0.667 + CO3-2 + H+ = Chalk_aHCO3-0.667 + OH-
+	  log_k 10.15 # 10.15
+	  delta_h      0.0
+	  cd_music 0.6 -0.6 0 0 0  
+	  Chalk_aOH-0.667 + CO3-2 = Chalk_aCO3-1.667 + OH-
+	  log_k 1.55 # 1.55
+	  delta_h      0.0
+	  cd_music 0.6 -1.6 0 0 0
+	  Chalk_aOH-0.667 + SO4-2 = Chalk_aSO4-1.667 + OH- 
+	  log_k 0.35 # 1.55
+	  delta_h      0.0
+	  cd_music 0.6 -1.6 0 0 0
+	  Oil_nH = Oil_nH
+	  log_k   0.0
+	  Oil_cOH = Oil_cOH
+	  log_k   0.0
+	  Oil_nH + H+ = Oil_nH2+
+	  cd_music 1 0 0
+	  log_k   5.5
+	  delta_h 30.0
+	  Oil_cOH = Oil_cO- + H+
+	  cd_music -1 0 0
+	  log_k   -4.7572
+	  delta_h 0.0
+	  Oil_cOH + Na+ = Oil_cONa + H+
+	  cd_music -1 1 0
+	  log_k   -4.8606
+	  delta_h -0.029288
+	  Oil_cOH + K+ = Oil_cOK + H+
+	  cd_music -1 1 0
+	  log_k   -5.0211
+	  delta_h 4.8116
+	  Oil_cOH + Ca+2 = Oil_cOCa+ + H+
+	  cd_music -1 2 0
+	  log_k   -3.8263
+	  delta_h 1.17152
+	  Oil_cOH + Mg+2 = Oil_cOMg+ + H+
+	  cd_music -1 2 0
+	  log_k   -3.4781
+	  delta_h -8.42239
+	  Oil_cOH + Ba+2 = Oil_cOBa+ + H+
+	  cd_music -1 2 0
+	  log_k   -3.7677
+	  delta_h 7.322
+	END
+-----
+TITLE
+-----
+
+ chalk chromatographic test
+
+------------------
+End of simulation.
+------------------
+
+------------------------------------
+Reading input data for simulation 2.
+------------------------------------
+
+	SOLUTION 0  CaCl2
+	        units            mmol/kgw
+	        temp             25.0
+	        pH               7.0     charge
+	        Ca               0.3
+	        Mg               0.3
+	        Cl               1.2
+	SOLUTION 1-40  Initial solution for column
+	        units            mmol/kgw
+	        temp             25.0
+	        pH               7.0     charge
+	        Na               1.0
+	        Cl               1.0
+	END
+-------------------------------------------
+Beginning of initial solution calculations.
+-------------------------------------------
+
+Initial solution 0.	CaCl2
+
+-----------------------------Solution composition------------------------------
+
+	Elements           Molality       Moles
+
+	Ca                3.000e-04   3.000e-04
+	Cl                1.200e-03   1.200e-03
+	Mg                3.000e-04   3.000e-04
+
+----------------------------Description of solution----------------------------
+
+                                       pH  =   6.977      Charge balance
+                                       pe  =   4.000    
+      Specific Conductance (µS/cm,  25°C)  = 149
+                          Density (g/cm³)  =   0.99710
+                               Volume (L)  =   1.00298
+                        Activity of water  =   1.000
+                 Ionic strength (mol/kgw)  =   1.800e-03
+                       Mass of water (kg)  =   1.000e+00
+                 Total alkalinity (eq/kg)  =  -1.153e-20
+                         Temperature (°C)  =  25.00
+                  Electrical balance (eq)  =   4.265e-18
+ Percent error, 100*(Cat-|An|)/(Cat+|An|)  =   0.00
+                               Iterations  =   4
+                                  Total H  = 1.110124e+02
+                                  Total O  = 5.550622e+01
+
+----------------------------Distribution of species----------------------------
+
+                                               Log       Log       Log    mole V
+   Species          Molality    Activity  Molality  Activity     Gamma   cm³/mol
+
+   H+              1.101e-07   1.054e-07    -6.958    -6.977    -0.019      0.00
+   OH-             1.007e-07   9.606e-08    -6.997    -7.017    -0.021     -4.10
+   H2O             5.551e+01   1.000e+00     1.744    -0.000     0.000     18.07
+Ca            3.000e-04
+   Ca+2            3.000e-04   2.492e-04    -3.523    -3.603    -0.081    -18.10
+   CaOH+           4.114e-10   3.924e-10    -9.386    -9.406    -0.020     (0)  
+Cl            1.200e-03
+   Cl-             1.200e-03   1.144e-03    -2.921    -2.941    -0.021     18.08
+H(0)          1.571e-25
+   H2              7.857e-26   7.860e-26   -25.105   -25.105     0.000     28.61
+Mg            3.000e-04
+   Mg+2            3.000e-04   2.495e-04    -3.523    -3.603    -0.080    -21.79
+   MgOH+           8.999e-09   8.597e-09    -8.046    -8.066    -0.020     (0)  
+O(0)          0.000e+00
+   O2              0.000e+00   0.000e+00   -42.171   -42.171     0.000     30.40
+
+------------------------------Saturation indices-------------------------------
+
+  Phase               SI** log IAP   log K(298 K,   1 atm)
+
+  H2(g)           -22.00    -25.10   -3.10  H2
+  H2O(g)           -1.50     -0.00    1.50  H2O
+  O2(g)           -39.28    -42.17   -2.89  O2
+
+**For a gas, SI = log10(fugacity). Fugacity = pressure * phi / 1 atm.
+  For ideal gases, phi = 1.
+
+Initial solution 1.	Initial solution for column
+
+-----------------------------Solution composition------------------------------
+
+	Elements           Molality       Moles
+
+	Cl                1.000e-03   1.000e-03
+	Na                1.000e-03   1.000e-03
+
+----------------------------Description of solution----------------------------
+
+                                       pH  =   6.997      Charge balance
+                                       pe  =   4.000    
+      Specific Conductance (µS/cm,  25°C)  = 123
+                          Density (g/cm³)  =   0.99708
+                               Volume (L)  =   1.00298
+                        Activity of water  =   1.000
+                 Ionic strength (mol/kgw)  =   1.000e-03
+                       Mass of water (kg)  =   1.000e+00
+                 Total alkalinity (eq/kg)  =   2.504e-20
+                         Temperature (°C)  =  25.00
+                  Electrical balance (eq)  =  -1.843e-17
+ Percent error, 100*(Cat-|An|)/(Cat+|An|)  =  -0.00
+                               Iterations  =   3 (7 overall)
+                                  Total H  = 1.110124e+02
+                                  Total O  = 5.550622e+01
+
+----------------------------Distribution of species----------------------------
+
+                                               Log       Log       Log    mole V
+   Species          Molality    Activity  Molality  Activity     Gamma   cm³/mol
+
+   OH-             1.042e-07   1.005e-07    -6.982    -6.998    -0.016     -4.11
+   H+              1.042e-07   1.007e-07    -6.982    -6.997    -0.015      0.00
+   H2O             5.551e+01   1.000e+00     1.744    -0.000     0.000     18.07
+Cl            1.000e-03
+   Cl-             1.000e-03   9.649e-04    -3.000    -3.016    -0.016     18.07
+H(0)          1.435e-25
+   H2              7.177e-26   7.179e-26   -25.144   -25.144     0.000     28.61
+Na            1.000e-03
+   Na+             1.000e-03   9.652e-04    -3.000    -3.015    -0.015     -1.48
+   NaOH            9.699e-21   9.701e-21   -20.013   -20.013     0.000     (0)  
+O(0)          0.000e+00
+   O2              0.000e+00   0.000e+00   -42.092   -42.092     0.000     30.40
+
+------------------------------Saturation indices-------------------------------
+
+  Phase               SI** log IAP   log K(298 K,   1 atm)
+
+  H2(g)           -22.04    -25.14   -3.10  H2
+  H2O(g)           -1.50     -0.00    1.50  H2O
+  Halite           -7.60     -6.03    1.57  NaCl
+  O2(g)           -39.20    -42.09   -2.89  O2
+
+**For a gas, SI = log10(fugacity). Fugacity = pressure * phi / 1 atm.
+  For ideal gases, phi = 1.
+
+------------------
+End of simulation.
+------------------
+
+------------------------------------
+Reading input data for simulation 3.
+------------------------------------
+
+	EQUILIBRIUM_PHASES 1-40
+	    Calcite  0.0 10.84
+	END
+------------------
+End of simulation.
+------------------
+
+------------------------------------
+Reading input data for simulation 4.
+------------------------------------
+
+	SURFACE 1-40
+	  sites_units density
+	  cd_music
+	  Chalk_aOH      4.95      2.0    1084
+	  Chalk_cOH      4.95
+	  capacitances  100 100
+	  donnan
+	END
+------------------
+End of simulation.
+------------------
+
+------------------------------------
+Reading input data for simulation 5.
+------------------------------------
+
+	ADVECTION
+	        cells           40
+	        shifts          100
+	        punch_cells     40
+	        punch_frequency 1
+	        print_cells     40
+	        print_frequency 120
+	PRINT
+	 reset false
+WARNING: Maximum iterations exceeded, 100
+
+WARNING: Numerical method failed with this set of convergence parameters.
+
+WARNING: Trying smaller step size, pe step size 10, 5 ... 
+
+WARNING: Maximum iterations exceeded, 200
+
+WARNING: Numerical method failed with this set of convergence parameters.
+
+WARNING: Trying reduced tolerance 1e-14 ...
+
+-------------------------------
+End of Run after 7.496 Seconds.
+-------------------------------
+
