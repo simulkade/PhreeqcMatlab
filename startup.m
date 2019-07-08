@@ -23,7 +23,7 @@ if ispc
     % PhreeqcRM lib file download
     if ~isfile([current_path '/libs/libphreeqcrm.dll']) % lib files do not exist
         options = weboptions('Timeout', time_out);
-        url = 'https://github.com/simulkade/PhreeqcRM/raw/master/lib/PhreeqcRMd.dll';
+        url = 'https://github.com/simulkade/PhreeqcRM/raw/master/lib/PhreeqcRM.dll';
         lib_name = 'libs/libphreeqcrm.dll';
         disp('Downloading libphreeqcrm.dll from https://github.com/simulkade/PhreeqcRM. Please wait...');
         try
