@@ -9,7 +9,7 @@ ADVECTION
 END
 
 PhreeqcMatlab
-    threads   2
+    threads   4
     component_water    1
     error_handler_mode  1
     partition_uz_solids  0
