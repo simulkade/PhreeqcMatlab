@@ -12,6 +12,7 @@ PhreeqcMatlab
     threads   4
     component_water    1
     error_handler_mode  1
+    screen_messages     0
     partition_uz_solids  0
     rebalance_fraction  0.5
     rebalance_by_cell   1

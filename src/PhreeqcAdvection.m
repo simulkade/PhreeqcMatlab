@@ -11,7 +11,6 @@ function [phreeqc_rm, c_x_t] = PhreeqcAdvection(phreeqc_input_file, advection_in
 % shifts and time steps
 [phreeqc_rm, shifts, dt] = ReadAdvectionFile(advection_input_file);
 [phreeqc_rm, bc_conc, c_init] = InitializePhreeqcAdvection(phreeqc_rm, phreeqc_input_file);
-
 [m,n] = size(c_init);
 c_x_t = zeros(m, n, shifts+1);
 c_x_t(:,:,1) = c_init;

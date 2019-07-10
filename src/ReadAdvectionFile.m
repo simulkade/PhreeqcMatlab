@@ -72,6 +72,11 @@ if isempty(time_conversion)
     time_conversion = 1.0;
 end
 
+screen_messages = sscanf(C{contains(C, 'screen_messages')}, 'screen_messages %d');
+if isempty(screen_messages)
+    screen_messages = 1;
+end
+
 data_base = sscanf(C{contains(C, 'data_base')}, 'data_base %s');
 
 status = phreeqc_rm.RM_SetErrorHandlerMode(error_handler_mode);
@@ -80,6 +85,7 @@ status = phreeqc_rm.RM_SetRebalanceFraction(rebalance_fraction);
 status = phreeqc_rm.RM_SetRebalanceByCell(rebalance_by_cell);
 phreeqc_rm.RM_UseSolutionDensityVolume(use_solution_density_volume);
 phreeqc_rm.RM_SetPartitionUZSolids(partition_uz_solids);
+phreeqc_rm.RM_SetScreenOn(screen_messages);
 % status = phreeqc_rm.RM_SetFilePrefix('Advect');
 % phreeqc_rm.RM_OpenFiles();
 
