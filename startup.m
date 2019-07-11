@@ -2,7 +2,9 @@ function startup()
 %{
 startup
 
-Startup the phreeqc 
+Start up the PhreeqcMatlab package. If you have an internet connection, the
+package automatically downloads the PhreeqcRM and IPhreeqc libraries for
+your operating system (Mac is not supported yet).
 %}
 % global DATABASE_PATH
 try
@@ -11,7 +13,12 @@ try
 	current_path = p(1:end-1-length(file_name));
 	addpath([current_path '/libs']);
 	addpath([current_path '/src']);
+    addpath([current_path '/src/Advection1D']);
+    addpath([current_path '/src/Transport1D']);
+    addpath([current_path '/src/Bulk']);
+    addpath([current_path '/src/Tools']);
     addpath([current_path '/database']);
+    addpath([current_path '/FVTool']);
     disp('PhreeqcMatlab is starting. Checking for the PhreeqcRM library ...');
 catch 
     error("Something went wrong with the PhreeqcMatlab start up. Please download the package again, extract it, and run the startup.m file."); 
