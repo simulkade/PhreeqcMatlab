@@ -18,10 +18,10 @@ try
     addpath([current_path '/src/Bulk']);
     addpath([current_path '/src/Tools']);
     addpath([current_path '/database']);
-    addpath([current_path '/FVTool']);
+    addpath([current_path '/src/FVTool']);
     disp('PhreeqcMatlab is starting. Checking for the PhreeqcRM library ...');
 catch 
-    error("Something went wrong with the PhreeqcMatlab start up. Please download the package again, extract it, and run the startup.m file."); 
+    error('Something went wrong with the PhreeqcMatlab start up. Please download the package again, extract it, and run the startup.m file.'); 
 end
 
 % try to download the libraries and header files
