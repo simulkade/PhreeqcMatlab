@@ -167,7 +167,7 @@ classdef PhreeqcRM
             %}
             ncomps = obj.RM_FindComponents();
             components = cell(ncomps, 1);
-            s_name = '000000000000000000000000000';
+            s_name = '000000000000000000000000000'; % untill I find a more elegant solution
             for i=1:ncomps
                 [status, components{i}] = obj.RM_GetComponent(i-1, s_name, length(s_name));
             end
