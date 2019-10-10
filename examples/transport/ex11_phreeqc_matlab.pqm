@@ -10,6 +10,7 @@ END
 
 PhreeqcMatlab
     threads   2
+    screen_messages    1
     component_water    0
     error_handler_mode  1
     partition_uz_solids  0
