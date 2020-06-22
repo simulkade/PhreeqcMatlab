@@ -8,7 +8,7 @@ classdef solution
         unit
         components
         concentrations
-        charged_component
+        charge_balance_component
         charge_balance
         density
         pH
@@ -20,6 +20,11 @@ classdef solution
             %   Detailed explanation goes here
             obj.components = primary_species;
             obj.concentrations = concentration;
+        end
+        
+        function obj = seawater(obj)
+            obj.components = ["Na", "Cl", "Ca", "Mg", "pH", "C"];
+            
         end
         
         function solution_string = phreeqc_solution(obj)
