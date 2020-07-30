@@ -13,6 +13,8 @@ classdef solution
         density
         pH
         pe
+        alkalinity
+        alkalinity_component
     end
     
     methods
@@ -27,7 +29,18 @@ classdef solution
         end
         
         function obj = seawater(obj)
-            obj.components = ["Ca", "Mg", "Na", "K", "Si", "Cl", "Alkalinity", "pH", "S(6)"];
+            obj.name = "Seawater";
+            obj.number = 1;
+            obj.unit = "ppm";
+            obj.components = ["Ca", "Mg", "Na", "K", "Si", "Cl", "S(6)"];
+            obj.concentrations = [412.3, 1291.8, 10768.0, 399.1, 4.28, 19353.0, 2712.0];
+            obj.charge_balance_component = [];
+            obj.charge_balance = false;
+            obj.density = 1.0253; % kg/l
+            obj.pH = 8.22;
+            obj.pe = 8.451;
+            obj.alkalinity = 141.682;
+            obj.alkalinity_component = "HCO3";
 %                 units   ppm
 %                 pH      8.22
 %                 pe      8.451
