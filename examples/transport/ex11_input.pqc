@@ -6,7 +6,7 @@ SOLUTION 0  CaCl2
         pe               12.5    O2(g)   -0.68
         Ca               0.6
         Cl               1.2
-       # density          1.0   calculate
+       density          1.0   calculate
 SOLUTION 1-40  Initial solution for column
         units            mmol/L
         temp             50.0
@@ -15,7 +15,7 @@ SOLUTION 1-40  Initial solution for column
         Na               1.0
         K                0.2
         N(5)             1.2
-        # density          1.0   calculate
+        density          1.0   calculate
 END
 EXCHANGE 1-40
         -equilibrate 1
