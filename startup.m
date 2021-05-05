@@ -30,7 +30,7 @@ if ispc
     % PhreeqcRM lib file download
     if ~isfile([current_path '/libs/libphreeqcrm.dll']) % lib files do not exist
         options = weboptions('Timeout', time_out);
-        url = 'https://github.com/simulkade/PhreeqcRM/raw/master/lib/PhreeqcRMd.dll';
+        url = 'https://github.com/simulkade/PhreeqcRM/releases/download/3.7/PhreeqcRMd.dll';
         lib_name = 'libs/libphreeqcrm.dll';
         disp('Downloading libphreeqcrm.dll from https://github.com/simulkade/PhreeqcRM. Please wait...');
         try
@@ -38,7 +38,7 @@ if ispc
             disp('libphreeqcrm.dll is successfully downloaded.');
         catch
             disp('Could not download the libphreeqcrm.dll file.')
-            disp('Please download it from https://github.com/simulkade/PhreeqcRM/raw/master/lib/PhreeqcRMd.dll')
+            disp('Please download it from https://github.com/simulkade/PhreeqcRM/releases/download/3.7/PhreeqcRMd.dll')
             disp('rename it to libphreeqcrm.dll, and copy it to the libs folder')
         end
     else
@@ -48,7 +48,7 @@ if ispc
     % IPhreeqc lib file download
     if ~isfile([current_path '/libs/libiphreeqc.dll']) % lib files do not exist
         options = weboptions('Timeout', time_out);
-        url = 'https://github.com/simulkade/PhreeqcRM/raw/master/IPhreeqc_lib/IPhreeqcd.dll';
+        url = 'https://github.com/simulkade/PhreeqcRM/releases/download/3.7/IPhreeqcd.dll';
         lib_name = 'libs/libiphreeqc.dll';
         disp('Downloading libiphreeqc.dll from https://github.com/simulkade/PhreeqcRM. Please wait...');
         try
@@ -56,7 +56,7 @@ if ispc
             disp('libiphreeqc.dll is successfully downloaded.');
         catch
             disp('Could not download the libiphreeqc.dll file (OPTIONAL).')
-            disp('Please download it from https://github.com/simulkade/PhreeqcRM/raw/master/IPhreeqc_lib/IPhreeqcd.dll')
+            disp('Please download it from https://github.com/simulkade/PhreeqcRM/releases/download/3.7/IPhreeqcd.dll')
             disp('rename it to libiphreeqc.dll, and copy it to the libs folder')
         end
     else
@@ -70,7 +70,7 @@ if isunix
     % PhreeqcRM lib file download
     if ~isfile([current_path '/libs/libphreeqcrm.so']) % lib files do not exist
         options = weboptions('Timeout', time_out);
-        url = 'https://github.com/simulkade/PhreeqcRM/raw/master/linux_lib/libphreeqcrm-3.5.0.so';
+        url = 'https://github.com/simulkade/PhreeqcRM/releases/download/3.7/libphreeqcrm-3.7.0.so';
         lib_name = 'libs/libphreeqcrm.so';
         disp('Downloading libphreeqcrm.so from https://github.com/simulkade/PhreeqcRM. Please wait...');
         try
@@ -78,7 +78,7 @@ if isunix
             disp('libphreeqcrm.so is successfully downloaded.');
         catch
             disp('Could not download the libphreeqcrm.so file.')
-            disp('Please download it from https://github.com/simulkade/PhreeqcRM/raw/master/linux_lib/libphreeqcrm-3.5.0.so')
+            disp('Please download it from https://github.com/simulkade/PhreeqcRM/releases/download/3.7/libphreeqcrm-3.7.0.so')
             disp('rename it to libphreeqcrm.so, and copy it to the libs folder')
         end
     else
@@ -89,7 +89,7 @@ if isunix
     % IPhreeqc lib file download
     if ~isfile([current_path '/libs/libiphreeqc.so']) % lib files do not exist
         options = weboptions('Timeout', time_out);
-        url = 'https://github.com/simulkade/PhreeqcRM/raw/master/IPhreeqc_lib/libiphreeqc-3.5.0.so';
+        url = 'https://github.com/simulkade/PhreeqcRM/releases/download/3.7/libiphreeqc-3.7.0.so';
         lib_name = 'libs/libiphreeqc.so';
         disp('Downloading libiphreeqc.so from https://github.com/simulkade/PhreeqcRM. Please wait...');
         try    
@@ -97,7 +97,7 @@ if isunix
             disp('libiphreeqc.so is successfully downloaded.');
         catch
             disp('Could not download the libiphreeqc.so file.')
-            disp('Please download it from https://github.com/simulkade/PhreeqcRM/raw/master/IPhreeqc_lib/libiphreeqc-3.5.0.so')
+            disp('Please download it from https://github.com/simulkade/PhreeqcRM/releases/download/3.7/libiphreeqc-3.7.0.so')
             disp('rename it to libiphreeqc.so, and copy it to the libs folder')
         end
     else
