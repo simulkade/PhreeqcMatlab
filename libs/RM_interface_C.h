@@ -304,36 +304,37 @@ their charge (@ref RM_GetSpeciesZ).
 @ref RM_GetSpeciesCount,
 @ref RM_GetSpeciesD25, 
 @ref RM_GetSpeciesLog10Gammas, 
+@ref RM_GetSpeciesLog10Molalities,
 @ref RM_GetSpeciesName,
 @ref RM_GetSpeciesZ, 
 @ref RM_SetComponentH2O,
 @ref RM_SetSpeciesSaveOn, 
 @ref RM_SpeciesConcentrations2Module. 
-@par The @ref RM_FindComponents method also generates lists of reactants--equilibrium phases,
+@par The RM_FindComponents method also generates lists of reactants--equilibrium phases,
 exchangers, gas components, kinetic reactants, solid solution components, and surfaces.
 The lists are cumulative, including all reactants that were
 defined in the initial phreeqc instance at any time FindComponents was called.
 In addition, a list of phases is generated for which saturation indices may be calculated from the
 cumulative list of components.
 @see also
-@ref RM_GetEquilibriumPhases,
+@ref RM_GetEquilibriumPhasesName,
 @ref RM_GetEquilibriumPhasesCount,
-@ref RM_GetExchangeNames,
-@ref RM_GetExchangeSpecies,
+@ref RM_GetExchangeName,
+@ref RM_GetExchangeSpeciesName,
 @ref RM_GetExchangeSpeciesCount,
-@ref RM_GetGasComponents,
+@ref RM_GetGasComponentsName,
 @ref RM_GetGasComponentsCount,
-@ref RM_GetKineticReactions,
+@ref RM_GetKineticReactionsName,
 @ref RM_GetKineticReactionsCount,
 @ref RM_GetSICount,
-@ref RM_GetSINames,
-@ref RM_GetSolidSolutionComponents,
+@ref RM_GetSIName,
+@ref RM_GetSolidSolutionComponentsName,
 @ref RM_GetSolidSolutionComponentsCount,
-@ref RM_GetSolidSolutionNames,
-@ref RM_GetSurfaceNames,
-@ref RM_GetSurfaceSpecies,
+@ref RM_GetSolidSolutionName,
+@ref RM_GetSurfaceName,
+@ref RM_GetSurfaceSpeciesName,
 @ref RM_GetSurfaceSpeciesCount,
-@ref RM_GetSurfaceTypes.
+@ref RM_GetSurfaceType.
 @par C Example:
 @htmlonly
 <CODE>
@@ -856,6 +857,153 @@ strcat(input, line);
 Called by root.
 */
 IRM_DLL_EXPORT IRM_RESULT RM_GetGasComponentsName(int id, int num, char *name, int l1);
+/**
+Transfer moles of gas components from each reaction cell
+to the vector given in the argument list (@a gas_moles).
+
+@param id               The instance @a id returned from @ref RM_Create.
+@param gas_moles        Vector to receive the moles of gas components.
+Dimension of the vector must be @a ngas_comps times @a nxyz,
+where, @a ngas_comps is the result of @ref RM_GetGasComponentsCount,
+and @a nxyz is the number of user grid cells (@ref RM_GetGridCellCount).
+If a gas component is not defined for a cell, the number of moles is set to -1.
+Values for inactive cells are set to 1e30.
+@retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
+
+@see
+@ref RM_FindComponents, 
+@ref RM_GetGasComponentsCount, 
+@ref RM_GetGasCompPressures,
+@ref RM_GetGasCompPhi,
+@ref RM_GetGasPhaseVolume,
+@ref RM_SetGasCompMoles,
+@ref RM_SetGasPhaseVolume.
+
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+ngas_comps = RM_GetGasComponentsCount();
+gas_moles = (double *) malloc((size_t) (ngas_comps * nxyz * sizeof(double)));
+status = RM_RunCells(id);
+status = RM_GetGasCompMoles(id, gas_moles);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref RM_MpiWorker.
+ */
+IRM_DLL_EXPORT IRM_RESULT RM_GetGasCompMoles(int id, double* gas_moles);
+/**
+Transfer pressures of gas components from each reaction cell
+to the vector given in the argument list (@a gas_pressure).
+
+@param id               The instance @a id returned from @ref RM_Create.
+@param gas_pressure        Vector to receive the pressures of gas components.
+Dimension of the vector must be @a ngas_comps times @a nxyz,
+where, @a ngas_comps is the result of @ref RM_GetGasComponentsCount,
+and @a nxyz is the number of user grid cells (@ref RM_GetGridCellCount).
+If a gas component is not defined for a cell, the pressure is set to -1.
+Values for inactive cells are set to 1e30.
+@retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
+
+@see
+@ref RM_FindComponents,
+@ref RM_GetGasComponentsCount,
+@ref RM_GetGasCompMoles,
+@ref RM_GetGasCompPhi,
+@ref RM_GetGasPhaseVolume,
+@ref RM_SetGasCompMoles,
+@ref RM_SetGasPhaseVolume.
+
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+ngas_comps = RM_GetGasComponentsCount();
+gas_pressure = (double *) malloc((size_t) (ngas_comps * nxyz * sizeof(double)));
+status = RM_RunCells(id);
+status = RM_GetGasCompPressures(id, gas_pressure);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref RM_MpiWorker.
+ */
+IRM_DLL_EXPORT IRM_RESULT RM_GetGasCompPressures(int id, double* gas_pressure);
+/**
+Transfer fugacity coefficients (phi) of gas components from each reaction cell
+to the vector given in the argument list (@a gas_phi). Fugacity of a gas
+component is equal to its pressure times the fugacity coefficient.
+
+@param id               The instance @a id returned from @ref RM_Create.
+@param gas_phi        Vector to receive the fugacity coefficients of gas components.
+Dimension of the vector must be @a ngas_comps times @a nxyz,
+where, @a ngas_comps is the result of @ref RM_GetGasComponentsCount,
+and @a nxyz is the number of user grid cells (@ref RM_GetGridCellCount).
+If a gas component is not defined for a cell, the fugacity coefficient is set to -1.
+Values for inactive cells are set to 1e30.
+@retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
+
+@see
+@ref RM_FindComponents,
+@ref RM_GetGasComponentsCount,
+@ref RM_GetGasCompMoles,
+@ref RM_GetGasCompPressures,
+@ref RM_GetGasPhaseVolume,
+@ref RM_SetGasCompMoles,
+@ref RM_SetGasPhaseVolume.
+
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+ngas_comps = RM_GetGasComponentsCount();
+gas_phi = (double *) malloc((size_t) (ngas_comps * nxyz * sizeof(double)));
+status = RM_RunCells(id);
+status = RM_GetGasCompPhi(id, gas_phi);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref RM_MpiWorker.
+ */
+IRM_DLL_EXPORT IRM_RESULT RM_GetGasCompPhi(int id, double* gas_phi);
+/**
+Transfer volume of gas from each reaction cell
+to the vector given in the argument list (@a gas_volume).
+
+@param id               The instance @a id returned from @ref RM_Create.
+@param  gas_volume               Array to receive the gas phase volumes.
+Dimension of the vector must be @a nxyz,
+where,  @a nxyz is the number of user grid cells (@ref RM_GetGridCellCount).
+If a gas phase is not defined for a cell, the volume is set to -1.
+Values for inactive cells are set to 1e30.
+@retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
+
+@see
+@ref RM_FindComponents,
+@ref RM_GetGasComponentsCount,
+@ref RM_GetGasCompMoles,
+@ref RM_GetGasCompPressures,
+@ref RM_GetGasCompPhi,
+@ref RM_SetGasCompMoles,
+@ref RM_SetGasPhaseVolume.
+
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+gas_volume = (double *) malloc((size_t) (nxyz * sizeof(double)));
+status = RM_RunCells(id);
+status = RM_GetGasPhaseVolume(id, gas_volume);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref RM_MpiWorker.
+ */
+IRM_DLL_EXPORT IRM_RESULT RM_GetGasPhaseVolume(int id, double* gas_volume);
 /**
 Returns the gram formula weights (g/mol) for the components in the reaction-module component list.
 @param id               The instance id returned from @ref RM_Create.
@@ -1547,6 +1695,7 @@ Values for inactive cells are set to 1e30.
 @ref RM_GetSpeciesCount, 
 @ref RM_GetSpeciesD25, 
 @ref RM_GetSpeciesLog10Gammas,
+@ref RM_GetSpeciesLog10Molalities,
 @ref RM_GetSpeciesName,
 @ref RM_GetSpeciesSaveOn,
 @ref RM_GetSpeciesZ,   
@@ -1586,6 +1735,7 @@ aqueous species that can be made from the set of components.
 @ref RM_GetSpeciesConcentrations,
 @ref RM_GetSpeciesD25,
 @ref RM_GetSpeciesLog10Gammas,
+@ref RM_GetSpeciesLog10Molalities,
 @ref RM_GetSpeciesName, 
 @ref RM_GetSpeciesSaveOn,
 @ref RM_GetSpeciesZ, 
@@ -1628,6 +1778,7 @@ where @a nspecies is is the number of aqueous species (@ref RM_GetSpeciesCount).
 @ref RM_GetSpeciesConcentrations, 
 @ref RM_GetSpeciesCount,
 @ref RM_GetSpeciesLog10Gammas,
+@ref RM_GetSpeciesLog10Molalities,
 @ref RM_GetSpeciesName,  
 @ref RM_GetSpeciesSaveOn, 
 @ref RM_GetSpeciesZ, 
@@ -1659,7 +1810,7 @@ species is determined by @ref RM_FindComponents and includes all
 aqueous species that can be made from the set of components.
 
 @param id                   The instance @a id returned from @ref RM_Create.
-@param species_log10gammas  Array to receive the aqueous species concentrations.
+@param species_log10gammas  Array to receive the aqueous species log10 activity coefficients.
 Dimension of the array is (@a nxyz, @a nspecies),
 where @a nxyz is the number of user grid cells (@ref RM_GetGridCellCount),
 and @a nspecies is the number of aqueous species (@ref RM_GetSpeciesCount).
@@ -1670,6 +1821,7 @@ Values for inactive cells are set to 1e30.
 @ref RM_GetSpeciesConcentrations,
 @ref RM_GetSpeciesCount,
 @ref RM_GetSpeciesD25,
+@ref RM_GetSpeciesLog10Molalities,
 @ref RM_GetSpeciesName,
 @ref RM_GetSpeciesSaveOn,
 @ref RM_GetSpeciesZ,
@@ -1695,6 +1847,50 @@ Called by root, workers must be in the loop of @ref RM_MpiWorker.
 */
 IRM_DLL_EXPORT IRM_RESULT RM_GetSpeciesLog10Gammas(int id, double *species_log10gammas);
 /**
+Transfer aqueous-species log10 molalities to the array argument (@a species_log10molalities)
+To use this method @ref RM_SetSpeciesSaveOn must be set to @a true.
+The list of aqueous
+species is determined by @ref RM_FindComponents and includes all
+aqueous species that can be made from the set of components.
+
+@param id                   The instance @a id returned from @ref RM_Create.
+@param species_log10molalities  Array to receive the aqueous species log10 molalities.
+Dimension of the array is (@a nxyz, @a nspecies),
+where @a nxyz is the number of user grid cells (@ref RM_GetGridCellCount),
+and @a nspecies is the number of aqueous species (@ref RM_GetSpeciesCount).
+Values for inactive cells are set to 1e30.
+@retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
+@see
+@ref RM_FindComponents,
+@ref RM_GetSpeciesConcentrations,
+@ref RM_GetSpeciesCount,
+@ref RM_GetSpeciesD25,
+@ref RM_GetSpeciesLog10Gammas,
+@ref RM_GetSpeciesName,
+@ref RM_GetSpeciesSaveOn,
+@ref RM_GetSpeciesZ,
+@ref RM_SetSpeciesSaveOn,
+@ref RM_SpeciesConcentrations2Module.
+
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+status = RM_SetSpeciesSaveOn(id, 1);
+ncomps = RM_FindComponents(id);
+nspecies = RM_GetSpeciesCount(id);
+nxyz = RM_GetGridCellCount(id);
+species_log10molalities = (double *) malloc((size_t) (nxyz * nspecies * sizeof(double)));
+status = RM_RunCells(id);
+status = RM_GetSpeciesLog10Molalities(id, species_log10molalities);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref RM_MpiWorker.
+*/
+IRM_DLL_EXPORT IRM_RESULT RM_GetSpeciesLog10Molalities(int id, double* species_log10molalities);
+/**
 Transfers the name of the @a ith aqueous species to the character argument (@a name).
 This method is intended for use with multicomponent-diffusion transport calculations,
 and @ref RM_SetSpeciesSaveOn must be set to @a true.
@@ -1713,6 +1909,7 @@ aqueous species that can be made from the set of components.
 @ref RM_GetSpeciesCount,
 @ref RM_GetSpeciesD25, 
 @ref RM_GetSpeciesLog10Gammas,
+@ref RM_GetSpeciesLog10Molalities,
 @ref RM_GetSpeciesSaveOn,
 @ref RM_GetSpeciesZ,
 @ref RM_SetSpeciesSaveOn,
@@ -1754,6 +1951,7 @@ with @ref RM_GetSpeciesConcentrations, and solution compositions to be set with
 @ref RM_GetSpeciesCount,
 @ref RM_GetSpeciesD25, 
 @ref RM_GetSpeciesLog10Gammas,
+@ref RM_GetSpeciesLog10Molalities,
 @ref RM_GetSpeciesName,
 @ref RM_GetSpeciesZ, 
 @ref RM_SetSpeciesSaveOn,
@@ -1795,6 +1993,7 @@ where @a nspecies is is the number of aqueous species (@ref RM_GetSpeciesCount).
 @ref RM_GetSpeciesCount,
 @ref RM_GetSpeciesD25, 
 @ref RM_GetSpeciesLog10Gammas,
+@ref RM_GetSpeciesLog10Molalities,
 @ref RM_GetSpeciesName, 
 @ref RM_GetSpeciesSaveOn,
 @ref RM_SetSpeciesSaveOn,
@@ -2657,7 +2856,7 @@ by @ref RM_FindComponents or @ref RM_GetComponentCount.
 c = (double *) malloc((size_t) (ncomps * nxyz * sizeof(double)));
 ...
 advect_c(c, bc_conc, ncomps, nxyz, nbound);
-status = RM_SetPoosity(id, por);               // If porosity changes
+status = RM_SetPorsity(id, por);               // If porosity changes
 status = RM_SetSaturation(id, sat);            // If saturation changes
 status = RM_SetTemperature(id, temperature);   // If temperature changes
 status = RM_SetPressure(id, pressure);         // If pressure changes
@@ -2790,6 +2989,29 @@ Called by root, workers must be in the loop of @ref RM_MpiWorker.
  */
 IRM_DLL_EXPORT IRM_RESULT RM_SetErrorHandlerMode(int id, int mode);
 /**
+Set the property that controls whether error messages are generated and displayed.
+Messages include PHREEQC "ERROR" messages, and
+any messages written with @ref RM_ErrorMessage.
+
+@param id               The instance @a id returned from @ref RM_Create.
+@param tf  @a 1, enable error messages; @a 0, disable error messages. Default is 1.
+@retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
+@see
+@ref RM_ErrorMessage,
+@ref RM_ScreenMessage.
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+status = RM_SetErrorOn(id, 1);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root.
+ */
+IRM_DLL_EXPORT IRM_RESULT RM_SetErrorOn(int id, int tf);
+/**
 Set the prefix for the output (prefix.chem.txt) and log (prefix.log.txt) files.
 These files are opened by @ref RM_OpenFiles.
 @param id               The instance @a id returned from @ref RM_Create.
@@ -2811,6 +3033,86 @@ status = RM_OpenFiles(id);
 Called by root.
  */
 IRM_DLL_EXPORT IRM_RESULT RM_SetFilePrefix(int id, const char *prefix);
+
+/**
+Transfer moles of gas components from
+the vector given in the argument list (@a gas_moles) to each reaction cell.
+
+@param id               The instance @a id returned from @ref RM_Create.
+@param gas_moles        Vector of moles of gas components.
+Dimension of the vector must be @a ngas_comps times @a nxyz,
+where, @a ngas_comps is the result of @ref RM_GetGasComponentsCount,
+and @a nxyz is the number of user grid cells (@ref RM_GetGridCellCount).
+If the number of moles is set to a negative number, the gas component will
+not be defined for the GAS_PHASE of the reaction cell.
+@retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
+@see                    
+@ref RM_FindComponents, 
+@ref RM_GetGasComponentsCount, 
+@ref RM_GetGasCompMoles, 
+@ref RM_GetGasCompPressures,
+@ref RM_GetGasPhaseVolume,
+@ref RM_GetGasCompPhi,
+@ref RM_SetGasPhaseVolume.
+
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+ngas_comps = RM_GetGasComponentsCount();
+gas_moles = (double *) malloc((size_t) (ngas_comps * nxyz * sizeof(double)));
+...
+status = RM_SetGasCompMoles(id, gas_moles);
+status = RM_RunCells(id)
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref RM_MpiWorker.
+ */
+IRM_DLL_EXPORT IRM_RESULT RM_SetGasCompMoles(int id, double* gas_moles);
+
+/**
+Transfer volumes of gas phases from
+the array given in the argument list (@a gas_volume) to each reaction cell.
+The gas-phase volume affects the pressures calculated for fixed-volume
+gas phases. If a gas-phase volume is defined with this method 
+for a GAS_PHASE in a cell, 
+the gas phase is forced to be a fixed-volume gas phase.
+
+@param id               The instance @a id returned from @ref RM_Create.
+@param  gas_volume               Vector of volumes for each gas phase.
+Dimension of the vector must be @a nxyz,
+where, @a nxyz is the number of user grid cells (@ref RM_GetGridCellCount).
+If the volume is set to a negative number for a cell, the gas-phase volume for that cell is
+not changed.
+@retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
+@see
+@ref RM_FindComponents,
+@ref RM_GetGasComponentsCount,
+@ref RM_GetGasCompMoles,
+@ref RM_GetGasCompPressures,
+@ref RM_GetGasPhaseVolume,
+@ref RM_GetGasCompPhi,
+@ref RM_SetGasCompMoles.
+
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+gas_volume = (double *) malloc((size_t) (nxyz * sizeof(double)));
+...
+status = RM_SetGasPhaseVolume(id, gas_moles);
+status = RM_RunCells(id)
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref RM_MpiWorker.
+ */
+IRM_DLL_EXPORT IRM_RESULT RM_SetGasPhaseVolume(int id, double* gas_volume);
+
+
 /**
 MPI only. Defines a callback function that allows additional tasks to be done
 by the workers. The method @ref RM_MpiWorker contains a loop,
@@ -3334,6 +3636,7 @@ saved.
 @ref RM_GetSpeciesCount,
 @ref RM_GetSpeciesD25, 
 @ref RM_GetSpeciesLog10Gammas,
+@ref RM_GetSpeciesLog10Molalities,
 @ref RM_GetSpeciesName,
 @ref RM_GetSpeciesSaveOn, 
 @ref RM_GetSpeciesZ, 
@@ -3767,6 +4070,7 @@ Concentrations are moles per liter.
 @ref RM_GetSpeciesCount,
 @ref RM_GetSpeciesD25, 
 @ref RM_GetSpeciesLog10Gammas,
+@ref RM_GetSpeciesLog10Molalities,
 @ref RM_GetSpeciesName, 
 @ref RM_GetSpeciesSaveOn,
 @ref RM_GetSpeciesZ, 
