@@ -169,7 +169,7 @@ classdef PhreeqcRM
             components = cell(ncomps, 1);
             s_name = '000000000000000000000000000'; % untill I find a more elegant solution
             for i=1:ncomps
-                [status, components{i}] = obj.RM_GetComponent(i-1, s_name, length(s_name));
+                [~, components{i}] = obj.RM_GetComponent(i-1, s_name, length(s_name));
             end
         end
         
@@ -231,6 +231,41 @@ classdef PhreeqcRM
             [status, ec_out] = calllib('libphreeqcrm','RM_GetEndCell', obj.id, ec);
         end
         
+        function n = RM_GetEquilibriumPhasesCount(obj)
+            %{
+            Returns the number of equilibrium phases in the initial-phreeqc module. RM_FindComponents must be called before RM_GetEquilibriumPhasesCount. This method may be useful when generating selected output definitions related to equilibrium phases. 
+            %}
+            n = calllib('libphreeqcrm','RM_GetEquilibriumPhasesCount', obj.id);
+        end
+        
+        
+        function [status, chem_name_out] = RM_GetEquilibriumPhasesName(obj, num, chem_name, l)
+            %{
+            Retrieves an item from the equilibrium phase list. The list includes all phases included in any EQUILIBRIUM_PHASES definitions in the initial-phreeqc module. RM_FindComponents must be called before RM_GetEquilibriumPhasesName. This method may be useful when generating selected output definitions related to equilibrium phases.
+
+            Parameters
+                id	The instance id returned from RM_Create.
+                num	The number of the equilibrium phase name to be retrieved. Fortran, 1 based.
+                name	The equilibrium phase name at number num.
+                l1	The length of the maximum number of characters for name. 
+            %}
+            [status, chem_name_out] = calllib('libphreeqcrm','RM_GetEquilibriumPhasesName', ...
+                obj.id, num, chem_name, l);
+        end
+        
+        function components = GetEquilibriumPhasesName(obj)
+           %{
+            Get all the EQUILIBRIUM PHASES NAME name and return as a cell vector
+            %}
+            % ncomps = obj.RM_FindComponents();
+            n_eq_phases = obj.RM_GetEquilibriumPhasesCount();
+            components = cell(n_eq_phases, 1);
+            s_name = '000000000000000000000000000'; % untill I find a more elegant solution
+            for i=1:n_eq_phases
+                [~, components{i}] = obj.RM_GetEquilibriumPhasesName(i-1, s_name, length(s_name));
+            end
+        end
+        
         function [status, msg_out] = RM_GetErrorString(obj, errstr, l)
             %{
             Returns a string containing error messages related to the last call to a PhreeqcRM method to the character argument (errstr).
@@ -248,6 +283,58 @@ classdef PhreeqcRM
             
             %}
             l = calllib('libphreeqcrm','RM_GetErrorStringLength', obj.id);
+        end
+        
+        function n = RM_GetExchangeSpeciesCount(obj)
+            %{
+            Returns the number of exchange species in the initial-phreeqc module. RM_FindComponents must be called before RM_GetExchangeSpeciesCount. This method may be useful when generating selected output definitions related to exchangers. 
+            %}
+            n = calllib('libphreeqcrm','RM_GetExchangeSpeciesCount', obj.id);
+        end
+        
+        
+        function [status, chem_name_out] = RM_GetExchangeName(obj, num, chem_name, l)
+            %{
+            Retrieves an item from the exchange name list. RM_FindComponents must be called before RM_GetExchangeName. The exchange names vector is the same length as the exchange species names vector and provides the corresponding exchange site (for example, X corresponing to NaX). This method may be useful when generating selected output definitions related to exchangers.
+
+            Parameters
+                id	The instance id returned from RM_Create.
+                num	The number of the exchange name to be retrieved. Fortran, 1 based.
+                name	The exchange name associated with exchange species num.
+                l1	The length of the maximum number of characters for name. 
+            %}
+            [status, chem_name_out] = calllib('libphreeqcrm','RM_GetExchangeName', ...
+                obj.id, num, chem_name, l);
+        end
+        
+        function [status, chem_name_out] = RM_GetExchangeSpeciesName(obj, num, chem_name, l)
+            %{
+            Retrieves an item from the exchange species list. The list of exchange species (such as "NaX") is derived from the list of components (RM_FindComponents) and the list of all exchange names (such as "X") that are included in EXCHANGE definitions in the initial-phreeqc module. RM_FindComponents must be called before RM_GetExchangeSpeciesName. This method may be useful when generating selected output definitions related to exchangers.
+
+            Parameters
+                id	The instance id returned from RM_Create.
+                num	The number of the exchange species to be retrieved. Fortran, 1 based.
+                name	The exchange species name at number num.
+                l1	The length of the maximum number of characters for name. 
+            %}
+            [status, chem_name_out] = calllib('libphreeqcrm','RM_GetExchangeSpeciesName', ...
+                obj.id, num, chem_name, l);
+        end
+        
+        function components = GetExchangeSpeciesNames(obj)
+           %{
+            Get all the EQUILIBRIUM PHASES NAME name and return as a cell vector
+            %}
+            % ncomps = obj.RM_FindComponents();
+            n_ex_phases = obj.RM_GetExchangeSpeciesCount();
+            components = cell(n_ex_phases, 1);
+            s_name = '000000000000000000000000000'; % untill I find a more elegant solution
+            s_name2 = '000000000000000000000000000';
+            for i=1:n_ex_phases
+                [~, s1] = obj.RM_GetExchangeSpeciesName(i-1, s_name, length(s_name));
+                [~, s2] = obj.RM_GetExchangeName(i-1, s_name2, length(s_name));
+                components{i} = [s1 s2];
+            end
         end
         
         function [status, prefix_out] = RM_GetFilePrefix(obj, prefix, l)
@@ -270,6 +357,154 @@ classdef PhreeqcRM
 
             %}
             [status, prefix_out] = calllib('libphreeqcrm','RM_GetFilePrefix', obj.id, prefix, l);
+        end
+        
+        function [status, c_out] = RM_GetGasCompMoles(obj, c)
+            %{
+            Transfer moles of gas components from each reaction cell to the vector given in the argument list (gas_moles).
+
+            Parameters
+                id	The instance id returned from RM_Create.
+                gas_moles	Vector to receive the moles of gas components. Dimension of the vector must be ngas_comps times nxyz, where, ngas_comps is the result of RM_GetGasComponentsCount, and nxyz is the number of user grid cells (RM_GetGridCellCount). If a gas component is not defined for a cell, the number of moles is set to -1. Values for inactive cells are set to 1e30. 
+            %}
+            [status, c_out] = calllib('libphreeqcrm','RM_GetGasCompMoles', obj.id, c);
+        end
+        
+        function [status, c_out] = RM_SetGasCompMoles(obj, c)
+            %{
+            Transfer moles of gas components from the vector given in the argument list (gas_moles) to each reaction cell.
+
+            Parameters
+                id	The instance id returned from RM_Create.
+                gas_moles	Vector of moles of gas components. Dimension of the vector must be ngas_comps times nxyz, where, ngas_comps is the result of RM_GetGasComponentsCount, and nxyz is the number of user grid cells (RM_GetGridCellCount). If the number of moles is set to a negative number, the gas component will not be defined for the GAS_PHASE of the reaction cell. 
+            %}
+            [status, c_out] = calllib('libphreeqcrm','RM_SetGasCompMoles', obj.id, c);
+        end
+        
+        function n = RM_GetGasComponentsCount(obj)
+            %{
+            Returns the number of gas phase components in the initial-phreeqc module. RM_FindComponents must be called before RM_GetGasComponentsCount. This method may be useful when generating selected output definitions related to gas phases. 
+            %}
+            n = calllib('libphreeqcrm','RM_GetGasComponentsCount', obj.id);
+        end
+        
+        function c = GetGasCompMoles(obj)
+            %{
+            Transfer moles of gas components from each reaction cell to the vector given in the argument list (gas_moles).
+            %}
+            nxyz = obj.ncells;
+            obj.RM_FindComponents(); % need to call it first
+            n_gas_comp = obj.RM_GetGasComponentsCount();
+            c = zeros(nxyz, n_gas_comp);
+            [~, c] = calllib('libphreeqcrm','RM_GetGasCompMoles', obj.id, c);
+        end
+        
+        function [status, chem_name_out] = RM_GetGasComponentsName(obj, num, chem_name, l)
+            %{
+            Retrieves an item from the gas components list. The list includes all gas components included in any GAS_PHASE definitions in the initial-phreeqc module. RM_FindComponents must be called before RM_GetGasComponentsName. This method may be useful when generating selected output definitions related to gas phases.
+
+            Parameters
+                id	The instance id returned from RM_Create.
+                num	The number of the gas component name to be retrieved. Fortran, 1 based.
+                name	The gas component name at number num.
+                l1	The length of the maximum number of characters for name. 
+            %}
+            [status, chem_name_out] = calllib('libphreeqcrm','RM_GetGasComponentsName', ...
+                obj.id, num, chem_name, l);
+        end
+        
+        function components = GetGasComponentsNames(obj)
+           %{
+            Get all the gas components name and return as a cell vector
+            %}
+            ncomps = obj.RM_FindComponents();
+            n_gas_comp = obj.RM_GetGasComponentsCount();
+            components = cell(n_gas_comp, 1);
+            s_name = '000000000000000000000000000'; % untill I find a more elegant solution
+            for i=1:ncomps
+                [~, components{i}] = obj.RM_GetGasComponentsName(i-1, s_name, length(s_name));
+            end
+        end
+        
+        
+        function [status, c_out] = RM_GetGasCompPhi(obj, c)
+            %{
+            Transfer fugacity coefficients (phi) of gas components from each reaction cell to the vector given in the argument list (gas_phi). Fugacity of a gas component is equal to its pressure times the fugacity coefficient.
+
+            Parameters
+                id	The instance id returned from RM_Create.
+                gas_phi	Vector to receive the fugacity coefficients of gas components. Dimension of the vector must be ngas_comps times nxyz, where, ngas_comps is the result of RM_GetGasComponentsCount, and nxyz is the number of user grid cells (RM_GetGridCellCount). If a gas component is not defined for a cell, the fugacity coefficient is set to -1. Values for inactive cells are set to 1e30. 
+           %}
+            [status, c_out] = calllib('libphreeqcrm','RM_GetGasCompPhi', obj.id, c);
+        end
+        
+        function c = GetGasCompPhi(obj)
+            %{
+             Transfer fugacity coefficients (phi) of gas components from each reaction cell to the vector given in the argument list (gas_phi). Fugacity of a gas component is equal to its pressure times the fugacity coefficient.
+
+            Parameters
+                id	The instance id returned from RM_Create.
+                gas_phi	Vector to receive the fugacity coefficients of gas components. Dimension of the vector must be ngas_comps times nxyz, where, ngas_comps is the result of RM_GetGasComponentsCount, and nxyz is the number of user grid cells (RM_GetGridCellCount). If a gas component is not defined for a cell, the fugacity coefficient is set to -1. Values for inactive cells are set to 1e30. 
+           %}
+            nxyz = obj.ncells;
+            obj.RM_FindComponents(); % need to call it first
+            n_gas_comp = obj.RM_GetGasComponentsCount();
+            c = zeros(nxyz, n_gas_comp);
+            [~, c] = calllib('libphreeqcrm','RM_GetGasCompPhi', obj.id, c);
+        end
+        
+        function [status, c_out] = RM_GetGasCompPressures(obj, c)
+            %{
+            Transfer pressures of gas components from each reaction cell to the vector given in the argument list (gas_pressure).
+
+            Parameters
+                id	The instance id returned from RM_Create.
+                gas_pressure	Vector to receive the pressures of gas components. Dimension of the vector must be ngas_comps times nxyz, where, ngas_comps is the result of RM_GetGasComponentsCount, and nxyz is the number of user grid cells (RM_GetGridCellCount). If a gas component is not defined for a cell, the pressure is set to -1. Values for inactive cells are set to 1e30. 
+            %}
+            [status, c_out] = calllib('libphreeqcrm','RM_GetGasCompPressures', obj.id, c);
+        end
+        
+        function c = GetGasCompPressures(obj)
+            %{
+             Transfer pressures of gas components from each reaction cell to the vector given in the argument list (gas_pressure).
+            %}
+            nxyz = obj.ncells;
+            obj.RM_FindComponents(); % need to call it first
+            n_gas_comp = obj.RM_GetGasComponentsCount();
+            c = zeros(nxyz, n_gas_comp);
+            [~, c] = calllib('libphreeqcrm','RM_GetGasCompPressures', obj.id, c);
+        end
+        
+        function [status, c_out] = RM_GetGasPhaseVolume(obj, c)
+            %{
+            Transfer volume of gas from each reaction cell to the vector given in the argument list (gas_volume).
+
+            Parameters
+                id	The instance id returned from RM_Create.
+                gas_volume	Array to receive the gas phase volumes. Dimension of the vector must be nxyz, where, nxyz is the number of user grid cells (RM_GetGridCellCount). If a gas phase is not defined for a cell, the volume is set to -1. Values for inactive cells are set to 1e30. 
+            %}
+            [status, c_out] = calllib('libphreeqcrm','RM_GetGasPhaseVolume', obj.id, c);
+        end
+        
+        function [status, c_out] = RM_SetGasPhaseVolume(obj, c)
+            %{
+            Transfer volumes of gas phases from the array given in the argument list (gas_volume) to each reaction cell. The gas-phase volume affects the pressures calculated for fixed-volume gas phases. If a gas-phase volume is defined with this method for a GAS_PHASE in a cell, the gas phase is forced to be a fixed-volume gas phase.
+
+            Parameters
+                id	The instance id returned from RM_Create.
+                gas_volume	Vector of volumes for each gas phase. Dimension of the vector must be nxyz, where, nxyz is the number of user grid cells (RM_GetGridCellCount). If the volume is set to a negative number for a cell, the gas-phase volume for that cell is not changed. 
+            %}
+            [status, c_out] = calllib('libphreeqcrm','RM_SetGasPhaseVolume', obj.id, c);
+        end
+        
+        function c = GetGasPhaseVolume(obj)
+            %{
+            Transfer volume of gas from each reaction cell to the vector given in the argument list (gas_volume).
+            gas_volume	Array to receive the gas phase volumes. Dimension of the vector must be nxyz, where, nxyz is the number of user grid cells (RM_GetGridCellCount). If a gas phase is not defined for a cell, the volume is set to -1. Values for inactive cells are set to 1e30. 
+            %}
+            nxyz = obj.ncells;
+            c = zeros(nxyz, 1);
+            [~, c] = calllib('libphreeqcrm','RM_GetGasPhaseVolume', obj.id, c);
         end
         
         function [status, gfw_out] = RM_GetGfw(obj, gfw)
@@ -350,7 +585,7 @@ classdef PhreeqcRM
                 sat_calc	Vector to receive the saturations. Dimension of the array is set to nxyz, where nxyz is the number of user grid cells (RM_GetGridCellCount). Values for inactive cells are set to 1e30. 
             %}
             sat = zeros(obj.ncells, 1);
-            [status, sat] = calllib('libphreeqcrm','RM_GetSaturation', obj.id, sat);
+            [~, sat] = calllib('libphreeqcrm','RM_GetSaturation', obj.id, sat);
         end
         
         function [status, s_out] = RM_GetSelectedOutput(obj, so)
@@ -395,7 +630,7 @@ classdef PhreeqcRM
                   free(selected_out);
                 }
             %}
-            status = obj.RM_SetCurrentSelectedOutputUserNumber(n_user);
+            obj.RM_SetCurrentSelectedOutputUserNumber(n_user);
             col = obj.RM_GetSelectedOutputColumnCount();
             nxyz = obj.ncells;
             s_out = zeros(nxyz, col);
@@ -463,7 +698,7 @@ classdef PhreeqcRM
                   }
                 }
             %}
-            status = obj.RM_SetCurrentSelectedOutputUserNumber(n_user);
+            obj.RM_SetCurrentSelectedOutputUserNumber(n_user);
             col = obj.RM_GetSelectedOutputColumnCount();
             headings = cell(col, 1);
             
@@ -553,8 +788,8 @@ classdef PhreeqcRM
                 species_conc	Array to receive the aqueous species concentrations. Dimension of the array is (nxyz, nspecies), where nxyz is the number of user grid cells (RM_GetGridCellCount), and nspecies is the number of aqueous species (RM_GetSpeciesCount). Concentrations are moles per liter. Values for inactive cells are set to 1e30. 
             %}
             
-            status = obj.RM_SetSpeciesSaveOn(1); % to make sure that it is on
-            ncomps = obj.RM_FindComponents(); % must run to update species list
+            obj.RM_SetSpeciesSaveOn(1); % to make sure that it is on
+            obj.RM_FindComponents(); % must run to update species list
             nspecies = obj.RM_GetSpeciesCount();
             c_out = zeros(obj.ncells, nspecies);
             c_out = calllib('libphreeqcrm','RM_GetSpeciesConcentrations', obj.id, c_out);
@@ -626,13 +861,13 @@ classdef PhreeqcRM
                   fprintf(stderr, "%s\n", name);
                 }
             %}
-            status = obj.RM_SetSpeciesSaveOn(1);
-            ncomps = obj.RM_FindComponents(); % must run to update species list
+            obj.RM_SetSpeciesSaveOn(1);
+            obj.RM_FindComponents(); % must run to update species list
             nspecies = obj.RM_GetSpeciesCount();
             name = cell(nspecies, 1);
             for i=1:nspecies
                 name{i} = '00000000000000000000';
-                [status, name{i}] = calllib('libphreeqcrm','RM_GetSpeciesName', obj.id, i-1, name{i}, length(name{i}));
+                [~, name{i}] = calllib('libphreeqcrm','RM_GetSpeciesName', obj.id, i-1, name{i}, length(name{i}));
             end
         end
         
@@ -958,6 +1193,17 @@ classdef PhreeqcRM
             Print message to the screen. 
             %}
             status = calllib('libphreeqcrm','RM_ScreenMessage', obj.id, msg_str);
+        end
+        
+        function status = RM_SetErrorOn(obj, tf)
+            %{
+            Set the property that controls whether error messages are generated and displayed. Messages include PHREEQC "ERROR" messages, and any messages written with RM_ErrorMessage.
+
+            Parameters
+                id	The instance id returned from RM_Create.
+                tf	1, enable error messages; 0, disable error messages. Default is 1. 
+            %}
+            status = calllib('libphreeqcrm','RM_SetErrorOn', obj.id, tf);
         end
         
         function status = RM_SetComponentH2O(obj, tf)
@@ -1371,59 +1617,59 @@ classdef PhreeqcRM
         end
         
  % New methods:
-        function status = RM_GetExchangeSpeciesCount(obj)
-            %{
-            	Returns the number of exchange species in the initial-phreeqc module. RM_FindComponents must be called before RM_GetExchangeSpeciesCount. This method may be useful when generating selected output definitions related to exchangers. 
-            %}
-            status = calllib('libphreeqcrm','RM_GetExchangeSpeciesCount', obj.id);
-        end
+%         function status = RM_GetExchangeSpeciesCount(obj)
+%             %{
+%             	Returns the number of exchange species in the initial-phreeqc module. RM_FindComponents must be called before RM_GetExchangeSpeciesCount. This method may be useful when generating selected output definitions related to exchangers. 
+%             %}
+%             status = calllib('libphreeqcrm','RM_GetExchangeSpeciesCount', obj.id);
+%         end
+%         
+%         function [status, ex_name] = RM_GetExchangeSpeciesName(obj, num, name, l)
+%             %{
+%             Retrieves an item from the exchange species list. The list of exchange species (such as "NaX") is derived from the list of components (RM_FindComponents) and the list of all exchange names (such as "X") that are included in EXCHANGE definitions in the initial-phreeqc module. RM_FindComponents must be called before RM_GetExchangeSpeciesName. This method may be useful when generating selected output definitions related to exchangers.
+% 
+%             Parameters
+%                 id	The instance id returned from RM_Create.
+%                 num	The number of the exchange species to be retrieved. Fortran, 1 based.
+%                 name	The exchange species name at number num.
+%                 l1	The length of the maximum number of characters for name. 
+%             %}
+%             [status, ex_name] = calllib('libphreeqcrm','RM_GetExchangeSpeciesName', ...
+%                 obj.id, num, name, l);
+%         end
         
-        function [status, ex_name] = RM_GetExchangeSpeciesName(obj, num, name, l)
-            %{
-            Retrieves an item from the exchange species list. The list of exchange species (such as "NaX") is derived from the list of components (RM_FindComponents) and the list of all exchange names (such as "X") that are included in EXCHANGE definitions in the initial-phreeqc module. RM_FindComponents must be called before RM_GetExchangeSpeciesName. This method may be useful when generating selected output definitions related to exchangers.
-
-            Parameters
-                id	The instance id returned from RM_Create.
-                num	The number of the exchange species to be retrieved. Fortran, 1 based.
-                name	The exchange species name at number num.
-                l1	The length of the maximum number of characters for name. 
-            %}
-            [status, ex_name] = calllib('libphreeqcrm','RM_GetExchangeSpeciesName', ...
-                obj.id, num, name, l);
-        end
+%         function ex_name = GetExchangeSpeciesNames(obj)
+%             %{
+%             Retrieves an item from the exchange species list. The list of exchange species (such as "NaX") is derived from the list of components (RM_FindComponents) and the list of all exchange names (such as "X") that are included in EXCHANGE definitions in the initial-phreeqc module. RM_FindComponents must be called before RM_GetExchangeSpeciesName. This method may be useful when generating selected output definitions related to exchangers.
+% 
+%             Parameters
+%                 id	The instance id returned from RM_Create.
+%                 num	The number of the exchange species to be retrieved. Fortran, 1 based.
+%                 name	The exchange species name at number num.
+%                 l1	The length of the maximum number of characters for name. 
+%             %}
+%             n_ex_species = obj.RM_GetExchangeSpeciesCount();
+%             ex_name = cell(n_ex_species, 1);
+%             for i = 1:n_ex_species
+%                 ex_name{i} = '00000000000000000000';
+%                 [status, ex_name{i}] = calllib('libphreeqcrm','RM_GetExchangeSpeciesName', ...
+%                     obj.id, i, ex_name{i}, length(ex_name{i}));
+%             end
+%         end
         
-        function ex_name = GetExchangeSpeciesNames(obj)
-            %{
-            Retrieves an item from the exchange species list. The list of exchange species (such as "NaX") is derived from the list of components (RM_FindComponents) and the list of all exchange names (such as "X") that are included in EXCHANGE definitions in the initial-phreeqc module. RM_FindComponents must be called before RM_GetExchangeSpeciesName. This method may be useful when generating selected output definitions related to exchangers.
-
-            Parameters
-                id	The instance id returned from RM_Create.
-                num	The number of the exchange species to be retrieved. Fortran, 1 based.
-                name	The exchange species name at number num.
-                l1	The length of the maximum number of characters for name. 
-            %}
-            n_ex_species = obj.RM_GetExchangeSpeciesCount();
-            ex_name = cell(n_ex_species, 1);
-            for i = 1:n_ex_species
-                ex_name{i} = '00000000000000000000';
-                [status, ex_name{i}] = calllib('libphreeqcrm','RM_GetExchangeSpeciesName', ...
-                    obj.id, i, ex_name{i}, length(ex_name{i}));
-            end
-        end
-        
-        function [status, ex_name] = RM_GetExchangeName(obj, num, name, l)
-            %{
-            Retrieves an item from the exchange name list. RM_FindComponents must be called before RM_GetExchangeName. The exchange names vector is the same length as the exchange species names vector and provides the corresponding exchange site (for example, X corresponing to NaX). This method may be useful when generating selected output definitions related to exchangers.
-
-            Parameters
-                id	The instance id returned from RM_Create.
-                num	The number of the exchange name to be retrieved. Fortran, 1 based.
-                name	The exchange name associated with exchange species num.
-                l1	The length of the maximum number of characters for name. 
-            %}
-            [status, ex_name] = calllib('libphreeqcrm','RM_GetExchangeName', ...
-                obj.id, num, name, l);
-        end
+%         function [status, ex_name] = RM_GetExchangeName(obj, num, name, l)
+%             %{
+%             Retrieves an item from the exchange name list. RM_FindComponents must be called before RM_GetExchangeName. The exchange names vector is the same length as the exchange species names vector and provides the corresponding exchange site (for example, X corresponing to NaX). This method may be useful when generating selected output definitions related to exchangers.
+% 
+%             Parameters
+%                 id	The instance id returned from RM_Create.
+%                 num	The number of the exchange name to be retrieved. Fortran, 1 based.
+%                 name	The exchange name associated with exchange species num.
+%                 l1	The length of the maximum number of characters for name. 
+%             %}
+%             [status, ex_name] = calllib('libphreeqcrm','RM_GetExchangeName', ...
+%                 obj.id, num, name, l);
+%         end
         
         function ex_name = GetExchangeNames(obj)
             %{
@@ -1439,53 +1685,53 @@ classdef PhreeqcRM
             ex_name = cell(n_ex_species, 1);
             for i = 1:n_ex_species
                 ex_name{i} = '00000000000000000000';
-                [status, ex_name{i}] = calllib('libphreeqcrm','RM_GetExchangeName', ...
+                [~, ex_name{i}] = calllib('libphreeqcrm','RM_GetExchangeName', ...
                     obj.id, i, ex_name{i}, length(ex_name{i}));
             end
         end
 
         
-        function status = RM_GetEquilibriumPhasesCount(obj)
-            %{
-            Returns the number of equilibrium phases in the initial-phreeqc module. RM_FindComponents must be called before RM_GetEquilibriumPhasesCount. This method may be useful when generating selected output definitions related to equilibrium phases. 
-            %}
-            status = calllib('libphreeqcrm','RM_GetEquilibriumPhasesCount', obj.id);
-        end
+%         function status = RM_GetEquilibriumPhasesCount(obj)
+%             %{
+%             Returns the number of equilibrium phases in the initial-phreeqc module. RM_FindComponents must be called before RM_GetEquilibriumPhasesCount. This method may be useful when generating selected output definitions related to equilibrium phases. 
+%             %}
+%             status = calllib('libphreeqcrm','RM_GetEquilibriumPhasesCount', obj.id);
+%         end
         
-        function [status, phase_name] = RM_GetEquilibriumPhasesName(obj, num, name, l)
-            %{
-            Retrieves an item from the equilibrium phase list. The list includes all phases included in any EQUILIBRIUM_PHASES definitions in the initial-phreeqc module. RM_FindComponents must be called before RM_GetEquilibriumPhasesName. This method may be useful when generating selected output definitions related to equilibrium phases.
-
-            Parameters
-                id	The instance id returned from RM_Create.
-                num	The number of the equilibrium phase name to be retrieved. Fortran, 1 based.
-                name	The equilibrium phase name at number num.
-                l1	The length of the maximum number of characters for name. 
-            %}
-            [status, phase_name] = calllib('libphreeqcrm','RM_GetEquilibriumPhasesName', ...
-                obj.id, num, name, l);
-        end
+%         function [status, phase_name] = RM_GetEquilibriumPhasesName(obj, num, name, l)
+%             %{
+%             Retrieves an item from the equilibrium phase list. The list includes all phases included in any EQUILIBRIUM_PHASES definitions in the initial-phreeqc module. RM_FindComponents must be called before RM_GetEquilibriumPhasesName. This method may be useful when generating selected output definitions related to equilibrium phases.
+% 
+%             Parameters
+%                 id	The instance id returned from RM_Create.
+%                 num	The number of the equilibrium phase name to be retrieved. Fortran, 1 based.
+%                 name	The equilibrium phase name at number num.
+%                 l1	The length of the maximum number of characters for name. 
+%             %}
+%             [status, phase_name] = calllib('libphreeqcrm','RM_GetEquilibriumPhasesName', ...
+%                 obj.id, num, name, l);
+%         end
         
-        function status = RM_GetGasComponentsCount(obj)
-            %{
-            Returns the number of gas phase components in the initial-phreeqc module. RM_FindComponents must be called before RM_GetGasComponentsCount. This method may be useful when generating selected output definitions related to gas phases. 
-            %}
-            status = calllib('libphreeqcrm','RM_GetGasComponentsCount', obj.id);
-        end
-        
-        function [status, gas_name] = RM_GetGasComponentsName(obj, num, name, l)
-            %{
-            Retrieves an item from the gas components list. The list includes all gas components included in any GAS_PHASE definitions in the initial-phreeqc module. RM_FindComponents must be called before RM_GetGasComponentsName. This method may be useful when generating selected output definitions related to gas phases.
-
-            Parameters
-                id	The instance id returned from RM_Create.
-                num	The number of the gas component name to be retrieved. Fortran, 1 based.
-                name	The gas component name at number num.
-                l1	The length of the maximum number of characters for name. 
-            %}
-            [status, gas_name] = calllib('libphreeqcrm','RM_GetGasComponentsName', obj.id, ...
-                num, name, l);
-        end
+%         function status = RM_GetGasComponentsCount(obj)
+%             %{
+%             Returns the number of gas phase components in the initial-phreeqc module. RM_FindComponents must be called before RM_GetGasComponentsCount. This method may be useful when generating selected output definitions related to gas phases. 
+%             %}
+%             status = calllib('libphreeqcrm','RM_GetGasComponentsCount', obj.id);
+%         end
+%         
+%         function [status, gas_name] = RM_GetGasComponentsName(obj, num, name, l)
+%             %{
+%             Retrieves an item from the gas components list. The list includes all gas components included in any GAS_PHASE definitions in the initial-phreeqc module. RM_FindComponents must be called before RM_GetGasComponentsName. This method may be useful when generating selected output definitions related to gas phases.
+% 
+%             Parameters
+%                 id	The instance id returned from RM_Create.
+%                 num	The number of the gas component name to be retrieved. Fortran, 1 based.
+%                 name	The gas component name at number num.
+%                 l1	The length of the maximum number of characters for name. 
+%             %}
+%             [status, gas_name] = calllib('libphreeqcrm','RM_GetGasComponentsName', obj.id, ...
+%                 num, name, l);
+%         end
         
         function status = RM_GetKineticReactionsCount(obj)
             %{
@@ -1586,7 +1832,33 @@ classdef PhreeqcRM
             %}
             nspecies = obj.RM_GetSpeciesCount();
             log10_gamma = zeros(obj.ncells, nspecies);
-            [status, log10_gamma] = calllib('libphreeqcrm','RM_GetSpeciesLog10Gammas', ...
+            [~, log10_gamma] = calllib('libphreeqcrm','RM_GetSpeciesLog10Gammas', ...
+                obj.id, log10_gamma);
+        end
+        
+        function [status, log10_gamma] = RM_GetSpeciesLog10Molalities(obj, species_log10gammas)
+            %{
+            Transfer aqueous-species log10 molalities to the array argument (species_log10molalities) To use this method RM_SetSpeciesSaveOn must be set to true. The list of aqueous species is determined by RM_FindComponents and includes all aqueous species that can be made from the set of components.
+
+            Parameters
+                id	The instance id returned from RM_Create.
+                species_log10molalities	Array to receive the aqueous species log10 molalities. Dimension of the array is (nxyz, nspecies), where nxyz is the number of user grid cells (RM_GetGridCellCount), and nspecies is the number of aqueous species (RM_GetSpeciesCount). Values for inactive cells are set to 1e30. 
+            %}
+            [status, log10_gamma] = calllib('libphreeqcrm','RM_GetSpeciesLog10Molalities', ...
+                obj.id, species_log10gammas);
+        end
+        
+        function log10_gamma = GetSpeciesLog10Molalities(obj)
+            %{
+            Transfer aqueous-species log10 molalities to the array argument (species_log10molalities) To use this method RM_SetSpeciesSaveOn must be set to true. The list of aqueous species is determined by RM_FindComponents and includes all aqueous species that can be made from the set of components.
+
+            Parameters
+                id	The instance id returned from RM_Create.
+                species_log10molalities	Array to receive the aqueous species log10 molalities. Dimension of the array is (nxyz, nspecies), where nxyz is the number of user grid cells (RM_GetGridCellCount), and nspecies is the number of aqueous species (RM_GetSpeciesCount). Values for inactive cells are set to 1e30. 
+            %}
+            nspecies = obj.RM_GetSpeciesCount();
+            log10_gamma = zeros(obj.ncells, nspecies);
+            [~, log10_gamma] = calllib('libphreeqcrm','RM_GetSpeciesLog10Molalities', ...
                 obj.id, log10_gamma);
         end
         
@@ -1653,7 +1925,7 @@ classdef PhreeqcRM
             name_out = cell(n_surf_species, 1);
             for i=1:n_surf_species
                 name_out{i} = '00000000000000000000';
-                [status, name_out{i}] = calllib('libphreeqcrm','RM_GetSurfaceSpeciesName', ...
+                [~, name_out{i}] = calllib('libphreeqcrm','RM_GetSurfaceSpeciesName', ...
                 obj.id, i, name_out{i}, length(name_out{i}));
             end
         end
@@ -1680,7 +1952,7 @@ classdef PhreeqcRM
             name_out = cell(n_surf_species, 1);
             for i=1:n_surf_species
                 name_out{i} = '00000000000000000000';
-                [status, name_out{i}] = calllib('libphreeqcrm','RM_GetSurfaceType', ...
+                [~, name_out{i}] = calllib('libphreeqcrm','RM_GetSurfaceType', ...
                 obj.id, i, name_out{i}, length(name_out{i}));
             end
         end
