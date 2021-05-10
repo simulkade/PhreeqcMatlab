@@ -11,4 +11,8 @@ END
 SELECTED_OUTPUT 1
         -reset false
         -si     Anhydrite  Gypsum
+USER_PUNCH
+        -headings equi_anhydrite
+        10 PUNCH EQUI("Anhydrite")
+
 END
