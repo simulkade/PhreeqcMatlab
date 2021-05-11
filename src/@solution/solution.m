@@ -11,6 +11,7 @@ classdef solution
         charge_balance_component
         ph_charge_balance
         density
+        density_calculation
         pH
         pe
         alkalinity
@@ -30,46 +31,15 @@ classdef solution
             obj.temperature = 25.0; % degree Celcius
             obj.pressure = 1.0;     % atmosphere
         end
-        
-        function obj = seawater(obj)
-            % defiene a seawater solution
-            % Note: convert it to static method
-            % currently:
-            % sw = solution();
-            % sw = sw.seawater(); % this is more elegant with static method
-            obj.name = "Seawater";
-            obj.number = 1;
-            obj.unit = "ppm";
-            obj.components = ["Ca", "Mg", "Na", "K", "Si", "Cl", "S(6)"];
-            obj.concentrations = [412.3, 1291.8, 10768.0, 399.1, 4.28, 19353.0, 2712.0];
-            obj.charge_balance_component = [];
-            obj.ph_charge_balance = false;
-            obj.density = 1.0253; % kg/l
-            obj.pH = 8.22;
-            obj.pe = 8.451;
-            obj.alkalinity = 141.682;
-            obj.alkalinity_component = "HCO3";
-%                 units   ppm
-%                 pH      8.22
-%                 pe      8.451
-%                 density 1.023
-%                 temp    25.0
-%                 Ca              412.3
-%                 Mg              1291.8
-%                 Na              10768.0
-%                 K               399.1
-%                 Si              4.28
-%                 Cl              19353.0
-%                 Alkalinity      141.682 as HCO3
-%                 S(6)            2712.0
-        end
-        
-        function solution_string = phreeqc_solution(obj)
+                
+        function solution_string = phreeqc_string(obj)
             %phreeqc_solution returns a string of phreeqc format for the
             %defined PhreeqcMatlab solution
             % NOTE: at this stage, a phreeqc string can contain more
-            % details than that the equivalent PhreeqcMatlab solution
+            % details than the equivalent PhreeqcMatlab solution
             % object
+            % Note: still not smart enough to filter out the nonspecified
+            % fields; requires some if then else.
             n_comp = length(obj.components);
             % solution_cell = cell(n_comp, 1);
             % solution_cell{1} = ['SOLUTION ' obj.name];
@@ -103,6 +73,27 @@ classdef solution
             end
                 
             
+        end
+    end
+    
+    methods(Static)
+        function sw = seawater()
+            % sw = solution.seawater();
+            % returns a simple solution object that contains 
+            % a seawater composition
+            sw=solution();
+            sw.name = "Seawater";
+            sw.number = 1;
+            sw.unit = "ppm";
+            sw.components = ["Ca", "Mg", "Na", "K", "Si", "Cl", "S(6)"];
+            sw.concentrations = [412.3, 1291.8, 10768.0, 399.1, 4.28, 19353.0, 2712.0];
+            sw.charge_balance_component = [];
+            sw.ph_charge_balance = false;
+            sw.density = 1.0253; % kg/l
+            sw.pH = 8.22;
+            sw.pe = 8.451;
+            sw.alkalinity = 141.682;
+            sw.alkalinity_component = "HCO3";
         end
     end
 end
