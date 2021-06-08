@@ -7,7 +7,7 @@ classdef IPhreeqc
     
     methods
         function obj = IPhreeqc()
-            %IPhreeqc Construct an instance of this class without creating
+            %IPhreeqc loads the IPhreeqc library without creating
             %an IPhreeqc instance; Call CreateIPhreeqc to create an
             %instance and initialize the object id
             %
@@ -538,116 +538,359 @@ classdef IPhreeqc
         
         function version_string = GetVersionString(obj)
             % Retrieves the string buffer containing the version in the form of X.X.X-XXXX.
-
             % Returns
             % A null terminated string containing the IPhreeqc version number.
             version_string = calllib('libiphreeqc','GetVersionString');
         end
         
-        % function status = (obj, )
-        %     % 
-        %     status = calllib('libiphreeqc','', obj.id, );
-        % end
+        function warning_string = GetWarningString(obj)
+            % Retrieves the warning messages from the last call to (RunAccumulated, RunFile, RunString, LoadDatabase, or LoadDatabaseString).
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % Returns
+            % A null terminated string containing warning messages.
+            % See also
+            % GetWarningStringLine, GetWarningStringLineCount, OutputWarningString
+            warning_string = calllib('libiphreeqc','GetWarningString', obj.id);
+        end
         
-        % function status = (obj, )
-        %     % 
-        %     status = calllib('libiphreeqc','', obj.id, );
-        % end
+        function warning_line = GetWarningStringLine(obj, n)
+            % Retrieves the given warning line.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % n	The zero-based index of the line to retrieve.
+            % Returns
+            % A null terminated string containing the given warning line message.
+            % See also
+            % GetWarningString, GetWarningStringLineCount, OutputWarningString
+            warning_line = calllib('libiphreeqc','GetWarningStringLine', obj.id, n);
+        end
         
-        % function status = (obj, )
-        %     % 
-        %     status = calllib('libiphreeqc','', obj.id, );
-        % end
+        function line_count = GetWarningStringLineCount(obj)
+            % Retrieves the number of lines in the current warning string buffer.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % Returns
+            % The number of lines.
+            % See also
+            % GetWarningString, GetWarningStringLine, OutputWarningString
+            line_count = calllib('libiphreeqc','GetWarningStringLineCount', obj.id);
+        end
 
-        % function status = (obj, )
-        %     % 
-        %     status = calllib('libiphreeqc','', obj.id, );
-        % end
+        function status = LoadDatabase(obj, file_name)
+            % Load the specified database file into phreeqc.
+
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % filename	The name of the phreeqc database to load. The full path (or relative path with respect to the working directory) must be given if the file is not in the current working directory.
+            % Returns
+            % The number of errors encountered.
+            % See also
+            % LoadDatabaseString
+            % Remarks
+            % All previous definitions are cleared.
+            status = calllib('libiphreeqc','LoadDatabase', obj.id, file_name);
+        end
         
-        %         function status = (obj, )
-        %             % 
-        %             status = calllib('libiphreeqc','', obj.id, );
-        %         end
+        function status = LoadDatabaseString(obj, data_string)
+            % Load the specified string as a database into phreeqc.
+
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % input	String containing data to be used as the phreeqc database.
+            % Returns
+            % The number of errors encountered.
+            % See also
+            % LoadDatabase
+            % Remarks
+            % All previous definitions are cleared.
+            status = calllib('libiphreeqc','LoadDatabaseString', obj.id, data_string);
+        end
+        
+        function status = OutputAccumulatedLines(obj)
+            % Output the accumulated input buffer to stdout. This input buffer can be run with a call to RunAccumulated.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % See also
+            % AccumulateLine, ClearAccumulatedLines, RunAccumulated
+            status = calllib('libiphreeqc','OutputAccumulatedLines', obj.id);
+        end
+        
+        function status = OutputErrorString(obj)
+            % Output the error messages normally stored in the phreeqc.id.err file to stdout.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % See also
+            % GetErrorFileOn, GetErrorStringLine, GetErrorStringLineCount, SetErrorFileOn
+            status = calllib('libiphreeqc','OutputErrorString', obj.id);
+        end
+        
+        function status = OutputWarningString(obj)
+            % Output the warning messages to stdout.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % See also
+            % GetWarningString, GetWarningStringLine, GetWarningStringLineCount
+            status = calllib('libiphreeqc','OutputWarningString', obj.id);
+        end
+        
+        function status = RunAccumulated(obj)
+            % Runs the input buffer as defined by calls to AccumulateLine.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % Returns
+            % The number of errors encountered.
+            % See also
+            % AccumulateLine, ClearAccumulatedLines, OutputAccumulatedLines, RunFile, RunString
+            % Remarks
+            % The accumulated input is cleared at the next call to AccumulateLine.
+            % Precondition
+            % LoadDatabase/LoadDatabaseString must have been called and returned 0 (zero) errors.
+            status = calllib('libiphreeqc','RunAccumulated', obj.id);
+        end
+        
+        function status = RunFile(obj, file_name)
+            % Runs the specified phreeqc input file.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % filename	The name of the phreeqc input file to run.
+            % Returns
+            % The number of errors encountered during the run.
+            % See also
+            % RunAccumulated, RunString
+            % Precondition
+            % (LoadDatabase, LoadDatabaseString) must have been called and returned 0 (zero) errors.
+            status = calllib('libiphreeqc','RunFile', obj.id, file_name);
+        end
+        
+        function status = RunString(obj, input_string)
+            % Runs the specified string as input to phreeqc.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % input	String containing phreeqc input.
+            % Returns
+            % The number of errors encountered during the run.
+            % See also
+            % RunAccumulated, RunFile
+            % Precondition
+            % (LoadDatabase, LoadDatabaseString) must have been called and returned 0 (zero) errors.
+            status = calllib('libiphreeqc','RunString', obj.id, input_string);
+        end
+
+        % skipped the function SetBasicCallback, which is not trivial to implement and use within Matlab
+        % skipped the function SetBasicFortranCallback, which is not trivial to implement and use within Matlab
+
+        
+        function status = SetCurrentSelectedOutputUserNumber(obj, n)
+            % Sets the current SELECTED_OUTPUT user number for use in subsequent calls to (GetSelectedOutputColumnCount, GetSelectedOutputFileName, GetSelectedOutputRowCount, GetSelectedOutputString, GetSelectedOutputStringLine, GetSelectedOutputStringLineCount, GetSelectedOutputValue, GetSelectedOutputValue2) routines. The initial setting after calling CreateIPhreeqc is 1.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % n	The user number specified in the SELECTED_OUTPUT block.
+            % Return values
+            % IPQ_OK	Success.
+            % IPQ_BADINSTANCE	The given id is invalid.
+            % IPQ_INVALIDARG	The given user number is invalid.
+            % See also
+            % GetSelectedOutputColumnCount, GetSelectedOutputFileName, GetSelectedOutputRowCount, GetSelectedOutputString, GetSelectedOutputStringLine, GetSelectedOutputStringLineCount, GetSelectedOutputValue
+            status = calllib('libiphreeqc','SetCurrentSelectedOutputUserNumber', obj.id, n);
+        end
+        
+        function status = SetDumpFileName(obj, file_name)
+            % Sets the name of the dump file. This file name is used if not specified within DUMP input. The default value is dump.id.out.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % filename	The name of the file to write DUMP output to.
+            % Return values
+            % IPQ_OK	Success.
+            % IPQ_BADINSTANCE	The given id is invalid.
+            % See also
+            % GetDumpFileName, GetDumpFileOn, GetDumpString, GetDumpStringOn, GetDumpStringLine, GetDumpStringLineCount, SetDumpFileOn, SetDumpStringOn
+            status = calllib('libiphreeqc','SetDumpFileName', obj.id, file_name);
+        end
+        
+        function status = SetDumpFileOn(obj, dump_on)
+            % Sets the dump file switch on or off. This switch controls whether or not phreeqc writes to the dump file. The initial setting after calling CreateIPhreeqc is off.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % dump_on	If non-zero, turns on output to the DUMP (dump.id.out if unspecified) file; if zero, turns off output to the DUMP file.
+            % Return values
+            % IPQ_OK	Success.
+            % IPQ_BADINSTANCE	The given id is invalid.
+            % See also
+            % GetDumpFileOn, GetDumpString, GetDumpStringLine, GetDumpStringOn, GetDumpStringLineCount, SetDumpStringOn
+            status = calllib('libiphreeqc','SetDumpFileOn', obj.id, dump_on);
+        end
+        
+        function status = SetDumpStringOn(obj, dump_string_on)
+            % Sets the dump string switch on or off. This switch controls whether or not the data normally sent to the dump file are stored in a buffer for retrieval. The initial setting after calling CreateIPhreeqc is off.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % dump_string_on	If non-zero, captures the output defined by the DUMP keyword into a string buffer; if zero, output defined by the DUMP keyword is not captured to a string buffer.
+            % Return values
+            % IPQ_OK	Success.
+            % IPQ_BADINSTANCE	The given id is invalid.
+            % See also
+            % GetDumpFileOn, GetDumpStringOn, GetDumpString, GetDumpStringLine, GetDumpStringLineCount, SetDumpFileOn
+            status = calllib('libiphreeqc','SetDumpStringOn', obj.id, dump_string_on);
+        end
+        
+        function status = SetErrorFileName(obj, file_name)
+            % Sets the name of the error file. The default value is phreeqc.id.err.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % filename	The name of the error file.
+            % Return values
+            % IPQ_OK	Success.
+            % IPQ_BADINSTANCE	The given id is invalid.
+            % See also
+            % GetErrorFileName, GetErrorFileOn, GetErrorString, GetErrorStringOn, GetErrorStringLine, GetErrorStringLineCount, SetErrorFileOn, SetErrorStringOn
+            status = calllib('libiphreeqc','SetErrorFileName', obj.id, file_name);
+        end
+        
+        function status = SetErrorFileOn(obj, error_on)
+            % Sets the error file switch on or off. This switch controls whether or not error messages are written to the phreeqc.id.err file. The initial setting after calling CreateIPhreeqc is off.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % error_on	If non-zero, writes errors to the error file; if zero, no errors are written to the error file.
+            % Return values
+            % IPQ_OK	Success.
+            % IPQ_BADINSTANCE	The given id is invalid.
+            % See also
+            % GetErrorFileOn, GetErrorStringLine, GetErrorStringLineCount, OutputErrorString
+            status = calllib('libiphreeqc','SetErrorFileOn', obj.id, error_on);
+        end
+        
+        function status = SetErrorStringOn(obj, error_string_on)
+            % Sets the error string switch on or off. This switch controls whether or not the data normally sent to the error file are stored in a buffer for retrieval. The initial setting after calling CreateIPhreeqc is on.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % error_string_on	If non-zero, captures the error output into a string buffer; if zero, error output is not captured to a string buffer.
+            % Return values
+            % IPQ_OK	Success.
+            % IPQ_BADINSTANCE	The given id is invalid.
+            % See also
+            % GetErrorFileOn, GetErrorStringOn, GetErrorString, GetErrorStringLine, GetErrorStringLineCount, SetErrorFileOn
+            status = calllib('libiphreeqc','SetErrorStringOn', obj.id, error_string_on);
+        end
+        
+        function status = SetLogFileName(obj, file_name)
+            % Sets the name of the log file. The default value is phreeqc.id.log.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % filename	The name of the log file.
+            % Return values
+            % IPQ_OK	Success.
+            % IPQ_BADINSTANCE	The given id is invalid.
+            % See also
+            % GetLogFileName, GetLogFileOn, GetLogString, GetLogStringOn, GetLogStringLine, GetLogStringLineCount, SetLogFileOn, SetLogStringOn
+            status = calllib('libiphreeqc','SetLogFileName', obj.id, file_name);
+        end
+
+        function status = SetLogFileOn(obj, log_on)
+            % Sets the log file switch on or off. This switch controls whether or not phreeqc writes log messages to the phreeqc.id.log file. The initial setting after calling CreateIPhreeqc is off.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % log_on	If non-zero, log messages are written to the log file; if zero, no log messages are written to the log file.
+            % Return values
+            % IPQ_OK	Success.
+            % IPQ_BADINSTANCE	The given id is invalid.
+            % Remarks
+            % Logging must be enabled through the use of the KNOBS -logfile option in order to receive any log messages.
+            % See also
+            % GetLogFileOn
+            status = calllib('libiphreeqc','SetLogFileOn', obj.id, log_on);
+        end
+        
+        function status = SetLogStringOn(obj, log_string_on)
+            % Sets the log string switch on or off. This switch controls whether or not the data normally sent to the log file are stored in a buffer for retrieval. The initial setting after calling CreateIPhreeqc is off.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % log_string_on	If non-zero, captures the log output into a string buffer; if zero, log output is not captured to a string buffer.
+            % Return values
+            % IPQ_OK	Success.
+            % IPQ_BADINSTANCE	The given id is invalid.
+            % See also
+            % GetLogFileOn, GetLogStringOn, GetLogString, GetLogStringLine, GetLogStringLineCount, SetLogFileOn
+            status = calllib('libiphreeqc','SetLogStringOn', obj.id, log_string_on);
+        end
         %         
-        %         function status = (obj, )
-        %             % 
-        %             status = calllib('libiphreeqc','', obj.id, );
-        %         end
-        %         
-        %         function status = (obj, )
-        %             % 
-        %             status = calllib('libiphreeqc','', obj.id, );
-        %         end
-                %         function status = (obj, )
-        %             % 
-        %             status = calllib('libiphreeqc','', obj.id, );
-        %         end
-        %         
-        %         function status = (obj, )
-        %             % 
-        %             status = calllib('libiphreeqc','', obj.id, );
-        %         end
-        %         
-        %         function status = (obj, )
-        %             % 
-        %             status = calllib('libiphreeqc','', obj.id, );
-        %         end
-                %         function status = (obj, )
-        %             % 
-        %             status = calllib('libiphreeqc','', obj.id, );
-        %         end
-        %         
-        %         function status = (obj, )
-        %             % 
-        %             status = calllib('libiphreeqc','', obj.id, );
-        %         end
-        %         
-        %         function status = (obj, )
-        %             % 
-        %             status = calllib('libiphreeqc','', obj.id, );
-        %         end
-                %         function status = (obj, )
-        %             % 
-        %             status = calllib('libiphreeqc','', obj.id, );
-        %         end
-        %         
-        %         function status = (obj, )
-        %             % 
-        %             status = calllib('libiphreeqc','', obj.id, );
-        %         end
-        %         
-        %         function status = (obj, )
-        %             % 
-        %             status = calllib('libiphreeqc','', obj.id, );
-        %         end
-                %         function status = (obj, )
-        %             % 
-        %             status = calllib('libiphreeqc','', obj.id, );
-        %         end
-        %         
-        %         function status = (obj, )
-        %             % 
-        %             status = calllib('libiphreeqc','', obj.id, );
-        %         end
-        %         
-        %         function status = (obj, )
-        %             % 
-        %             status = calllib('libiphreeqc','', obj.id, );
-        %         end
-                %         function status = (obj, )
-        %             % 
-        %             status = calllib('libiphreeqc','', obj.id, );
-        %         end
-        %         
-        %         function status = (obj, )
-        %             % 
-        %             status = calllib('libiphreeqc','', obj.id, );
-        %         end
-        %         
-        %         function status = (obj, )
-        %             % 
-        %             status = calllib('libiphreeqc','', obj.id, );
-        %         end
+        function status = SetOutputFileName(obj, file_name)
+            % Sets the name of the output file. This file name is used if not specified within DUMP input. The default value is phreeqc.id.out.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % filename	The name of the phreeqc output file.
+            % Return values
+            % IPQ_OK	Success.
+            % IPQ_BADINSTANCE	The given id is invalid.
+            % See also
+            % GetOutputFileName, GetOutputFileOn, GetOutputString, GetOutputStringOn, GetOutputStringLine, GetOutputStringLineCount, SetOutputFileOn, SetOutputStringOn
+            status = calllib('libiphreeqc','SetOutputFileName', obj.id, file_name);
+        end
+
+        function status = SetOutputFileOn(obj, output_on)
+            % Sets the output file switch on or off. This switch controls whether or not phreeqc writes to the phreeqc.id.out file. This is the output normally generated when phreeqc is run. The initial setting after calling CreateIPhreeqc is off.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % output_on	If non-zero, writes output to the output file; if zero, no output is written to the output file.
+            % Return values
+            % IPQ_OK	Success.
+            % IPQ_BADINSTANCE	The given id is invalid.
+            % See also
+            % GetOutputFileOn
+            status = calllib('libiphreeqc','SetOutputFileOn', obj.id, output_on);
+        end
+        
+        function status = SetOutputStringOn(obj, output_string_on)
+            % Sets the output string switch on or off. This switch controls whether or not the data normally sent to the output file are stored in a buffer for retrieval. The initial setting after calling CreateIPhreeqc is off.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % output_string_on	If non-zero, captures the phreeqc output into a string buffer; if zero, phreeqc output is not captured to a string buffer.
+            % Return values
+            % IPQ_OK	Success.
+            % IPQ_BADINSTANCE	The given id is invalid.
+            % See also
+            % GetOutputFileOn, GetOutputStringOn, GetOutputString, GetOutputStringLine, GetOutputStringLineCount, SetOutputFileOn
+            status = calllib('libiphreeqc','SetOutputStringOn', obj.id, output_string_on);
+        end
+        
+        function status = SetSelectedOutputFileName(obj, file_name)
+            % Sets the name of the current selected output file (see SetCurrentSelectedOutputUserNumber). This file name is used if not specified within SELECTED_OUTPUT input. The default value is selected_n.id.out.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % filename	The name of the file to write SELECTED_OUTPUT output to.
+            % Return values
+            % IPQ_OK	Success.
+            % IPQ_BADINSTANCE	The given id is invalid.
+            % See also
+            % GetSelectedOutputFileName, GetSelectedOutputFileOn, GetSelectedOutputString, GetSelectedOutputStringOn, GetSelectedOutputStringLine, GetSelectedOutputStringLineCount, SetCurrentSelectedOutputUserNumber, SetSelectedOutputFileOn, SetSelectedOutputStringOn
+            status = calllib('libiphreeqc','SetSelectedOutputFileName', obj.id, file_name);
+        end
+
+        function status = SetSelectedOutputFileOn(obj, sel_on)
+            % Sets the selected-output file switch on or off. This switch controls whether or not phreeqc writes output to the current SELECTED_OUTPUT file (see SetCurrentSelectedOutputUserNumber). The initial setting after calling CreateIPhreeqc is off.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % sel_on	If non-zero, writes output to the selected-output file; if zero, no output is written to the selected-output file.
+            % Return values
+            % IPQ_OK	Success.
+            % IPQ_BADINSTANCE	The given id is invalid.
+            % See also
+            % GetSelectedOutputFileOn, GetSelectedOutputColumnCount, GetSelectedOutputRowCount, GetSelectedOutputValue, SetCurrentSelectedOutputUserNumber
+            status = calllib('libiphreeqc','SetSelectedOutputFileOn', obj.id, sel_on);
+        end
+        
+        function status = SetSelectedOutputStringOn(obj, sel_string_on)
+            % Sets the current selected output string switch on or off. This switch controls whether or not the data normally sent to the current selected output file (see SetCurrentSelectedOutputUserNumber) are stored in a buffer for retrieval. The initial setting after calling CreateIPhreeqc is off.
+            % Parameters
+            % id	The instance id returned from CreateIPhreeqc.
+            % sel_string_on	If non-zero, captures the output defined by the SELECTED_OUTPUT keyword into a string buffer; if zero, output defined by the SELECTED_OUTPUT keyword is not captured to a string buffer.
+            % Return values
+            % IPQ_OK	Success.
+            % IPQ_BADINSTANCE	The given id is invalid.
+            % See also
+            % GetSelectedOutputFileOn, GetSelectedOutputStringOn, GetSelectedOutputString, GetSelectedOutputStringLine, GetSelectedOutputStringLineCount, SetCurrentSelectedOutputUserNumber, SetSelectedOutputFileOn
+            status = calllib('libiphreeqc','SetSelectedOutputStringOn', obj.id, sel_string_on);
+        end
     end
 end
 
