@@ -5,24 +5,117 @@ classdef datafile
     % interface
     
     properties
-        filename % name of the phreeqc datafile
-        datafilepath
+        datafile_abs_path % absolute path to the data file
     end
     
     methods
-        function obj = datafile(filename, datafilepath)
+        function obj = datafile(datafilepath)
             %DATAFILE accepts two arguments filename, that is the name of
             %the database and filepath that is the absolute path to the
             %datafile
-            obj.filename = filename;
-            obj.datafilepath = datafilepath;
+            % Example:
+            % data_path = 'C:/project/phreeqc/';
+            % file_name = 'phreeqc.dat';
+            obj.datafile_abs_path = datafilepath;
         end
         
-        function primary_species = extract_primary_species(obj)
+        function C = clean_up_data_file(obj)
+            % This function cleans up the data file from all commented lines
+            % and empty lines and returns it as a cell array
+            % read the data file into a cell array
+            fid = fopen(obj.datafile_abs_path);
+            C = textscan(fid, '%s','Delimiter',''); % read the input file into a cell array
+            fclose(fid);
+            C = C{:}; % get rid of cells in cell C
+            % clean the comments:
+            ind_comment = cellfun(@(x)(x(1)=='#'), C);
+            C(ind_comment) = []; % simply remove the comment lines
+            % remove extra spaces and end of line comments
+            for i=1:length(C)
+                C{i}(strfind(C{i}, '#'):end) = '';
+                C{i} = strtrim(C{i});
+            end
+        end
+        function [primary_species, ps_table] = extract_primary_species(obj)
             % extract_primary_species extracts all the primary species from
             % a phreeqc datafile
-            % 
+            C= obj.clean_up_data_file();
+            ind_1 = find(strcmpi(C, 'SOLUTION_MASTER_SPECIES'), 1)+1;
+            ind_end = find(strcmpi(C, 'SOLUTION_SPECIES'), 1)-1;
+            p = C(ind_1:ind_end); % cut the cells 
+            % element	species	alk	gfw_formula	element_gfw
+            n_species = length(p);
+            element = strings(n_species, 1);
+            species = strings(n_species, 1);
+            alk = zeros(n_species, 1);
+            gfw_formula = strings(n_species, 1);
+            element_gfw = zeros(n_species, 1);
+            for i = 1:length(p)
+                tmp = strtrim(strsplit(p{i}, '\t'));
+                element(i) = tmp{1};
+                species(i) = tmp{2};
+                alk(i) = str2double(tmp{3});
+                gfw_formula(i) = tmp{4};
+                try
+                    element_gfw(i) = str2double(tmp{5});
+                catch
+                    element_gfw(i) = -1;
+                end
+                if element_gfw(i)==-1 && i>1
+                    element_gfw(i) = element_gfw(i-1);
+                end
+            end
+            % strtrim(cellfun(@strsplit, p, 'UniformOutput', false))
+            primary_species = element;
+            ps_table = table(element, species, alk, gfw_formula, element_gfw);
+        end
+        
+        function phases = extract_phases(obj)
+            % extracts the phases from the data file
+            % between PHASES and EXCHANGE_MASTER_SPECIES keywords
+            C= obj.clean_up_data_file();
+            ind_1 = find(strcmpi(C, 'PHASES'), 1)+1;
+            ind_end = find(strcmpi(C, 'EXCHANGE_MASTER_SPECIES'), 1)-1;
+            p = C(ind_1:ind_end); % extract the phases block
+            phases = strings(0);
+            kw = obj.phase_keywords(); % key words in the PHASE block
+            % go through each line
+            % if the line starts with - or contains =, then ignore
+            for i=1:length(p)
+               if ~obj.check_keywords(p{i}, kw)
+                   phases = [phases; strtrim(p{i})];
+               end
+            end
+            % extract the phase reactions and log_k for exporting to the
+            % GUI tables TBD
         end
     end
+    
+    methods (Static)
+        function status = check_keywords(string_line, key_words)
+            status = false;
+            for i = 1:length(key_words)
+                status = (status || contains(string_line, key_words(i)));
+            end
+        end
+        
+        function kw = phase_keywords()
+            kw = ["log_k" 
+                "delta_h"
+                "Vm"
+                "analytic"
+                "T_c"
+                "P_c"
+                "Omega"
+                "="];
+        end
+        
+        function kw = species_keywords()
+            % TBD
+            kw = ["log_k" 
+                "delta_h"];
+        end
+    end
+            
 end
 
