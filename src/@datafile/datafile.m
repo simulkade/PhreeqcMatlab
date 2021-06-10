@@ -13,6 +13,7 @@ classdef datafile
             %DATAFILE accepts two arguments filename, that is the name of
             %the database and filepath that is the absolute path to the
             %datafile
+            % use an empty path if the file will be provided as a strings
             % Example:
             % data_path = 'C:/project/phreeqc/';
             % file_name = 'phreeqc.dat';
@@ -89,6 +90,20 @@ classdef datafile
             % extract the phase reactions and log_k for exporting to the
             % GUI tables TBD
         end
+        
+        function [secondary_species, reactions] = extract_secondary_species(obj)
+            % extracts all the secondary species, and the equilibrium
+            % reactions
+            C= obj.clean_up_data_file();
+            ind_1 = find(strcmpi(C, 'SOLUTION_SPECIES'), 1)+1;
+            ind_end = find(strcmpi(C, 'PHASES'), 1)-1;
+            p = C(ind_1:ind_end); % extract the solution species block
+            ind_reactions = contains(p, '=');
+            reactions = p(ind_reactions);
+            sp = cellfun(@(x)strsplit(x, {' = ', ' + '}), reactions, 'UniformOutput', false);
+            secondary_species = unique(strtrim(regexprep([sp{:}], '^\d*', '')));
+            
+        end
     end
     
     methods (Static)
@@ -100,7 +115,7 @@ classdef datafile
         end
         
         function kw = phase_keywords()
-            kw = ["log_k" 
+            kw = ["log_k"
                 "delta_h"
                 "Vm"
                 "analytic"
@@ -114,6 +129,16 @@ classdef datafile
             % TBD
             kw = ["log_k" 
                 "delta_h"];
+        end
+        
+        function kw = secondary_species_keywords()
+            % keywords from the secondary species definition in the phreeqc
+            % databases
+            kw = ["log_k"
+                "delta_h"
+                "analytic"
+                "dw"
+                "Vm"];
         end
     end
             
