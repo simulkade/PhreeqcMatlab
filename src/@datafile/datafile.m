@@ -91,7 +91,7 @@ classdef datafile
             % GUI tables TBD
         end
         
-        function [secondary_species, reactions] = extract_secondary_species(obj)
+        function [secondary_species, species_charge, reactions] = extract_secondary_species(obj)
             % extracts all the secondary species, and the equilibrium
             % reactions
             C= obj.clean_up_data_file();
@@ -101,7 +101,27 @@ classdef datafile
             ind_reactions = contains(p, '=');
             reactions = p(ind_reactions);
             sp = cellfun(@(x)strsplit(x, {' = ', ' + '}), reactions, 'UniformOutput', false);
-            secondary_species = unique(strtrim(regexprep([sp{:}], '^\d*', '')));
+            secondary_species = unique(strtrim(regexprep([sp{:}], '^\d*', '')))';
+            n_species = length(secondary_species);
+            % find charge
+            species_charge = zeros(n_species, 1);
+            for i=1:n_species
+                if contains(secondary_species{i}, '+')
+                    ind_sign = strfind(secondary_species{i}, '+');
+                    if ind_sign ~= length(secondary_species{i})
+                        species_charge(i) = str2double(secondary_species{i}(ind_sign:end));
+                    else
+                        species_charge(i) = 1.0;
+                    end
+                elseif contains(secondary_species{i}, '-')
+                    ind_sign = strfind(secondary_species{i}, '-');
+                    if ind_sign ~= length(secondary_species{i})
+                        species_charge(i) = str2double(secondary_species{i}(ind_sign:end));
+                    else
+                        species_charge(i) = -1.0;
+                    end
+                end      
+            end
             
         end
     end
