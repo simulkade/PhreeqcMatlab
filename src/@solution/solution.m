@@ -70,9 +70,7 @@ classdef solution
                     solution_string = strjoin([solution_string 'Alkalinity' num2str(obj.alkalinity) "\n"]);
             
                 end
-            end
-                
-            
+            end            
         end
     end
     

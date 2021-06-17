@@ -891,6 +891,19 @@ classdef IPhreeqc
             % GetSelectedOutputFileOn, GetSelectedOutputStringOn, GetSelectedOutputString, GetSelectedOutputStringLine, GetSelectedOutputStringLineCount, SetCurrentSelectedOutputUserNumber, SetSelectedOutputFileOn
             status = calllib('libiphreeqc','SetSelectedOutputStringOn', obj.id, sel_string_on);
         end
+        
+        % Extra methods added for convenience
+        function out_string = RunPhreeqcFile(obj, file_name, data_file)
+            % RunPhreeqcFile(obj, file_name, data_file)
+            % runs a phreeqc input file and returns the results as an
+            % string. It also display the results in the matlab command
+            % prompt
+            obj.SetOutputStringOn(true);
+            obj.LoadDatabase(data_file);
+            obj.RunFile(file_name);
+            out_string = obj.GetOutputString();
+            disp(out_string); % display the phreeqc output string
+        end
     end
 end
 

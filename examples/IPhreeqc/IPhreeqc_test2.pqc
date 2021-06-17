@@ -1,0 +1,11 @@
+# Test 2 for directly adding salts
+SOLUTION 1 brine
+        pH      7.0
+        temp    25.0
+        CaCl2    1.0
+END
+
+SELECTED_OUTPUT 1
+        -reset false
+        -totals Na Cl
+END
