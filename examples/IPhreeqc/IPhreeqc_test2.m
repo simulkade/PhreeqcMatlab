@@ -3,6 +3,7 @@
 iph = IPhreeqc(); % load the library
 iph = iph.CreateIPhreeqc(); % create an IPhreeqc instance
 out_string = iph.RunPhreeqcFile('IPhreeqc_test2.pqc', database_file('phreeqc.dat'));
+disp(out_string)
 % the above function does the following:
 % iph.SetOutputStringOn(true);
 % iph.LoadDatabase(database_file('phreeqc.dat'));
