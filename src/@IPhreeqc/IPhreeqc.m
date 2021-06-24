@@ -902,6 +902,16 @@ classdef IPhreeqc
             obj.RunFile(file_name);
             out_string = obj.GetOutputString();
         end
+        
+        function out_string = RunPhreeqcString(obj, input_string, data_file)
+            % RunPhreeqcFile(obj, file_name, data_file)
+            % runs a phreeqc input file and returns the results as an
+            % string.
+            obj.SetOutputStringOn(true);
+            obj.LoadDatabase(data_file);
+            obj.RunString(input_string);
+            out_string = obj.GetOutputString();
+        end
     end
 end
 
