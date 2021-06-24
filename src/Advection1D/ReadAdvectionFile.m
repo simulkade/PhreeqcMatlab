@@ -38,7 +38,7 @@ end
 use_solution_density_volume = sscanf(C{contains(C, 'use_solution_density_volume')}, 'use_solution_density_volume %d');
 if isempty(use_solution_density_volume)
     use_solution_density_volume = 0;
-endprimary_species = 
+% endprimary_species = 
 units_solution = sscanf(C{contains(C, 'units_solution')}, 'units_solution %d');
 if isempty(units_solution)
     units_solution = 2;
