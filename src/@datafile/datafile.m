@@ -83,9 +83,10 @@ classdef datafile
             % go through each line
             % if the line starts with - or contains =, then ignore
             for i=1:length(p)
-               if ~obj.check_keywords(p{i}, kw)
-                   phases = [phases; strtrim(p{i})];
-               end
+                if ~obj.check_keywords(p{i}, kw)
+                    tmp = strtrim(strsplit(p{i}));
+                    phases = [phases; tmp{1}];
+                end
             end
             % extract the phase reactions and log_k for exporting to the
             % GUI tables TBD
