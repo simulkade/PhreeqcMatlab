@@ -52,7 +52,7 @@ classdef datafile
             gfw_formula = strings(n_species, 1);
             element_gfw = zeros(n_species, 1);
             for i = 1:length(p)
-                tmp = strtrim(strsplit(p{i}, '\t'));
+                tmp = strtrim(strsplit(p{i}));
                 element(i) = tmp{1};
                 species(i) = tmp{2};
                 alk(i) = str2double(tmp{3});
