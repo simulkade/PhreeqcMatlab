@@ -161,6 +161,19 @@ classdef datafile
                 "dw"
                 "Vm"];
         end
+
+        function kw = database_main_keywords()
+            % keywords that define a block of phreeqc species
+            kw = ["SOLUTION_MASTER_SPECIES"
+            "SOLUTION_SPECIES"
+            "EXCHANGE_MASTER_SPECIES"
+            "EXCHANGE_SPECIES"
+            "SURFACE_MASTER_SPECIES"
+            "SURFACE_MASTER_SPECIES"
+            "RATES"
+            "PHASES"
+            "PITZER"];
+        end
     end
             
 end
