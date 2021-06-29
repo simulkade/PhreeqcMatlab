@@ -40,9 +40,12 @@ classdef datafile
         function [primary_species, ps_table] = extract_primary_species(obj)
             % extract_primary_species extracts all the primary species from
             % a phreeqc datafile
+            % ps_table is a table of primary species and associated data
+            % such as molecular weight
             C= obj.clean_up_data_file();
-            ind_1 = find(strcmpi(C, 'SOLUTION_MASTER_SPECIES'), 1)+1;
-            ind_end = find(strcmpi(C, 'SOLUTION_SPECIES'), 1)-1;
+            %ind_1 = find(strcmpi(C, 'SOLUTION_MASTER_SPECIES'), 1)+1;
+            %ind_end = find(strcmpi(C, 'SOLUTION_SPECIES'), 1)-1;
+            [ind_1, ind_end] = obj.find_data_block(C, 'SOLUTION_MASTER_SPECIES');
             p = C(ind_1:ind_end); % cut the cells 
             % element	species	alk	gfw_formula	element_gfw
             n_species = length(p);
@@ -75,8 +78,9 @@ classdef datafile
             % extracts the phases from the data file
             % between PHASES and EXCHANGE_MASTER_SPECIES keywords
             C= obj.clean_up_data_file();
-            ind_1 = find(strcmpi(C, 'PHASES'), 1)+1;
-            ind_end = find(strcmpi(C, 'EXCHANGE_MASTER_SPECIES'), 1)-1;
+            % ind_1 = find(strcmpi(C, 'PHASES'), 1)+1;
+            % ind_end = find(strcmpi(C, 'EXCHANGE_MASTER_SPECIES'), 1)-1;
+            [ind_1, ind_end] = obj.find_data_block(C, 'PHASES');
             p = C(ind_1:ind_end); % extract the phases block
             phases = strings(0);
             kw = obj.phase_keywords(); % key words in the PHASE block
@@ -96,8 +100,9 @@ classdef datafile
             % extracts all the secondary species, and the equilibrium
             % reactions
             C= obj.clean_up_data_file();
-            ind_1 = find(strcmpi(C, 'SOLUTION_SPECIES'), 1)+1;
-            ind_end = find(strcmpi(C, 'PHASES'), 1)-1;
+            %ind_1 = find(strcmpi(C, 'SOLUTION_SPECIES'), 1)+1;
+            %ind_end = find(strcmpi(C, 'PHASES'), 1)-1;
+            [ind_1, ind_end] = obj.find_data_block(C, 'SOLUTION_SPECIES');
             p = C(ind_1:ind_end); % extract the solution species block
             ind_reactions = contains(p, '=');
             reactions = p(ind_reactions);
@@ -125,6 +130,8 @@ classdef datafile
             end
             
         end
+        
+        
     end
     
     methods (Static)
@@ -173,6 +180,32 @@ classdef datafile
             "RATES"
             "PHASES"
             "PITZER"];
+        end
+        
+        function [ind1, ind2] = find_data_block(C, block_name)
+            % finds the index of the the begining and the end of a data
+            % block that shows the block of data representing the keyword
+            % specified by block_name
+            % returns 0 for both indices if the block name does not exist
+            % C is a cleaned up data file
+            % Example:
+            % [ind1, ind2] = find_date_block(C, 'SOLUTION_SPECIES');
+            ind1 = find(strcmpi(C, block_name), 1)+1;
+            if isempty(ind1)
+                ind1=0;
+                ind2=0;
+                return
+            end
+            kw = datafile.database_main_keywords();
+            ind2 = length(C);
+            for i=1:length(kw)
+                ind_end = find(strcmpi(C, kw{i}), 1)-1;
+                if ~isempty(ind_end)
+                    if ind_end>ind1 && ind_end<ind2
+                        ind2 = ind_end-1;
+                    end
+                end
+            end
         end
     end
             
