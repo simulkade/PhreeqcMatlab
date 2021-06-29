@@ -145,6 +145,7 @@ classdef datafile
         function kw = phase_keywords()
             kw = ["log_k"
                 "delta_h"
+                "delta_H"
                 "Vm"
                 "analytic"
                 "T_c"
@@ -156,7 +157,8 @@ classdef datafile
         function kw = species_keywords()
             % TBD
             kw = ["log_k" 
-                "delta_h"];
+                "delta_h"
+                "delta_H"];
         end
         
         function kw = secondary_species_keywords()
@@ -164,6 +166,7 @@ classdef datafile
             % databases
             kw = ["log_k"
                 "delta_h"
+                "delta_H"
                 "analytic"
                 "dw"
                 "Vm"];
@@ -179,7 +182,8 @@ classdef datafile
             "SURFACE_MASTER_SPECIES"
             "RATES"
             "PHASES"
-            "PITZER"];
+            "PITZER"
+            "SIT"];
         end
         
         function [ind1, ind2] = find_data_block(C, block_name)
