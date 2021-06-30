@@ -33,4 +33,4 @@ This package probably won't be broken by sudden changes. So you can start using 
   + Simple GUI
 
 # Author
-This package is written by [Ali A. Eftekhari](https://www.oilgas.dtu.dk/service/telefonbog/person?id=112240&cpid=203787&tab=2&qt=dtupublicationquery) in his free time. It is/will be used in some of the projects/publications at the [Danish Hydrocarbon Research and Technology Centre](https://www.oilgas.dtu.dk/) at the [Technical University of Denmark](https://www.dtu.dk/).
+The original package was written by [Ali A. Eftekhari](https://www.oilgas.dtu.dk/service/telefonbog/person?id=112240&cpid=203787&tab=2&qt=dtupublicationquery) in his free time. It is/will be used in some of the projects/publications at the [Danish Hydrocarbon Research and Technology Centre](https://www.oilgas.dtu.dk/) (DHRTC) at the [Technical University of Denmark](https://www.dtu.dk/). Some of the current development is done as part of an ongoing project in the DHRTC.
