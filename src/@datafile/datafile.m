@@ -89,7 +89,7 @@ classdef datafile
             for i=1:length(p)
                 if ~obj.check_keywords(p{i}, kw)
                     tmp = strtrim(strsplit(p{i}));
-                    phases = [phases; tmp{1}];
+                    phases = [phases; tmp{1}]; % find an elegant solution later
                 end
             end
             % extract the phase reactions and log_k for exporting to the
@@ -134,7 +134,7 @@ classdef datafile
         
     end
     
-    methods (Static)
+    methods (Static=true, Access = 'private')
         function status = check_keywords(string_line, key_words)
             status = false;
             for i = 1:length(key_words)
@@ -170,6 +170,21 @@ classdef datafile
                 "analytic"
                 "dw"
                 "Vm"];
+        end
+        
+        function kw = surface_keywords()
+            % keywords from the surface and surface species 
+            kw = ["log_k"
+                "logk"
+                "delta_h"
+                "delta_H"
+                "analytic"
+                "analytical_expression"
+                "cd_music"
+                "-cd"
+                "Vm"
+                "mole_balance"
+                "no_check"];
         end
 
         function kw = database_main_keywords()

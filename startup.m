@@ -19,6 +19,7 @@ try
     addpath([current_path '/src/Tools']);
     addpath([current_path '/database']);
     addpath([current_path '/src/FVTool']);
+    addpath([current_path '/src/classes']);
     disp('PhreeqcMatlab is starting. Checking for the PhreeqcRM library ...');
 catch 
     error('Something went wrong with the PhreeqcMatlab start up. Please download the package again, extract it, and run the startup.m file.'); 

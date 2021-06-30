@@ -3,20 +3,39 @@ classdef surface
     %   Detailed explanation goes here
     
     properties
-        Property1
+        name
+        number
+        binding_site
+        surface_master_species
+        surface_species_reactions
+        log_k
+        dh
+        specific_surface_area
+        eq_solution
+        sites_units   % absolute or density
+        edl_layer
     end
     
     methods
-        function obj = surface(inputArg1,inputArg2)
+        function obj = surface(binding_site,surface_master_species)
             %SURFACE Construct an instance of this class
             %   Detailed explanation goes here
-            obj.Property1 = inputArg1 + inputArg2;
+            obj.binding_site = binding_site;
+            obj.surface_master_species = surface_master_species;
         end
         
-        function outputArg = method1(obj,inputArg)
-            %METHOD1 Summary of this method goes here
-            %   Detailed explanation goes here
-            outputArg = obj.Property1 + inputArg;
+        function surface_string = phreeqc_string(obj)
+           surface_string = ["SURFACE" num2str(obj.number) obj.name "\n"];
+        end
+    end
+    
+    methods (Static)
+        function obj = calcite_surface()
+            obj = surface();
+        end
+        
+        function obj = clay_surface()
+            obj = surface();
         end
     end
 end
