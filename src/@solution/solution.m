@@ -3,21 +3,21 @@ classdef solution
     %   Detailed explanation goes here
     
     properties
-        name
-        number
-        unit
-        components
-        concentrations
-        charge_balance_component
-        ph_charge_balance
-        density
-        density_calculation
-        pH
-        pe
-        alkalinity
-        alkalinity_component
-        pressure
-        temperature
+        name(1,1) string
+        number(1,1) double {mustBeNonnegative, mustBeInteger}
+        unit(1,1) string
+        components(1,:) string
+        concentrations(1,:) double
+        charge_balance_component(1,1) string
+        ph_charge_balance(1,1) {mustBeNumericOrLogical}
+        density(1,1) double
+        density_calculation(1,1) {mustBeNumericOrLogical}
+        pH {mustBeScalarOrEmpty} = []
+        pe {mustBeScalarOrEmpty} = []
+        alkalinity {mustBeScalarOrEmpty} = []
+        alkalinity_component(1,1) string
+        pressure {mustBeScalarOrEmpty}
+        temperature {mustBeScalarOrEmpty}
     end
     
     methods
@@ -64,7 +64,7 @@ classdef solution
                 end
             end
             if ~isempty(obj.alkalinity)
-                if ~isempty(obj.alkalinity_component)
+                if obj.alkalinity_component~=""
                     solution_string = strjoin([solution_string 'Alkalinity' num2str(obj.alkalinity) "  as  " obj.alkalinity_component "\n"]);
                 else
                     solution_string = strjoin([solution_string 'Alkalinity' num2str(obj.alkalinity) "\n"]);
@@ -85,7 +85,7 @@ classdef solution
             sw.unit = "ppm";
             sw.components = ["Ca", "Mg", "Na", "K", "Si", "Cl", "S(6)"];
             sw.concentrations = [412.3, 1291.8, 10768.0, 399.1, 4.28, 19353.0, 2712.0];
-            sw.charge_balance_component = [];
+            sw.charge_balance_component = "";
             sw.ph_charge_balance = false;
             sw.density = 1.0253; % kg/l
             sw.pH = 8.22;

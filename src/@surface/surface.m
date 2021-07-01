@@ -3,8 +3,8 @@ classdef surface
     %   Detailed explanation goes here
     
     properties
-        name
-        number
+        name(1,1) string
+        number(1,1) double {mustBeNonnegative, mustBeInteger}
         binding_site
         surface_master_species
         surface_species_reactions
