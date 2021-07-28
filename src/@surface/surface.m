@@ -1,4 +1,4 @@
-classdef surface
+classdef Surface
     %SURFACE Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -17,7 +17,7 @@ classdef surface
     end
     
     methods
-        function obj = surface(binding_site,surface_master_species)
+        function obj = Surface(binding_site,surface_master_species)
             %SURFACE Construct an instance of this class
             %   Detailed explanation goes here
             obj.binding_site = binding_site;
@@ -31,11 +31,11 @@ classdef surface
     
     methods (Static)
         function obj = calcite_surface()
-            obj = surface();
+            obj = Surface();
         end
         
         function obj = clay_surface()
-            obj = surface();
+            obj = Surface();
         end
     end
 end
