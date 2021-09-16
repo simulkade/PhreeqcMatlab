@@ -1,4 +1,4 @@
-classdef phase
+classdef Phase
     %PHASE 
     % define a new phase (e.g. a mineral) that is in equilibrium with a
     % solution defined by @solution class
@@ -13,7 +13,7 @@ classdef phase
     end
     
     methods
-        function obj = phase()
+        function obj = Phase()
             %PHASE Construct an instance of this class
             %   Detailed explanation goes here
             obj.name="empty phase";

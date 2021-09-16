@@ -1,4 +1,4 @@
-classdef solution
+classdef Solution
     %SOLUTION Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -21,7 +21,7 @@ classdef solution
     end
     
     methods
-        function obj = solution()
+        function obj = Solution()
             %SOLUTION Construct an instance of this class
             % currently, it constructs an empty class (pure water)
             % the preferred method of initializing its fields is manually or 
@@ -79,7 +79,7 @@ classdef solution
             % sw = solution.seawater();
             % returns a simple solution object that contains 
             % a seawater composition
-            sw=solution();
+            sw=Solution();
             sw.name = "Seawater";
             sw.number = 1;
             sw.unit = "ppm";
