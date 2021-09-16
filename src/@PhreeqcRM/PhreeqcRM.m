@@ -1956,7 +1956,68 @@ classdef PhreeqcRM
                 obj.id, i, name_out{i}, length(name_out{i}));
             end
         end
-% Helper functions: will be added soon               
+        
+        % added in Version 3.7.1-15876
+        function status = RM_StateSave(obj, istate)
+            %{
+            Save the state of the chemistry in all model cells, including SOLUTIONs, EQUILIBRIUM_PHASES, EXCHANGEs, GAS_PHASEs, KINETICS, SOLID_SOLUTIONs, and SURFACEs. Although not generally used, MIXes, REACTIONs, REACTION_PRESSUREs, and REACTION_TEMPERATUREs will be saved for each cell, if they have been defined in the worker IPhreeqc instances. The distribution of cells among the workersand the chemistry of fully or partially unsaturated cells are also saved.The state is saved in memory; use RM_DumpModule to save the state to file.PhreeqcRM can be reset to this state by using RM_StateApply. A state is identified by an integer, and multiple states can be saved.
+
+            Parameters
+                id	The instance id returned from RM_Create.
+                istate	Integer identifying the state that is saved.
+            Return values
+                IRM_RESULT	0 is success, negative is failure(See RM_DecodeError).
+            See also
+                RM_DumpModule, RM_StateApply, and RM_StateDelete.
+            C++ Example:
+                status = RM_StateSave(id, 1);
+                ...
+                status = RM_StateApply(id, 1);
+                status = RM_StateDelete(id, 1);
+            %}
+            status = calllib('libphreeqcrm','RM_StateSave', obj.id, istate);
+        end
+        
+        function status = RM_StateDelete(obj, istate)
+            %{
+            Delete a state previously saved with RM_StateSave.
+            Parameters
+                id	The instance id returned from RM_Create.
+                istate	Integer identifying the state that is to be deleted.
+            Return values
+                IRM_RESULT	0 is success, negative is failure(See RM_DecodeError).
+            See also
+                RM_StateSave and ref RM_StateApply.
+            C++ Example:
+                status = RM_StateSave(id, 1);
+                ...
+                status = RM_StateApply(id, 1);
+                status = RM_StateDelete(id, 1);
+            %}
+            status = calllib('libphreeqcrm','RM_StateDelete', obj.id, istate);
+        end
+        
+        function status = RM_StateApply(obj, istate)
+            %{
+            Reset the state of the module to a state previously saved with RM_StateSave. The chemistry of all model cells are reset, including SOLUTIONs, EQUILIBRIUM_PHASES, EXCHANGEs, GAS_PHASEs, KINETICS, SOLID_SOLUTIONs, and SURFACEs. MIXes, REACTIONs, REACTION_PRESSUREs, and REACTION_TEMPERATUREs will be reset for each cell, if they were defined in the worker IPhreeqc instances at the time the state was saved. The distribution of cells among the workersand the chemistry of fully or partially unsaturated cells are also reset to the saved state. The state to be applied is identified by an integer.
+            Parameters
+                id	The instance id returned from RM_Create.
+                istate	Integer identifying the state that is to be applied.
+            Return values
+                IRM_RESULT	0 is success, negative is failure(See RM_DecodeError).
+            See also
+                RM_StateSave and RM_StateDelete.
+            C++ Example:
+                status = RM_StateSave(id, 1);
+                ...
+                status = RM_StateApply(id, 1);
+                status = RM_StateDelete(id, 1);
+            %}
+            status = calllib('libphreeqcrm','RM_StateApply', obj.id, istate);
+        end
+        
+        % Helper functions: all functions that start without RM_
+        % more will be added
         
     end
 	
