@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/187366776.svg)](https://zenodo.org/badge/latestdoi/187366776)
+[![View PhreeqcMatlab on File Exchange](https://www.mathworks.com/matlabcentral/images/matlab-file-exchange.svg)](https://se.mathworks.com/matlabcentral/fileexchange/99394-phreeqcmatlab)
 # PhreeqcMatlab
 [Documents (work in progress)](https://github.com/simulkade/PhreeqcMatlab/wiki)
 
@@ -98,3 +100,9 @@ This package probably won't be broken by sudden changes. So you can start using 
 
 # Author
 The original package was written by [Ali A. Eftekhari](https://www.oilgas.dtu.dk/service/telefonbog/person?id=112240&cpid=203787&tab=2&qt=dtupublicationquery) in his free time. It is/will be used in some of the projects/publications at the [Danish Hydrocarbon Research and Technology Centre](https://www.oilgas.dtu.dk/) (DHRTC) at the [Technical University of Denmark](https://www.dtu.dk/). Some of the current development is done as part of an ongoing project at the DHRTC.
+
+# Citation
+Please cite as
+```
+Eftekhari, Ali A., and Behzad Hosseinzadeh. Simulkade/PhreeqcMatlab: Preliminary Release of PhreeqcMatlab. Zenodo, 2021, doi:10.5281/ZENODO.5513713.
+```
