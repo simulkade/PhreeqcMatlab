@@ -18,7 +18,10 @@
             "Density": 1.0,
             "DensityCalculation": true,
             "Alkalinity": 0.002,
-            "AlkalinityComponent": "HCO3"
+            "AlkalinityComponent": "HCO3",
+            "pe": 4.0,
+            "Pressure": 1.0,
+            "Temperature": 25.0
         },
         "FormationWater":{
             "Name": "Formation Water",

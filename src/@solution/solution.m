@@ -68,15 +68,36 @@ classdef Solution
                     solution_string = strjoin([solution_string 'Alkalinity' num2str(obj.alkalinity) "  as  " obj.alkalinity_component "\n"]);
                 else
                     solution_string = strjoin([solution_string 'Alkalinity' num2str(obj.alkalinity) "\n"]);
-            
                 end
-            end            
+            end
+            solution_string = char(solution_string);
+        end
+        
+        function out_string = run_in_phreeqc(obj, varargin)
+            % runs the function in a IPhreeqc instance, display the results
+            %, and kills the IPhreeqc instance
+            iph = IPhreeqc(); % load the library
+            iph = iph.CreateIPhreeqc(); % create an IPhreeqc instance
+            iph_string = phreeqc_string(obj);
+            if nargin>1
+                data_file = varargin{end};
+            else
+                data_file = 'phreeqc.dat';
+            end
+            try
+                out_string = iph.RunPhreeqcString(iph_string, database_file(data_file));
+                iph.DestroyIPhreeqc();
+            catch
+                out_string = 0;
+                disp('An error occured running Phreeqc. Please check the solution definition');
+                iph.DestroyIPhreeqc();
+            end
         end
     end
     
     methods(Static)
         function sw = seawater()
-            % sw = solution.seawater();
+            % sw = Solution.seawater();
             % returns a simple solution object that contains 
             % a seawater composition
             sw=Solution();
@@ -92,6 +113,71 @@ classdef Solution
             sw.pe = 8.451;
             sw.alkalinity = 141.682;
             sw.alkalinity_component = "HCO3";
+        end
+        
+        function obj = read_json(sol)
+            % read_json creates a Solution object from a decoded JSON
+            % string
+            % input:
+            %       sol: decoded JSON string to a Matlab structure
+            obj = Solution();
+
+            if isfield(sol, 'Name')
+                obj.name = sol.Name;
+            end
+
+            if isfield(sol, 'Number')
+                obj.number = sol.Number;
+            end
+
+            if isfield(sol, 'Unit')
+                obj.unit = sol.Unit;
+            end
+
+            if isfield(sol, 'Composition')
+                obj.components = fieldnames(sol.Composition); % get the list of components
+                obj.concentrations = cellfun(@(x)getfield(sol.Composition, {1}, x), obj.components); % get the compositions
+            end
+
+            if isfield(sol, 'Charge')
+                obj.ph_charge_balance = sol.Charge;
+            end
+
+            if isfield(sol, 'ChargeComponent')
+                obj.charge_balance_component = sol.ChargeComponent;
+            end
+
+            if isfield(sol, 'Density')
+                obj.density = sol.Density;
+            end
+
+            if isfield(sol, 'DensityCalculation')
+                obj.density_calculation = sol.DensityCalculation;
+            end
+
+            if isfield(sol, 'Alkalinity')
+                obj.alkalinity = sol.Alkalinity;
+            end
+
+            if isfield(sol, 'AlkalinityComponent')
+                obj.alkalinity_component = sol.AlkalinityComponent;
+            end
+
+            if isfield(sol, 'pe')
+                obj.pe = sol.pe;
+            end
+
+            if isfield(sol, 'Pressure')
+                obj.pressure = sol.Pressure;
+            end
+
+            if isfield(sol, 'Temperature')
+                obj.temperature = sol.Temperature;
+            end
+
+            if isfield(sol, 'pH')
+                obj.pH = sol.pH;
+            end
         end
     end
 end
