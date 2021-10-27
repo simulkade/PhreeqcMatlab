@@ -93,6 +93,42 @@ classdef Solution
                 iph.DestroyIPhreeqc();
             end
         end
+        
+        function out_string = run(obj, varargin)
+            % runs the function in a PhreeqcRM instance, and store the
+            % results in a SolutionResult object
+            iph = IPhreeqc(); % load the library
+            iph = iph.CreateIPhreeqc(); % create an IPhreeqc instance
+            iph_string = phreeqc_string(obj);
+            % add a selected output block to the string before running
+            iph_string = strjoin([iph_string "SELECTED_OUTPUT" num2str(obj.number) "\n"]);
+            iph_string = strjoin([iph_string  "-reset    false \n"]);
+            iph_string = strjoin([iph_string  "-pH    true \n"]);
+            iph_string = strjoin([iph_string  "-pe    true \n"]);
+            iph_string = strjoin([iph_string  "-temperature    true \n"]);
+            iph_string = strjoin([iph_string  "-alkalinity    true \n"]);
+            iph_string = strjoin([iph_string  "-ionic_strength    ture \n"]);
+            iph_string = strjoin([iph_string  "-water    true \n"]);
+            iph_string = strjoin([iph_string  "-charge_balance    true \n"]);
+            iph_string = strjoin([iph_string  "-percent_error    true \n"]);
+            iph_string = strjoin([iph_string  "\n"]);
+            iph_string = strjoin([iph_string  "\n"]);
+            iph_string = strjoin([iph_string  "\n"]);
+            iph_string = strjoin([iph_string  "\n"]);
+            if nargin>1
+                data_file = varargin{end};
+            else
+                data_file = 'phreeqc.dat';
+            end
+            try
+                out_string = iph.RunPhreeqcString(iph_string, database_file(data_file));
+                iph.DestroyIPhreeqc();
+            catch
+                out_string = 0;
+                disp('An error occured running Phreeqc. Please check the solution definition');
+                iph.DestroyIPhreeqc();
+            end
+        end
     end
     
     methods(Static)
