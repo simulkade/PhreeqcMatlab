@@ -909,7 +909,7 @@ classdef IPhreeqc
             % string.
             obj.SetOutputStringOn(true);
             obj.LoadDatabase(data_file);
-            obj.RunString(input_string);
+            obj.RunString(sprintf(input_string));
             out_string = obj.GetOutputString();
         end
     end

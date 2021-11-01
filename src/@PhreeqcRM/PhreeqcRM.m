@@ -1185,7 +1185,7 @@ classdef PhreeqcRM
 
             %}
             status = calllib('libphreeqcrm','RM_RunString', obj.id, workers, ...
-                initial_phreeqc, utility, input_string);
+                initial_phreeqc, utility, sprintf(input_string));
         end
         
         function status = RM_ScreenMessage(obj, msg_str)
