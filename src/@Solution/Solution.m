@@ -70,6 +70,7 @@ classdef Solution
                     solution_string = strjoin([solution_string 'Alkalinity' num2str(obj.alkalinity) "\n"]);
                 end
             end
+            solution_string = strjoin([solution_string 'END' "\n"]);
             solution_string = sprintf(char(solution_string));
         end
         
@@ -106,7 +107,7 @@ classdef Solution
             so_string = strjoin([so_string  "-pe    true \n"]);
             so_string = strjoin([so_string  "-temperature    true \n"]);
             so_string = strjoin([so_string  "-alkalinity    true \n"]);
-            so_string = strjoin([so_string  "-ionic_strength    ture \n"]);
+            so_string = strjoin([so_string  "-ionic_strength    true \n"]);
             so_string = strjoin([so_string  "-water    true \n"]);
             so_string = strjoin([so_string  "-charge_balance    true \n"]);
             so_string = strjoin([so_string  "-percent_error    true \n"]);
