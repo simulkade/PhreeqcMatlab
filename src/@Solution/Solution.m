@@ -44,7 +44,7 @@ classdef Solution
             % solution_cell = cell(n_comp, 1);
             % solution_cell{1} = ['SOLUTION ' obj.name];
             solution_string = strjoin(["SOLUTION " num2str(obj.number) obj.name "\n"]);
-            solution_string = strjoin([solution_string 'unit' obj.unit "\n"]);
+            solution_string = strjoin([solution_string 'units' obj.unit "\n"]);
             solution_string = strjoin([solution_string 'pressure' num2str(obj.pressure) "\n"]);
             solution_string = strjoin([solution_string 'temp' num2str(obj.temperature) "\n"]);
             if obj.ph_charge_balance
@@ -70,7 +70,7 @@ classdef Solution
                     solution_string = strjoin([solution_string 'Alkalinity' num2str(obj.alkalinity) "\n"]);
                 end
             end
-            solution_string = char(solution_string);
+            solution_string = sprintf(char(solution_string));
         end
         
         function out_string = run_in_phreeqc(obj, varargin)
@@ -94,34 +94,46 @@ classdef Solution
             end
         end
         
+        function so_string = solution_selected_output(obj)
+            % so_string = solution_selected_output(obj)
+            % returns a selected output string that can be appended to the
+            % current phreeqc string of the solution object to obtain all
+            % the physical and chemical properties calculated by phreeqc
+            % for a solution
+            so_string = strjoin(["SELECTED_OUTPUT" num2str(obj.number) "\n"]);
+            so_string = strjoin([so_string  "-reset    false \n"]);
+            so_string = strjoin([so_string  "-pH    true \n"]);
+            so_string = strjoin([so_string  "-pe    true \n"]);
+            so_string = strjoin([so_string  "-temperature    true \n"]);
+            so_string = strjoin([so_string  "-alkalinity    true \n"]);
+            so_string = strjoin([so_string  "-ionic_strength    ture \n"]);
+            so_string = strjoin([so_string  "-water    true \n"]);
+            so_string = strjoin([so_string  "-charge_balance    true \n"]);
+            so_string = strjoin([so_string  "-percent_error    true \n"]);
+%             so_string = strjoin([so_string  "\n"]);
+%             so_string = strjoin([so_string  "\n"]);
+%             so_string = strjoin([so_string  "\n"]);
+%             so_string = strjoin([so_string  "\n"]);
+            so_string = strjoin([so_string  "END"]);
+            so_string = sprintf(char(so_string));
+        end
+        
         function out_string = run(obj, varargin)
             % runs the function in a PhreeqcRM instance, and store the
             % results in a SolutionResult object
-            iph = IPhreeqc(); % load the library
-            iph = iph.CreateIPhreeqc(); % create an IPhreeqc instance
+            phreeqc_rm = PhreeqcRM(1, 1); % one cell, one thread
+            phreeqc_rm = phreeqc_rm.RM_Create(); % create a PhreeqcRM instance
             iph_string = phreeqc_string(obj);
             % add a selected output block to the string before running
-            iph_string = strjoin([iph_string "SELECTED_OUTPUT" num2str(obj.number) "\n"]);
-            iph_string = strjoin([iph_string  "-reset    false \n"]);
-            iph_string = strjoin([iph_string  "-pH    true \n"]);
-            iph_string = strjoin([iph_string  "-pe    true \n"]);
-            iph_string = strjoin([iph_string  "-temperature    true \n"]);
-            iph_string = strjoin([iph_string  "-alkalinity    true \n"]);
-            iph_string = strjoin([iph_string  "-ionic_strength    ture \n"]);
-            iph_string = strjoin([iph_string  "-water    true \n"]);
-            iph_string = strjoin([iph_string  "-charge_balance    true \n"]);
-            iph_string = strjoin([iph_string  "-percent_error    true \n"]);
-            iph_string = strjoin([iph_string  "\n"]);
-            iph_string = strjoin([iph_string  "\n"]);
-            iph_string = strjoin([iph_string  "\n"]);
-            iph_string = strjoin([iph_string  "\n"]);
+            iph_string = strjoin([iph_string solution_selected_output(obj)]);
             if nargin>1
                 data_file = varargin{end};
             else
                 data_file = 'phreeqc.dat';
             end
             try
-                out_string = iph.RunPhreeqcString(iph_string, database_file(data_file));
+                status = phreeqc_rm.RM_LoadDatabase(database_file(data_file));
+                status = phreeqc_rm.RM_RunString(true, true, true, iph_string);
                 iph.DestroyIPhreeqc();
             catch
                 out_string = 0;
