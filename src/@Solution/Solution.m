@@ -102,6 +102,7 @@ classdef Solution
             % the physical and chemical properties calculated by phreeqc
             % for a solution
             so_string = strjoin(["SELECTED_OUTPUT" num2str(obj.number) "\n"]);
+            so_string = strjoin([so_string  "-high_precision	 true \n"]);
             so_string = strjoin([so_string  "-reset    false \n"]);
             so_string = strjoin([so_string  "-pH    true \n"]);
             so_string = strjoin([so_string  "-pe    true \n"]);
@@ -111,35 +112,64 @@ classdef Solution
             so_string = strjoin([so_string  "-water    true \n"]);
             so_string = strjoin([so_string  "-charge_balance    true \n"]);
             so_string = strjoin([so_string  "-percent_error    true \n"]);
-%             so_string = strjoin([so_string  "\n"]);
-%             so_string = strjoin([so_string  "\n"]);
+            so_string = strjoin([so_string  "-molalities \n"]);  
 %             so_string = strjoin([so_string  "\n"]);
 %             so_string = strjoin([so_string  "\n"]);
             so_string = strjoin([so_string  "END"]);
             so_string = sprintf(char(so_string));
         end
         
-        function out_string = run(obj, varargin)
+        function SR = run(obj, varargin)
             % runs the function in a PhreeqcRM instance, and store the
             % results in a SolutionResult object
             phreeqc_rm = PhreeqcRM(1, 1); % one cell, one thread
             phreeqc_rm = phreeqc_rm.RM_Create(); % create a PhreeqcRM instance
             iph_string = phreeqc_string(obj);
             % add a selected output block to the string before running
-            iph_string = strjoin([iph_string solution_selected_output(obj)]);
+            iph_string = [iph_string solution_selected_output(obj)];
             if nargin>1
                 data_file = varargin{end};
             else
                 data_file = 'phreeqc.dat';
             end
             try
-                status = phreeqc_rm.RM_LoadDatabase(database_file(data_file));
-                status = phreeqc_rm.RM_RunString(true, true, true, iph_string);
-                iph.DestroyIPhreeqc();
+                phreeqc_rm.RM_LoadDatabase(database_file(data_file));
+                phreeqc_rm.RM_RunString(true, true, true, iph_string);
+                phreeqc_rm.RM_SetSelectedOutputOn(true);
+                phreeqc_rm.RM_SetComponentH2O(true);
+                phreeqc_rm.RM_SetUnitsSolution(2);
+                phreeqc_rm.RM_SetSpeciesSaveOn(true);
+                ic1 = -1*ones(7, 1);
+                ic2 = -1*ones(7, 1);
+                f1 = ones(7, 1);
+                ic1(1) = 1;              % Solution 1
+                phreeqc_rm.RM_InitialPhreeqc2Module(ic1, ic2, f1);
+                phreeqc_rm.RM_RunCells();
+                t_out = phreeqc_rm.GetSelectedOutputTable(obj.number);
+                
+                SR = SolutionResult(obj);
+                SR.temperature = t_out('temp(C)');
+                SR.components = string(phreeqc_rm.GetComponents())';
+                SR.concentrations = phreeqc_rm.GetConcentrations();
+                SR.species = string(phreeqc_rm.GetSpeciesNames())';
+                SR.species_concentrations = phreeqc_rm.GetSpeciesConcentrations();
+                SR.species_molalities = 10.^phreeqc_rm.GetSpeciesLog10Molalities();
+                SR.species_activity_coef = 10.^phreeqc_rm.GetSpeciesLog10Gammas();
+                SR.species_charge = phreeqc_rm.GetSpeciesZ();
+                SR.alkalinity = t_out('Alk(eq/kgw)');
+                SR.pH = t_out('pH');
+                SR.pe = t_out('pe');
+                SR.ionic_strength = t_out('mu');
+                SR.water_mass = t_out('mass_H2O');
+                SR.charge_balance = t_out('charge(eq)');
+                SR.density = phreeqc_rm.GetDensity();
+                SR.percent_error = t_out('pct_err');
+                
+                phreeqc_rm.RM_Destroy();
             catch
-                out_string = 0;
-                disp('An error occured running Phreeqc. Please check the solution definition');
-                iph.DestroyIPhreeqc();
+                SR = 0;
+                disp('An error occured running PhreeqcRM. Please check the solution definition');
+                phreeqc_rm.RM_Destroy();
             end
         end
     end

@@ -217,7 +217,7 @@ classdef PhreeqcRM
             density	Array to receive the densities. Dimension of the array is nxyz, where nxyz is the number of user grid cells (RM_GetGridCellCount). Values for inactive cells are set to 1e30. 
             %}
             density = zeros(obj.ncells, 1);
-            density = calllib('libphreeqcrm','RM_GetDensity', obj.id, density);
+            [~, density] = calllib('libphreeqcrm','RM_GetDensity', obj.id, density);
         end
         
         function [status, ec_out] = RM_GetEndCell(obj, ec)
@@ -792,7 +792,7 @@ classdef PhreeqcRM
             obj.RM_FindComponents(); % must run to update species list
             nspecies = obj.RM_GetSpeciesCount();
             c_out = zeros(obj.ncells, nspecies);
-            c_out = calllib('libphreeqcrm','RM_GetSpeciesConcentrations', obj.id, c_out);
+            [~, c_out] = calllib('libphreeqcrm','RM_GetSpeciesConcentrations', obj.id, c_out);
         end
         
         function status = RM_GetSpeciesCount(obj)
@@ -810,6 +810,20 @@ classdef PhreeqcRM
                 diffc	Array to receive the diffusion coefficients at 25 C, m^2/s. Dimension of the array is nspecies, where nspecies is is the number of aqueous species (RM_GetSpeciesCount). 
             %}
             [status, d_out] = calllib('libphreeqcrm','RM_GetSpeciesD25', obj.id, diffc);
+        end
+        
+        function d_out = GetSpeciesD25(obj)
+            %{
+            Transfers diffusion coefficients at 25C to the array argument (diffc). This method is intended for use with multicomponent-diffusion transport calculations, and RM_SetSpeciesSaveOn must be set to true. Diffusion coefficients are defined in SOLUTION_SPECIES data blocks, normally in the database file. Databases distributed with the reaction module that have diffusion coefficients defined are phreeqc.dat, Amm.dat, and pitzer.dat.
+            Parameters
+                id	The instance id returned from RM_Create.
+                diffc	Array to receive the diffusion coefficients at 25 C, m^2/s. Dimension of the array is nspecies, where nspecies is is the number of aqueous species (RM_GetSpeciesCount). 
+            %}
+            obj.RM_SetSpeciesSaveOn(1);
+            obj.RM_FindComponents(); % must run to update species list
+            nspecies = obj.RM_GetSpeciesCount();
+            d_out = zeros(nspecies, 1);
+            [~, d_out] = calllib('libphreeqcrm','RM_GetSpeciesD25', obj.id, d_out);
         end
         
         function [status, name] = RM_GetSpeciesName(obj, i, name, l)
@@ -898,6 +912,24 @@ classdef PhreeqcRM
             [status, z_out] = calllib('libphreeqcrm','RM_GetSpeciesZ', obj.id, z);
         end
         
+        function z_out = GetSpeciesZ(obj)
+            %{
+            Transfers the charge of each aqueous species to the array argument (z). This method is intended for use with multicomponent-diffusion transport calculations, and RM_SetSpeciesSaveOn must be set to true.
+
+            Parameters
+                id	The instance id returned from RM_Create.
+                z	Array that receives the charge for each aqueous species. Dimension of the array is nspecies, where nspecies is is the number of aqueous species (RM_GetSpeciesCount).
+
+            Return values
+                IRM_RESULT	0 is success, negative is failure (See RM_DecodeError). 
+            %}
+            obj.RM_SetSpeciesSaveOn(1);
+            obj.RM_FindComponents(); % must run to update species list
+            nspecies = obj.RM_GetSpeciesCount();
+            z_out = zeros(nspecies, 1);
+            [~, z_out] = calllib('libphreeqcrm','RM_GetSpeciesZ', obj.id, z_out);
+        end
+        
         function [status, sc_out] = RM_GetStartCell(obj, sc)
             %{
             Returns an array with the starting cell numbers from the range of cell numbers assigned to each worker.
@@ -948,7 +980,18 @@ classdef PhreeqcRM
         function [status, c_out] = RM_InitialPhreeqc2Concentrations(obj, ...
                 c, n_boundary, boundary_solution1, boundary_solution2, fraction1)
             %{
-            Fills an array (c) with concentrations from solutions in the InitialPhreeqc instance. The method is used to obtain concentrations for boundary conditions. If a negative value is used for a cell in boundary_solution1, then the highest numbered solution in the InitialPhreeqc instance will be used for that cell. Concentrations may be a mixture of two solutions, boundary_solution1 and boundary_solution2, with a mixing fraction for boundary_solution1 1 of fraction1 and mixing fraction for boundary_solution2 of (1 - fraction1). A negative value for boundary_solution2 implies no mixing, and the associated value for fraction1 is ignored. If boundary_solution2 and fraction1 are NULL, no mixing is used; concentrations are derived from boundary_solution1 only.
+            Fills an array (c) with concentrations from solutions in the InitialPhreeqc instance. 
+            The method is used to obtain concentrations for boundary conditions. 
+            If a negative value is used for a cell in boundary_solution1, 
+            then the highest numbered solution in the InitialPhreeqc instance 
+            will be used for that cell. Concentrations may be a mixture of 
+            two solutions, boundary_solution1 and boundary_solution2, 
+            with a mixing fraction for boundary_solution1 1 of fraction1 
+            and mixing fraction for boundary_solution2 of (1 - fraction1). 
+            A negative value for boundary_solution2 implies no mixing, 
+            and the associated value for fraction1 is ignored. 
+            If boundary_solution2 and fraction1 are NULL, 
+            no mixing is used; concentrations are derived from boundary_solution1 only.
 
             Parameters
                 id	The instance id returned from RM_Create.
@@ -1530,7 +1573,8 @@ classdef PhreeqcRM
         
         function status = RM_SetUnitsSolution(obj, option)
             %{
-            Solution concentration units used by the transport model. Options are 1, mg/L; 2 mol/L; or 3, mass fraction, kg/kgs. PHREEQC defines solutions by the number of moles of each element in the solution.
+            Solution concentration units used by the transport model. 
+            Options are 1, mg/L; 2 mol/L; or 3, mass fraction, kg/kgs. PHREEQC defines solutions by the number of moles of each element in the solution.
 
             To convert from mg/L to moles of element in the representative volume of a reaction cell, mg/L is converted to mol/L and multiplied by the solution volume, which is the product of porosity (RM_SetPorosity), saturation (RM_SetSaturation), and representative volume (RM_SetRepresentativeVolume). To convert from mol/L to moles of element in the representative volume of a reaction cell, mol/L is multiplied by the solution volume. To convert from mass fraction to moles of element in the representative volume of a reaction cell, kg/kgs is converted to mol/kgs, multiplied by density (RM_SetDensity) and multiplied by the solution volume.
 
