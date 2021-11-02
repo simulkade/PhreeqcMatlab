@@ -9,7 +9,6 @@ classdef Phase
         number
         mineral_names
         moles
-        
     end
     
     methods
