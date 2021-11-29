@@ -42,8 +42,8 @@ classdef Phase
         end
         
         function phase_string = phreeqc_phase(obj)
-            %METHOD1 Summary of this method goes here
-            %   Detailed explanation goes here
+            % phase_string = phreeqc_phase(obj) 
+            % converts a phase object to a phreeqc string
             n_phase = length(obj.phase_names);
             if n_phase==0
                 phase string = "\n";
@@ -89,6 +89,14 @@ classdef Phase
              ch.phase_names = "Calcite";
              ch.moles = 0.0;
              ch.saturation_indices = 0.0;
+         end
+         
+         function obj = read_json(phase_field)
+             % creates a phase object from an input JSON
+             obj = Phase();
+             if isfield(phase_field, 'Name')
+                obj.name = phase_field.Name;
+             end
          end
          
      end
