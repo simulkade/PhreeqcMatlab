@@ -76,6 +76,10 @@ classdef Phase
             phase_string = sprintf(char(phase_string));
         end
         
+        function run(obj)
+            disp('It is not possible to run a phase without solution. Pleas define a SingleCell and run it')
+        end
+        
         
     end
     
@@ -92,11 +96,42 @@ classdef Phase
          end
          
          function obj = read_json(phase_field)
-             % creates a phase object from an input JSON
-             obj = Phase();
-             if isfield(phase_field, 'Name')
+            % creates a phase object from an input JSON
+            obj = Phase();
+             
+            if isfield(phase_field, 'Name')
                 obj.name = phase_field.Name;
-             end
+            end
+
+            if isfield(phase_field, 'Number')
+                obj.number = phase_field.Number;
+            end
+
+            if isfield(phase_field, 'Composition')
+                obj.components = fieldnames(phase_field.Composition); % get the list of phases
+                obj.moles = cellfun(@(x)getfield(phase_field.Composition, {1}, x), obj.components); % get the moles
+            end
+            
+            if isfield(phase_field, 'AlternativeFormula')
+                obj.alternative_formula = phase_field.AlternativeFormula;
+            end
+            
+            if isfield(phase_field, 'SaturationIndices')
+                obj.saturation_indices = phase_field.SaturationIndices;
+            end
+            
+            if isfield(phase_field, 'ForceEquality')
+                obj.force_equality = phase_field.ForceEquality;
+            end
+            
+            if isfield(phase_field, 'DissolveOnly')
+                obj.dissolve_only = phase_field.DissolveOnly;
+            end
+            
+            if isfield(phase_field, 'PrecipitateOnly')
+                obj.precipitate_only = phase_field.PrecipitateOnly;
+            end
+            
          end
          
      end

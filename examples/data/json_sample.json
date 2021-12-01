@@ -38,5 +38,20 @@
             "Charge": true,
             "ChargeComponent": "pH"
         }
+    },
+    "Phase":{
+        "Chalk":{
+            "Name": "Stevns Klint",
+            "Number": 1,
+            "Composition":{
+                "Calcite": 1.0,
+                "Anhydrite": 0.01
+            },
+            "AlternativeFormula": ["CaCO3", ""], 
+            "SaturationIndices": [0.0, 0.0],
+            "ForceEquality": [false, false],
+            "DissolveOnly": [false, false],
+            "PrecipitateOnly": [false, false]
+        }
     }
 }
