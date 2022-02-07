@@ -21,10 +21,11 @@ classdef SingleCell
     end
     
     methods
-        function obj = SingleCell(aq_solution, eq_phase, )
-            %SINGLECELL Construct an instance of this class
-            %   Detailed explanation goes here
-            obj.Property1 = inputArg1 + inputArg2;
+        function obj = SingleCell(aq_solution, varargin)
+            %SINGLECELL constructs a single cell that contains an aqueous
+            %liquid and other phases, e.g. soluble minerals, surfaces,
+            %exchangers, gas phases, etc.
+            
         end
         
         function outputArg = method1(obj,inputArg)
