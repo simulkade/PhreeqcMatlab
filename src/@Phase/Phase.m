@@ -77,7 +77,8 @@ classdef Phase
         end
         
         function run(obj)
-            disp('It is not possible to run a phase without solution. Pleas define a SingleCell and run it')
+            disp(['Phase' obj.name]);
+            warning('It is not possible to run a phase without an aqueous solution. Pleas define a SingleCell and run it')
         end
         
         

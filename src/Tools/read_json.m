@@ -1,4 +1,6 @@
 % This is an example of how to read a json file in matlab
+% It is not meant to be called from here. Each PhreeqcMatlab object has it
+% own read_json method.
 % read the file as a text file
 s = fileread('..\..\examples\data\json_sample.json');
 % decode to json structure
