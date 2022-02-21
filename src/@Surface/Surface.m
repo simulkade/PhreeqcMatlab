@@ -1,17 +1,16 @@
 classdef Surface
-    %SURFACE Summary of this class goes here
-    %   Detailed explanation goes here
+    %SURFACE defines a surface species that can be equilibrated with a
+    %solution object
     
     properties
         name(1,1) string
         number(1,1) double {mustBeNonnegative, mustBeInteger}
-        binding_site
-        surface_master_species
-        surface_species_reactions
-        log_k
-        dh
+        binding_site(1,1) double {mustBeNonnegative, mustBeInteger}
+        surface_master_species(1,:) string
+        surface_species_reactions(1,:) string
+        log_k(1,:) double
+        dh(1,:) double
         specific_surface_area
-        eq_solution
         sites_units   % absolute or density
         edl_layer
     end
