@@ -1,4 +1,4 @@
-classdef datafile
+classdef Datafile
     %DATAFILE
     % datafile is a class that works with phreeqc data files
     % Currently, it is only used to extract the relevant data for the user
@@ -9,7 +9,7 @@ classdef datafile
     end
     
     methods
-        function obj = datafile(datafilepath)
+        function obj = Datafile(datafilepath)
             %DATAFILE accepts two arguments filename, that is the name of
             %the database and filepath that is the absolute path to the
             %datafile
@@ -215,7 +215,7 @@ classdef datafile
                 ind2=0;
                 return
             end
-            kw = datafile.database_main_keywords();
+            kw = Datafile.database_main_keywords();
             ind2 = length(C);
             for i=1:length(kw)
                 ind_end = find(strcmpi(C, kw{i}), 1)-1;

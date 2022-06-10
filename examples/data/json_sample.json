@@ -13,7 +13,7 @@
                 "S": 0.024
             },
             "pH": 8.4,
-            "Charge": true,
+            "Charge": false,
             "ChargeComponent": "pH",
             "Density": 1.0,
             "DensityCalculation": true,
