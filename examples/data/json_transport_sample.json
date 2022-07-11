@@ -1,0 +1,70 @@
+{
+    "BoundaryConditions":{
+        "solutions":{
+            "Seawater":{
+                "Name": "Seawater",
+                "Number": 1,
+                "Unit": "mol/L",
+                "Composition":{
+                    "Na": 0.45,
+                    "K": 0.01,
+                    "Mg": 0.045,
+                    "Ca": 0.013,
+                    "Cl": 0.528,
+                    "S": 0.024
+                },
+                "pH": 8.4,
+                "Charge": false,
+                "ChargeComponent": "pH",
+                "Density": 1.0,
+                "DensityCalculation": true,
+                "Alkalinity": 0.002,
+                "AlkalinityComponent": "HCO3",
+                "pe": 4.0,
+                "Pressure": 1.0,
+                "Temperature": 25.0
+            },
+            "FormationWater":{
+                "Name": "Formation Water",
+                "Number": 2,
+                "Composition":{
+                    "Na": 1.339,
+                    "K": 0.0,
+                    "Mg": 0.025,
+                    "Ca": 0.013,
+                    "Cl": 1.414,
+                    "S": 0.0
+                },
+                "pH": 8.4,
+                "Charge": true,
+                "ChargeComponent": "pH"
+            }
+        },
+        "left":{
+            "BC1":{
+                "location":"x>0 & x<1",
+                "solution": "Seawater"
+            }
+        },
+        "right":{
+
+        },
+        "bottom":{
+
+        },
+        "top":{
+
+        },
+        "back":{
+
+        },
+        "front":{
+
+        }
+    },
+    "InitialConditions":{
+
+    },
+    
+
+}

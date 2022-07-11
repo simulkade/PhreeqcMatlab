@@ -142,7 +142,7 @@ classdef Solution
                 ic1 = -1*ones(7, 1);
                 ic2 = -1*ones(7, 1);
                 f1 = ones(7, 1);
-                ic1(1) = 1;              % Solution 1
+                ic1(1) = obj.number;              % Solution 1
                 phreeqc_rm.RM_InitialPhreeqc2Module(ic1, ic2, f1);
                 phreeqc_rm.RM_RunCells();
                 t_out = phreeqc_rm.GetSelectedOutputTable(obj.number);

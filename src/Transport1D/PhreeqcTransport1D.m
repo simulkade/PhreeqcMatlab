@@ -1,4 +1,4 @@
-function phreeqc_rm = PhreeqcTransport(input_file, data_base)
+function phreeqc_rm = PhreeqcTransport1D(input_file, data_base)
 %PHREEQCTRANSPORT Reads a phreeqc input file (with the transport key) and
 %creates a reactive transport simulation in FVTool and PhreeqcMatlab. This
 %function works only on 1D domains. For the 2D and 3D domains, see the
