@@ -53,5 +53,66 @@
             "DissolveOnly": [false, false],
             "PrecipitateOnly": [false, false]
         }
+    },
+    "Surface":{
+        "Chalk":{
+            "Name": "Calcite_DLM",
+            "Number": 1,
+            "SpecificArea": 2.0,
+            "MasterSpecies":{
+                "ms1":{
+                    "Species": ["Chalk_a", "Chalk_aOH"],
+                    "SiteDensity": 4.95
+                },
+                "ms2":{
+                    "Species": ["Chalk_c", "Chalk_cH"],
+                    "SiteDensity": 4.95
+                }
+            },
+            "Reactions":{
+                "r1":{
+                    "Reaction": "Chalk_aOH = Chalk_aOH",
+                    "logK": 0.0,
+                    "DeltaH": 0.0
+                },
+                "r2":{
+                    "Reaction": "Chalk_cH = Chalk_cH",
+                    "logK": 0.0,
+                    "DeltaH": 0.0
+                },
+                "r3":{
+                    "Reaction": "Chalk_aOH + H+ = Chalk_aOH2+",
+                    "logK": 15.21,
+                    "DeltaH": 0.0
+                },
+                "r4":{
+                    "Reaction": "Chalk_aOH + HCO3- = Chalk_aCO3- + H2O",
+                    "logK": 5.688,
+                    "DeltaH": 0.0
+                },
+                "r5":{
+                    "Reaction": "Chalk_aOH2+ + SO4-2 = Chalk_aSO4- + H2O",
+                    "logK": 0.151,
+                    "DeltaH": 0.0
+                },
+                "r6":{
+                    "Reaction": "Chalk_cH = Chalk_c- + H+",
+                    "logK": -2.549,
+                    "DeltaH": 0.0
+                },
+                "r7":{
+                    "Reaction": "Chalk_cH + Ca+2 = Chalk_cCa+ + H+",
+                    "logK": -1.696,
+                    "DeltaH": 0.0
+                },
+                "r8":{
+                    "Reaction": "Chalk_cH + Mg+2 = Chalk_cMg+ + H+",
+                    "logK": -1.856,
+                    "DeltaH": 0.0
+                }
+            },
+            "SitesUnits": "density",
+            "EDL": "diffuse_layer"
+        }
     }
 }
