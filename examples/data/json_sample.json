@@ -55,10 +55,11 @@
         }
     },
     "Surface":{
-        "Chalk":{
+        "Chalk_DLM":{
             "Name": "Calcite_DLM",
             "Number": 1,
             "SpecificArea": 2.0,
+            "Mass": 100.0,
             "MasterSpecies":{
                 "ms1":{
                     "Species": ["Chalk_a", "Chalk_aOH"],
@@ -112,7 +113,256 @@
                 }
             },
             "SitesUnits": "density",
-            "EDL": "diffuse_layer"
+            "EDL": "diffuse_layer",
+            "EDL_thickness": 1e-8,
+            "only_counter_ions": false
+        },
+        "Chalk_CD_MUSIC":{
+            "Name": "Calcite_CD_MUSIC",
+            "Number": 1,
+            "SpecificArea": 2.0,
+            "Mass": 100.0,
+            "MasterSpecies":{
+                "ms1":{
+                    "Species": ["Chalk_a", "Chalk_aOH-0.667"],
+                    "SiteDensity": 4.95
+                },
+                "ms2":{
+                    "Species": ["Chalk_c", "Chalk_cH+0.667"],
+                    "SiteDensity": 4.95
+                }
+            },
+            "Reactions":{
+                "r1":{
+                    "Reaction": "Chalk_cH+0.667 = Chalk_cH+0.667",
+                    "logK": 0.0,
+                    "DeltaH": 0.0,
+                    "cd_music": [0, 0, 0, 0, 0]
+                },
+                "r2":{
+                    "Reaction": "Chalk_aOH-0.667 = Chalk_aOH-0.667",
+                    "logK": 0.0,
+                    "DeltaH": 0.0,
+                    "cd_music": [0, 0, 0, 0, 0]
+                },
+                "r3":{
+                    "Reaction": "Chalk_cH+0.667 = Chalk_c-0.333 + H+",
+                    "logK": -3.1446,
+                    "DeltaH": 0.0,
+                    "cd_music": [-1, 0, 0, 0, 0]
+                },
+                "r4":{
+                    "Reaction": "Chalk_cH+0.667 + Ca+2 = Chalk_cCa+1.667 + H+",
+                    "logK": -2.1934,
+                    "DeltaH": 0.0,
+                    "cd_music": [-1, 2, 0, 0, 0]
+                },
+                "r5":{
+                    "Reaction": "Chalk_cH+0.667 + Mg+2 = Chalk_cMg+1.667 + H+",
+                    "logK": -2.3467,
+                    "DeltaH": 0.0,
+                    "cd_music": [-1, 2, 0, 0, 0]
+                },
+                "r6":{
+                    "Reaction": "Chalk_aOH-0.667 + H+ = Chalk_aOH2+0.333",
+                    "logK": 13.5401,
+                    "DeltaH": 0.0,
+                    "cd_music": [1, 0, 0, 0, 0]
+                },
+                "r7":{
+                    "Reaction": "Chalk_aOH-0.667 + CO3-2 + H+ = Chalk_aHCO3-0.667 + OH-",
+                    "logK": 9.24328,
+                    "DeltaH": 0.0,
+                    "cd_music": [0.6, -0.6, 0, 0, 0]
+                },
+                "r8":{
+                    "Reaction": "Chalk_aOH-0.667 + CO3-2 = Chalk_aCO3-1.667 + OH-",
+                    "logK": 1.0,
+                    "DeltaH": 0.0,
+                    "cd_music": [0.6, -1.6, 0, 0, 0]
+                },
+                "r9":{
+                    "Reaction": "Chalk_aOH-0.667 + SO4-2 = Chalk_aSO4-1.667 + OH-",
+                    "logK": -0.1410,
+                    "DeltaH": 0.0,
+                    "cd_music": [1.4, -2.4, 0, 0, 0]
+                },
+                "r10":{
+                    "Reaction": "Chalk_cH+0.667 + Na+ = Chalk_cNa+0.667 + H+",
+                    "logK": -3.73788,
+                    "DeltaH": 0.0,
+                    "cd_music": [-1, 1, 0, 0, 0]
+                }
+            },
+            "SitesUnits": "density",
+            "SCM": "cd_music",
+            "EDL": "Donan",
+            "Capacitances": [1.3, 4.5],
+            "EDL_thickness": 3.5e-9,
+            "only_counter_ions": false
+        },
+        "Chalk_BASIC_STERN":{
+            "Name": "Calcite_BASIC_STERN",
+            "Number": 1,
+            "SpecificArea": 2.0,
+            "Mass": 100.0,
+            "MasterSpecies":{
+                "ms1":{
+                    "Species": ["Chalk_a", "Chalk_aOH-0.5"],
+                    "SiteDensity": 4.95
+                },
+                "ms2":{
+                    "Species": ["Chalk_c", "Chalk_c-0.5"],
+                    "SiteDensity": 4.95
+                }
+            },
+            "Reactions":{
+                "r1":{
+                    "Reaction": "Chalk_aOH-0.5 = Chalk_aOH-0.5",
+                    "logK": 0.0,
+                    "DeltaH": 0.0,
+                    "cd_music": [0, 0, 0]
+                },
+                "r2":{
+                    "Reaction": "Chalk_c-0.5 = Chalk_c-0.5",
+                    "logK": 0.0,
+                    "DeltaH": 0.0,
+                    "cd_music": [0, 0, 0]
+                },
+                "r3":{
+                    "Reaction": "Chalk_aOH-0.5 + H+ = Chalk_aOH2+0.5",
+                    "logK": 0.49888,
+                    "DeltaH": 0.0,
+                    "cd_music": [1, 0, 0]
+                },
+                "r4":{
+                    "Reaction": "Chalk_aOH-0.5 + H+ + Cl-= Chalk_aOH2Cl-0.5",
+                    "logK": -0.97393,
+                    "DeltaH": 0.0,
+                    "cd_music": [1, -1, 0]
+                },
+                "r5":{
+                    "Reaction": "Chalk_aOH-0.5 + H+ + HCO3-= Chalk_aOH3CO3-0.5",
+                    "logK": -0.54971,
+                    "DeltaH": 0.0,
+                    "cd_music": [1, -1, 0]
+                },
+                "r6":{
+                    "Reaction": "Chalk_aOH-0.5 + HCO3-= Chalk_aOH2CO3-1.5",
+                    "logK": -6.96648,
+                    "DeltaH": 0.0,
+                    "cd_music": [1, -2, 0]
+                },
+                "r7":{
+                    "Reaction": "Chalk_aOH-0.5 + SO4-2 + H+= Chalk_aOH2SO4-1.5",
+                    "logK": 2.05285,
+                    "DeltaH": 0.0,
+                    "cd_music": [1, -2, 0]
+                },
+                "r8":{
+                    "Reaction": "Chalk_aOH-0.5 + Na+= Chalk_aOHNa+0.5",
+                    "logK": 1.5436,
+                    "DeltaH": 0.0,
+                    "cd_music": [0, 1, 0]
+                },
+                "r9":{
+                    "Reaction": "Chalk_aOH-0.5 + Ca+2 = Chalk_aOHCa+1.5",
+                    "logK": 2.548,
+                    "DeltaH": 0.0,
+                    "cd_music": [0, 2, 0]
+                },
+                "r10":{
+                    "Reaction": "Chalk_aOH-0.5 + Mg+2 = Chalk_aOHMg+1.5",
+                    "logK": 2.57697,
+                    "DeltaH": 0.0,
+                    "cd_music": [0, 2, 0]
+                },
+                "r11":{
+                    "Reaction": "Chalk_c-0.5 + Ca+2 = Chalk_cCa+1.5",
+                    "logK": 1.3907,
+                    "DeltaH": 0.0,
+                    "cd_music": [0, 2, 0]
+                },
+                "r12":{
+                    "Reaction": "Chalk_c-0.5 + Mg+2 = Chalk_cMg+1.5",
+                    "logK": 0.95563,
+                    "DeltaH": 0.0,
+                    "cd_music": [0, 2, 0]
+                },
+                "r13":{
+                    "Reaction": "Chalk_c-0.5 + Na+ = Chalk_cNa+0.5",
+                    "logK": 0.731318,
+                    "DeltaH": 0.0,
+                    "cd_music": [0, 1, 0]
+                }
+            },
+            "SitesUnits": "density",
+            "SCM": "cd_music",
+            "EDL": "",
+            "Capacitances": [1.126735,  999.999],
+            "EDL_thickness": 1e-8,
+            "only_counter_ions": false
+        },
+        "Oil_DLM":{
+            "Name": "Oil_DLM",
+            "Number": 1,
+            "SpecificArea": 3.4,
+            "Mass": 100.0,
+            "MasterSpecies":{
+                "ms1":{
+                    "Species": ["Oil_n", "Oil_nH"],
+                    "SiteDensity": 0.1
+                },
+                "ms2":{
+                    "Species": ["Oil_c", "Oil_cOH"],
+                    "SiteDensity": 0.7
+                },
+                "ms3":{
+                    "Species": ["Oil_w", "Oil_wOH"],
+                    "SiteDensity": 0.1
+                }
+            },
+            "Reactions":{
+                "r1":{
+                    "Reaction": "Oil_nH + H+ = Oil_nH2+",
+                    "logK": 5.5,
+                    "DeltaH": 30.0
+                },
+                "r2":{
+                    "Reaction": "Oil_cOH = Oil_cO- + H+",
+                    "logK": -4.7572,
+                    "DeltaH": 0.0
+                },
+                "r3":{
+                    "Reaction": "Oil_cOH + Ca+2 = Oil_cOCa+ + H+",
+                    "logK": -3.8263,
+                    "DeltaH": 1.17152
+                },
+                "r4":{
+                    "Reaction": "Oil_cOH + Mg+2 = Oil_cOMg+ + H+",
+                    "logK": -3.4781,
+                    "DeltaH": -8.42239
+                },
+                "r5":{
+                    "Reaction": "Oil_wOH = Oil_wO- + H+",
+                    "logK": -5.5,
+                    "DeltaH": 0.0
+                },
+                "r6":{
+                    "Reaction": "Oil_wOH + Ca+2 = Oil_wOCa+ + H+",
+                    "logK": -5.85,
+                    "DeltaH": 0.0
+                },
+                "r7":{
+                    "Reaction": "Oil_wOH + Mg+2 = Oil_wOMg+ + H+",
+                    "logK": -5.85,
+                    "DeltaH": 0.0
+                }
+            },
+            "SitesUnits": "density",
+            "EDL": "diffuse_layer",
+            "EDL_thickness": 1e-8,
+            "only_counter_ions": false
         }
     }
 }
