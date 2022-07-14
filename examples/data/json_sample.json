@@ -113,6 +113,7 @@
                 }
             },
             "SitesUnits": "density",
+            "SCM": "diffuse_layer",
             "EDL": "diffuse_layer",
             "EDL_thickness": 1e-8,
             "only_counter_ions": false
@@ -360,6 +361,7 @@
                 }
             },
             "SitesUnits": "density",
+            "SCM": "diffuse_layer",
             "EDL": "diffuse_layer",
             "EDL_thickness": 1e-8,
             "only_counter_ions": false
