@@ -76,9 +76,32 @@ classdef Phase
             phase_string = sprintf(char(phase_string));
         end
         
+        function so_string = phase_selected_output(obj)
+            % creates a selected output string with typical values for a 
+            % phase object; this is a convenience function and similar
+            % selected output strings can be defined in the code. This
+            % particular selected output is used when equilibrating the
+            % phase object with a specified solution
+            % see also equilibrate_with
+            so_string = [];
+        end
+
         function run(obj)
             disp(['Phase' obj.name]);
             warning('It is not possible to run a phase without an aqueous solution. Pleas define a SingleCell and run it')
+        end
+
+        function equilibrate_with(obj, solution_object, varargin)
+            % equilibrates the phase with a solution
+            % TBD
+            if nargin>1
+                data_file = varargin{end};
+            else
+                data_file = 'phreeqc.dat';
+            end
+            phreeqc_rm = PhreeqcRM(1, 1); % one cell, one thread
+            phreeqc_rm = phreeqc_rm.RM_Create(); % create a PhreeqcRM instance
+            iph_string = phreeqc_string(obj);
         end
         
         

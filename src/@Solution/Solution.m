@@ -33,7 +33,7 @@ classdef Solution
         end
                 
         function solution_string = phreeqc_string(obj)
-            % phreeqc_solution returns a string of phreeqc format for the
+            % phreeqc_string returns a string of phreeqc format for the
             % defined PhreeqcMatlab solution
             % NOTE: at this stage, a phreeqc string can contain more
             % details than the equivalent PhreeqcMatlab solution
