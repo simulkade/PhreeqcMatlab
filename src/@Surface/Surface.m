@@ -44,6 +44,7 @@ classdef Surface
             for i = 1:length(obj.surface_master_species)
                 surface_master_string = strjoin([surface_master_string obj.surface_master_species(i) "\n"]);
             end
+            surface_master_string = sprintf(char(surface_master_string));
 
             surface_species_string = "SURFACE_SPECIES \n";
             for i = 1:length(obj.surface_species_reactions)
@@ -52,7 +53,8 @@ classdef Surface
                     surface_species_string = strjoin([surface_species_string "-cd_music" num2str(obj.cd_music_coeffs(i,:)) "\n"]);
                 end
             end
-            
+            surface_species_string = sprintf(char(surface_species_string));
+
             surface_string = ["SURFACE" num2str(obj.number) obj.name "\n"];
             if strcmpi(obj.scm, 'cd_music')
                 surface_string = strjoin([surface_string "-cd_music \n"]);
@@ -68,11 +70,9 @@ classdef Surface
                 ms = strsplit(obj.surface_master_species(i), ' ');
                 surface_string = strjoin([surface_string ms(1) num2str(obj.site_density(i)) "\n"]);
             end
-            
             if strcmpi(obj.scm, 'cd_music')
                 surface_string = strjoin([surface_string "-capacitances " num2str(obj.capacitances) "\n"]);
             end
-
             if strcmpi(obj.edl_model, 'diffuse_layer')
                 surface_string = strjoin([surface_string "-diffuse_layer " num2str(obj.edl_thickness) "\n"]);
             elseif strcmpi(obj.edl_model, 'Donnan')
@@ -80,24 +80,98 @@ classdef Surface
             elseif strcmpi(obj.edl_model, 'no_edl')
                 surface_string = strjoin([surface_string "-no_edl \n"]);
             end
-
             if obj.only_counter_ions
                 surface_string = strjoin([surface_string "-only_counter_ions true \n"]);
             end
+            surface_string = sprintf(char(surface_string));
+        end
 
+        function so_string = surf_selected_output(obj)
+            % so_string = surf_selected_output(obj)
+            % returns a selected output string that can be appended to the
+            % current phreeqc string of the surface object to obtain most of
+            % the physical and chemical properties calculated by phreeqc
+            % for a surface in equilibrium with a solution
+            so_string = strjoin(["SELECTED_OUTPUT" num2str(obj.number) "\n"]);
+            so_string = strjoin([so_string  "-high_precision	 true \n"]);
+            so_string = strjoin([so_string  "-reset    false \n"]);
+            so_string = strjoin([so_string  "-pH    true \n"]);
+            so_string = strjoin([so_string  "-pe    true \n"]);
+            so_string = strjoin([so_string  "-temperature    true \n"]);
+            so_string = strjoin([so_string  "-alkalinity    true \n"]);
+            so_string = strjoin([so_string  "-ionic_strength    true \n"]);
+            so_string = strjoin([so_string  "-water    true \n"]);
+            so_string = strjoin([so_string  "-charge_balance    true \n"]);
+            so_string = strjoin([so_string  "-percent_error    true \n"]);
+            so_string = strjoin([so_string  "-molalities \n"]);
+            % add selected output for the surface compositions and properties
+            % so_string = strjoin([so_string  "\n"]);
+            % so_string = strjoin([so_string  "\n"]);
+            so_string = strjoin([so_string  "END"]);
+            so_string = sprintf(char(so_string));
+        end
+    
+        function out_string = equilibrate_with_in_phreeqc(obj, solution, varargin)
+            % function output_string = equilibrate_with_in_phreeqc(obj, solution_object)
+            % The function equilibrates a solution defined as a Solution class
+            % the procedure is relatively simple. A phreeqc string is created for both 
+            % surface and solution, and the combined string is run in IPhreeqc
+            % Note that the latest version of IPhreeqc crashes Matlab; therefore,
+            % IPhreeqc 3.7 is called within this function
+            sol_string = solution.phreeqc_string();
+            [surf_string, surf_master_string, surf_sp_string] = obj.phreeqc_string();
+            iph_string = strjoin([surf_master_string, surf_sp_string, sol_string, surf_string, "-equilibrate ", num2str(solution.number), "\nEND"]);
+            iph_string = sprintf(char(iph_string));
+            iph = IPhreeqc(); % load the library
+            iph = iph.CreateIPhreeqc(); % create an IPhreeqc instance
+            if nargin>2
+                data_file = varargin{end};
+            else
+                data_file = 'phreeqc.dat';
+            end
+            try
+                out_string = iph.RunPhreeqcString(iph_string, database_file(data_file));
+                iph.DestroyIPhreeqc();
+            catch
+                out_string = 0;
+                disp('An error occured running Phreeqc. Please check the solution and surface definition');
+                iph.DestroyIPhreeqc();
+            end
+        end
+
+        function output_string = equilibrate_with(obj, solution)
+            % function output_string = equilibrate_with(obj, solution_object)
+            % The function equilibrates a solution defined as a Solution class
+            % the procedure is relatively simple. A phreeqc string is created for both 
+            % surface and solution, and the combined string is run in PhreeqcRM
+            % I have some problems with IPhreeqc on Windows machines, which is something I will 
+            % fix later (if possible, and not a priority)
+            sol_string = solution.phreeqc_string();
+            [surf_string, surf_master_string, surf_sp_string] = obj.phreeqc_string();
+            iph_string = strjoin([surf_master_string, surf_sp_string, sol_string, surf_string, "-equilibrate ", num2str(solution.number), "\nEND"]);
+            iph_string = sprintf(char(iph_string));
         end
     end
-    
-    methods (Static)
+
+    methods(Static)
         function obj = calcite_surface()
+            s=fileread(database_file('surfaces.json'));
+            d = jsondecode(s);
             obj = Surface();
-            % TBD
+            obj = obj.read_json(d.Surface.Chalk_DLM);
         end
         
         function obj = clay_surface()
             obj = Surface();
             % TBD
         end
+
+        function obj = oil_surface()
+            s=fileread(database_file('surfaces.json'));
+            d = jsondecode(s);
+            obj = Surface();
+            obj = obj.read_json(d.Surface.Oil_DLM);
+        end        
 
         function [surface_string, surface_master_string, surface_species_string] = combine_surfaces(surf1, surf2, new_name, new_number)
             % mixes two surface definitions and creates a phreeqc string
