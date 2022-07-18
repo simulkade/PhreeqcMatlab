@@ -86,12 +86,24 @@ classdef Surface
             surface_string = sprintf(char(surface_string));
         end
 
-        function so_string = surf_selected_output(obj)
+        function so_string = surf_selected_output(obj, solution, varargin)
             % so_string = surf_selected_output(obj)
             % returns a selected output string that can be appended to the
             % current phreeqc string of the surface object to obtain most of
             % the physical and chemical properties calculated by phreeqc
             % for a surface in equilibrium with a solution
+            % a solution must be specified since some of the selected output lines
+            % are constructed after running a Phreeqc equilibration
+            % step 1: run the equilibration
+            phreeqc_rm = PhreeqcRM(1, 1); % one cell, one thread
+            phreeqc_rm = phreeqc_rm.RM_Create(); % create a PhreeqcRM instance
+            if nargin>2
+                data_file = varargin{end};
+            else
+                data_file = 'phreeqc.dat';
+            end
+
+
             so_string = strjoin(["SELECTED_OUTPUT" num2str(obj.number) "\n"]);
             so_string = strjoin([so_string  "-high_precision	 true \n"]);
             so_string = strjoin([so_string  "-reset    false \n"]);
@@ -118,10 +130,7 @@ classdef Surface
             % surface and solution, and the combined string is run in IPhreeqc
             % Note that the latest version of IPhreeqc crashes Matlab; therefore,
             % IPhreeqc 3.7 is called within this function
-            sol_string = solution.phreeqc_string();
-            [surf_string, surf_master_string, surf_sp_string] = obj.phreeqc_string();
-            iph_string = strjoin([surf_master_string, surf_sp_string, sol_string, surf_string, "-equilibrate ", num2str(solution.number), "\nEND"]);
-            iph_string = sprintf(char(iph_string));
+            iph_string = obj.combine_surface_solution_string(solution);
             iph = IPhreeqc(); % load the library
             iph = iph.CreateIPhreeqc(); % create an IPhreeqc instance
             if nargin>2
@@ -139,17 +148,28 @@ classdef Surface
             end
         end
 
-        function output_string = equilibrate_with(obj, solution)
+        function [surface_result, solution_result] = equilibrate_with(obj, solution, varargin)
             % function output_string = equilibrate_with(obj, solution_object)
             % The function equilibrates a solution defined as a Solution class
             % the procedure is relatively simple. A phreeqc string is created for both 
             % surface and solution, and the combined string is run in PhreeqcRM
             % I have some problems with IPhreeqc on Windows machines, which is something I will 
             % fix later (if possible, and not a priority)
+            iph_string = obj.combine_surface_solution_string(solution);
+            if nargin>2
+                data_file = varargin{end};
+            else
+                data_file = 'phreeqc.dat';
+            end
+
+        end
+
+        function out_string = combine_surface_solution_string(obj, solution)
+            % combines the phreeqc string of a solution and a surface to be equilibrated with each other
             sol_string = solution.phreeqc_string();
             [surf_string, surf_master_string, surf_sp_string] = obj.phreeqc_string();
-            iph_string = strjoin([surf_master_string, surf_sp_string, sol_string, surf_string, "-equilibrate ", num2str(solution.number), "\nEND"]);
-            iph_string = sprintf(char(iph_string));
+            out_string = strjoin([surf_master_string, surf_sp_string, sol_string, surf_string, "-equilibrate ", num2str(solution.number), "\nEND"]);
+            out_string = sprintf(char(out_string));
         end
     end
 
@@ -159,6 +179,13 @@ classdef Surface
             d = jsondecode(s);
             obj = Surface();
             obj = obj.read_json(d.Surface.Chalk_DLM);
+        end
+
+        function obj = calcite_surface_cd_music()
+            s=fileread(database_file('surfaces.json'));
+            d = jsondecode(s);
+            obj = Surface();
+            obj = obj.read_json(d.Surface.Chalk_CD_MUSIC);
         end
         
         function obj = clay_surface()

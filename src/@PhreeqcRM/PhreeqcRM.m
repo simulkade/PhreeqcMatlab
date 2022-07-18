@@ -1730,7 +1730,7 @@ classdef PhreeqcRM
             for i = 1:n_ex_species
                 ex_name{i} = '00000000000000000000';
                 [~, ex_name{i}] = calllib('libphreeqcrm','RM_GetExchangeName', ...
-                    obj.id, i, ex_name{i}, length(ex_name{i}));
+                    obj.id, i-1, ex_name{i}, length(ex_name{i}));
             end
         end
 
@@ -1970,7 +1970,7 @@ classdef PhreeqcRM
             for i=1:n_surf_species
                 name_out{i} = '00000000000000000000';
                 [~, name_out{i}] = calllib('libphreeqcrm','RM_GetSurfaceSpeciesName', ...
-                obj.id, i, name_out{i}, length(name_out{i}));
+                obj.id, i-1, name_out{i}, length(name_out{i}));
             end
         end
         
@@ -1997,7 +1997,7 @@ classdef PhreeqcRM
             for i=1:n_surf_species
                 name_out{i} = '00000000000000000000';
                 [~, name_out{i}] = calllib('libphreeqcrm','RM_GetSurfaceType', ...
-                obj.id, i, name_out{i}, length(name_out{i}));
+                obj.id, i-1, name_out{i}, length(name_out{i}));
             end
         end
         
