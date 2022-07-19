@@ -2,3 +2,4 @@
 *.so
 *.asv
 *.lib
+examples/notebooks/.ipynb_checkpoints/development-ideas-checkpoint.ipynb

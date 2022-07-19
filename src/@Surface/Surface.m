@@ -87,7 +87,9 @@ classdef Surface
         end
 
         function so_string = surf_selected_output(obj, solution, varargin)
-            % so_string = surf_selected_output(obj)
+            % so_string = surf_selected_output(obj, solution, varargin)
+            % the last argument is an optional database file that must be
+            % in the database folder
             % returns a selected output string that can be appended to the
             % current phreeqc string of the surface object to obtain most of
             % the physical and chemical properties calculated by phreeqc
@@ -102,7 +104,14 @@ classdef Surface
             else
                 data_file = 'phreeqc.dat';
             end
-
+            % run phreeqc string in phreeqcRM
+            iph_string = obj.combine_surface_solution_string(solution);
+            phreeqc_rm.RM_LoadDatabase(database_file(data_file));
+            phreeqc_rm.RM_RunString(true, true, true, iph_string);
+            phreeqc_rm.RM_FindComponents(); % always run it first
+            phreeqc_rm.GetComponents();
+            phreeqc_rm.GetSurfaceSpeciesNames();
+            phreeqc_rm.GetSurfaceTypes();
 
             so_string = strjoin(["SELECTED_OUTPUT" num2str(obj.number) "\n"]);
             so_string = strjoin([so_string  "-high_precision	 true \n"]);
@@ -116,6 +125,9 @@ classdef Surface
             so_string = strjoin([so_string  "-charge_balance    true \n"]);
             so_string = strjoin([so_string  "-percent_error    true \n"]);
             so_string = strjoin([so_string  "-molalities \n"]);
+            so_string = strjoin([so_string "USER_PUNCH" num2str(obj.number) "\n"]);
+            so_string = strjoin([so_string "-headings"  "\n"]);
+            
             % add selected output for the surface compositions and properties
             % so_string = strjoin([so_string  "\n"]);
             % so_string = strjoin([so_string  "\n"]);
