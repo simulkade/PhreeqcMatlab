@@ -142,7 +142,7 @@
             },
             "SitesUnits": "density",
             "SCM": "cd_music",
-            "EDL": "Donan",
+            "EDL": "Donnan",
             "Capacitances": [1.3, 4.5],
             "EDL_thickness": 3.5e-9,
             "only_counter_ions": false

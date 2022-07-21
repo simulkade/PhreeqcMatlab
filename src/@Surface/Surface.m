@@ -75,7 +75,7 @@ classdef Surface
             end
             if strcmpi(obj.edl_model, 'diffuse_layer')
                 surface_string = strjoin([surface_string "-diffuse_layer " num2str(obj.edl_thickness) "\n"]);
-            elseif strcmpi(obj.edl_model, 'Donnan')
+            elseif strcmpi(obj.edl_model, 'Donnan') || strcmpi(obj.edl_model, 'Donan')
                 surface_string = strjoin([surface_string "-Donnan " num2str(obj.edl_thickness) "\n"]);
             elseif strcmpi(obj.edl_model, 'no_edl')
                 surface_string = strjoin([surface_string "-no_edl \n"]);
