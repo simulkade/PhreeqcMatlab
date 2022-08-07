@@ -1,0 +1,1 @@
+Data is obtained from the supplementary material of [this paper](https://www.sciencedirect.com/science/article/pii/S0883292720301943), that is freely accessible.
