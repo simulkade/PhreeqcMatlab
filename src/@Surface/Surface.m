@@ -86,7 +86,7 @@ classdef Surface
             surface_string = sprintf(char(surface_string));
         end
 
-        function so_string = surf_selected_output(obj, solution, varargin)
+        function [all_string, solution_string, surf_string, dl_string] = surf_selected_output(obj, solution, varargin)
             % so_string = surf_selected_output(obj, solution, varargin)
             % the last argument is an optional database file that must be
             % in the database folder
@@ -96,6 +96,8 @@ classdef Surface
             % for a surface in equilibrium with a solution
             % a solution must be specified since some of the selected output lines
             % are constructed after running a Phreeqc equilibration
+            % note that the new string must be called followed by the
+            % RM_RunCells to obtain the selected output values
             % step 1: run the equilibration
             phreeqc_rm = PhreeqcRM(1, 1); % one cell, one thread
             phreeqc_rm = phreeqc_rm.RM_Create(); % create a PhreeqcRM instance
@@ -109,30 +111,42 @@ classdef Surface
             phreeqc_rm.RM_LoadDatabase(database_file(data_file));
             phreeqc_rm.RM_RunString(true, true, true, iph_string);
             phreeqc_rm.RM_FindComponents(); % always run it first
-            phreeqc_rm.GetComponents();
-            phreeqc_rm.GetSurfaceSpeciesNames();
-            phreeqc_rm.GetSurfaceTypes();
-
-            so_string = strjoin(["SELECTED_OUTPUT" num2str(obj.number) "\n"]);
-            so_string = strjoin([so_string  "-high_precision	 true \n"]);
-            so_string = strjoin([so_string  "-reset    false \n"]);
-            so_string = strjoin([so_string  "-pH    true \n"]);
-            so_string = strjoin([so_string  "-pe    true \n"]);
-            so_string = strjoin([so_string  "-temperature    true \n"]);
-            so_string = strjoin([so_string  "-alkalinity    true \n"]);
-            so_string = strjoin([so_string  "-ionic_strength    true \n"]);
-            so_string = strjoin([so_string  "-water    true \n"]);
-            so_string = strjoin([so_string  "-charge_balance    true \n"]);
-            so_string = strjoin([so_string  "-percent_error    true \n"]);
-            so_string = strjoin([so_string  "-molalities \n"]);
-            so_string = strjoin([so_string "USER_PUNCH" num2str(obj.number) "\n"]);
-            so_string = strjoin([so_string "-headings"  "\n"]);
+            element_names = phreeqc_rm.GetComponents();
+            % surf_sp_name = phreeqc_rm.GetSurfaceSpeciesNames();
+            surf_type = phreeqc_rm.GetSurfaceTypes();
+            b = split(surf_type{1}, '_');
+            surf_name = strjoin(b(1:end-1), '_');
+            sur_sp_list = strjoin(phreeqc_rm.GetSurfaceSpeciesNames());
+            ind_charge = find(strcmpi(element_names, 'Charge'));
+            surf_call = strjoin(cellfun(@(x)(['SURF("' x '","' surf_name '")']), element_names(ind_charge+1:end), 'UniformOutput', false));
+            edl_special = [{'Charge'}; {'Charge1'}; {'Charge2'}; {'sigma'}; {'sigma1'}; {'sigma2'}; {'psi'}; {'psi1'}; {'psi2'}; {'water'}];
+            edl_in = [element_names(ind_charge+1:end); edl_special];
+            edl_call = strjoin(cellfun(@(x)(['EDL("' x '","' surf_name '")']), edl_in, 'UniformOutput', false));
             
-            % add selected output for the surface compositions and properties
-            % so_string = strjoin([so_string  "\n"]);
-            % so_string = strjoin([so_string  "\n"]);
-            so_string = strjoin([so_string  "END"]);
-            so_string = sprintf(char(so_string));
+            % we create three different selected output blocks
+            % sol_string that is the solution properties
+            % surf_string that is the surface properties and composition
+            % dl_string that is the composition of the double layer
+            % 1- Solution selected output
+            solution_string = solution.solution_selected_output();
+            % 2- surface selected output
+            surf_string = strjoin(["\nSELECTED_OUTPUT" num2str(solution.number+1) "\n"]);
+            surf_string = strjoin([surf_string  "-reset false\n"]);
+            surf_string = strjoin([surf_string "-molalities" sur_sp_list "\n"]);
+            surf_string = strjoin([surf_string  "USER_PUNCH" num2str(solution.number+1) "\n"]);
+            surf_string = strjoin([surf_string  "-headings "  element_names(ind_charge+1:end)' "\n"]);
+            surf_string = strjoin([surf_string  "10 PUNCH" surf_call "\n"]);
+            surf_string = strjoin([surf_string  "END"]);
+            % 3- DL selected output
+            dl_string = strjoin(["\nSELECTED_OUTPUT" num2str(solution.number+2) "\n"]);
+            dl_string = strjoin([dl_string  "-reset false\n"]);
+            dl_string = strjoin([dl_string  "USER_PUNCH"  num2str(solution.number+2) "\n"]);
+            dl_string = strjoin([dl_string  "-headings "  edl_in' "\n"]);
+            dl_string = strjoin([dl_string  "10 PUNCH" edl_call "\n"]);
+            dl_string = strjoin([dl_string  "END"]);
+            dl_string = sprintf(char(dl_string));
+            % combined strings:
+            all_string = sprintf(char([iph_string "\n" solution_string surf_string dl_string]));
         end
     
         function out_string = equilibrate_with_in_phreeqc(obj, solution, varargin)

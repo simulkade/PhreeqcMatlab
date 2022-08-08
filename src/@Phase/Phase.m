@@ -41,7 +41,7 @@ classdef Phase
             obj.precipitate_only = [];
         end
         
-        function phase_string = phreeqc_phase(obj)
+        function phase_string = phreeqc_string(obj)
             % phase_string = phreeqc_phase(obj) 
             % converts a phase object to a phreeqc string
             n_phase = length(obj.phase_names);
@@ -91,7 +91,29 @@ classdef Phase
             warning('It is not possible to run a phase without an aqueous solution. Pleas define a SingleCell and run it')
         end
 
-        function equilibrate_with(obj, solution_object, varargin)
+        function out_string = equilibrate_with_in_phreeqc(obj, solution, varargin)
+            % equilibrate_with_in_phreeqc(obj, solution, varargin)
+            % equilibrates the phase with a solution by creating a phreeqc
+            % string and running it in an IPhreeqc instance
+            iph_string = obj.combine_phase_solution_string(solution);
+            iph = IPhreeqc(); % load the library
+            iph = iph.CreateIPhreeqc(); % create an IPhreeqc instance
+            if nargin>2
+                data_file = varargin{end};
+            else
+                data_file = 'phreeqc.dat';
+            end
+            try
+                out_string = iph.RunPhreeqcString(iph_string, database_file(data_file));
+                iph.DestroyIPhreeqc();
+            catch
+                out_string = 0;
+                disp('An error occured running Phreeqc. Please check the solution and phase definition');
+                iph.DestroyIPhreeqc();
+            end
+        end
+
+        function equilibrate_with(obj, solution, varargin)
             % equilibrates the phase with a solution
             % TBD
             if nargin>1
@@ -104,7 +126,43 @@ classdef Phase
             iph_string = phreeqc_string(obj);
         end
         
-        
+        function out_string = combine_phase_solution_string(obj, solution)
+            % combines the phreeqc string of a solution and a surface to be equilibrated with each other
+            sol_string = solution.phreeqc_string();
+            phase_string = obj.phreeqc_string();
+            out_string = strjoin([phase_string, sol_string, "\nEND"]);
+            out_string = sprintf(char(out_string));
+        end
+
+        function so_string = selected_output(obj, solution, varargin)
+            % so_string = selected_output(obj, solution, varargin)
+            % the last argument is an optional database file that must be
+            % in the database folder
+            % returns a selected output string that can be appended to the
+            % current phreeqc string of the surface object to obtain most of
+            % the physical and chemical properties calculated by phreeqc
+            % for a phase in equilibrium with a solution
+            % a solution must be specified since some of the selected output lines
+            % are constructed after running a Phreeqc equilibration
+            % step 1: run the equilibration
+            phreeqc_rm = PhreeqcRM(1, 1); % one cell, one thread
+            phreeqc_rm = phreeqc_rm.RM_Create(); % create a PhreeqcRM instance
+            if nargin>2
+                data_file = varargin{end};
+            else
+                data_file = 'phreeqc.dat';
+            end
+            % run phreeqc string in phreeqcRM
+            iph_string = obj.combine_phase_solution_string(solution);
+            phreeqc_rm.RM_LoadDatabase(database_file(data_file));
+            phreeqc_rm.RM_RunString(true, true, true, iph_string);
+            phreeqc_rm.RM_FindComponents(); % always run it first
+            phreeqc_rm.GetComponents();
+
+            solution_so = solution.solution_selected_output();
+            % TBD
+            
+        end
     end
     
      methods(Static)
