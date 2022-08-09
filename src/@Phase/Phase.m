@@ -83,7 +83,38 @@ classdef Phase
             % particular selected output is used when equilibrating the
             % phase object with a specified solution
             % see also equilibrate_with
-            so_string = [];
+            % from Phreeqc manual:
+            % Line 23: -equilibrium_phases phase list
+            % -equilibrium_phases --Identifier allows definition of a list 
+            % of pure phases for which (1) total amounts in the pure-phase 
+            % assemblage and (2) moles transferred will be written to the 
+            % selected-output file. Optionally, -e[quilibrium_phases ] or -p 
+            % [ ure_phases ]. Note the hyphen is required to avoid a conflict 
+            % with the keyword EQUILIBRIUM_PHASES and its synonyms.
+            % 
+            % phase list --List of phases for which data will be written to 
+            % the selected-output file. The list may continue on the subsequent 
+            % line(s). After each calculation, two values are written to 
+            % the selected-output file: (1) the moles of each of the phases 
+            % (defined by EQUILIBRIUM_PHASES), and (2) the moles transferred. 
+            % Phases are defined by PHASES input. If the phase is not defined
+            % or is not present in the pure-phase assemblage, the amounts will 
+            % be printed as 0.
+            % Line 24: -saturation_indices phase list
+            % 
+            % -saturation_indices --Identifier allows definition of a list 
+            % of phases for which saturation indices [or log (base 10) fugacity 
+            % for gases] will be written to the selected-output file. Optionally, 
+            % saturation_indices , si , -s [ aturation_indices ], or -s [ i ].
+            % 
+            % phase list --List of phases for which saturation indices [or log (base 10) partial pressure for gases] will be written to the selected-output file. The list may continue on the subsequent line(s). After each calculation, the saturation index of each of the phases will be written to the selected-output file. Phases are defined by PHASES input. If the phase is not defined or if one or more of its constituent elements is not in solution, the saturation index will be printed as -999.999.
+            so_string = strjoin(["SELECTED_OUTPUT" num2str(obj.number) "\n"]);
+            so_string = strjoin([so_string  "-high_precision	 true \n"]);
+            so_string = strjoin([so_string  "-reset    false \n"]);
+            so_string = strjoin([so_string  "-equilibrium_phases   " obj.phase_names "\n"]);
+            so_string = strjoin([so_string  "-saturation_indices   " obj.phase_names "\n"]);
+            so_string = strjoin([so_string  "END"]);
+
         end
 
         function run(obj)

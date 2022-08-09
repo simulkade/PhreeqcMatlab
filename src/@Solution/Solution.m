@@ -113,8 +113,8 @@ classdef Solution
             so_string = strjoin([so_string  "-charge_balance    true \n"]);
             so_string = strjoin([so_string  "-percent_error    true \n"]);
             so_string = strjoin([so_string  "-molalities \n"]);  
-%             so_string = strjoin([so_string  "\n"]);
-%             so_string = strjoin([so_string  "\n"]);
+            % so_string = strjoin([so_string  "\n"]);
+            % so_string = strjoin([so_string  "\n"]);
             so_string = strjoin([so_string  "END"]);
             so_string = sprintf(char(so_string));
         end

@@ -146,16 +146,18 @@ classdef Surface
             dl_string = strjoin([dl_string  "END"]);
             dl_string = sprintf(char(dl_string));
             % combined strings:
-            all_string = sprintf(char([iph_string "\n" solution_string surf_string dl_string]));
+            all_string = sprintf(char([solution_string surf_string dl_string]));
         end
     
         function out_string = equilibrate_with_in_phreeqc(obj, solution, varargin)
-            % function output_string = equilibrate_with_in_phreeqc(obj, solution_object)
+            % function output_string = equilibrate_with_in_phreeqc(obj, solution_object, [databasename], [sel_output_string])
             % The function equilibrates a solution defined as a Solution class
             % the procedure is relatively simple. A phreeqc string is created for both 
             % surface and solution, and the combined string is run in IPhreeqc
             % Note that the latest version of IPhreeqc crashes Matlab; therefore,
             % IPhreeqc 3.7 is called within this function
+            % both databasename and sel_output_string are optional
+            % parameters
             iph_string = obj.combine_surface_solution_string(solution);
             iph = IPhreeqc(); % load the library
             iph = iph.CreateIPhreeqc(); % create an IPhreeqc instance
@@ -226,7 +228,8 @@ classdef Surface
             obj = obj.read_json(d.Surface.Oil_DLM);
         end        
 
-        function [surface_string, surface_master_string, surface_species_string] = combine_surfaces(surf1, surf2, new_name, new_number)
+        function [surface_string, surface_master_string, surface_species_string] = ...
+                combine_surfaces(surf1, surf2, new_name, new_number)
             % mixes two surface definitions and creates a phreeqc string
             % that contains both surfaces as a single SURFACE block
             % NOTE: only surfaces with the same model can be combined
