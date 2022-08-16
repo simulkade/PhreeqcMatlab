@@ -149,8 +149,8 @@ classdef Surface
             all_string = sprintf(char([solution_string surf_string dl_string]));
         end
     
-        function out_string = equilibrate_with_in_phreeqc(obj, solution, varargin)
-            % function output_string = equilibrate_with_in_phreeqc(obj, solution_object, [databasename], [sel_output_string])
+        function out_string = equilibrate_in_phreeqc(obj, solution, varargin)
+            % function output_string = equilibrate_in_phreeqc(obj, solution_object, [databasename], [sel_output_string])
             % The function equilibrates a solution defined as a Solution class
             % the procedure is relatively simple. A phreeqc string is created for both 
             % surface and solution, and the combined string is run in IPhreeqc

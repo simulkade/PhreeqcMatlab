@@ -29,7 +29,7 @@ classdef Phase
     methods
         function obj = Phase()
             %PHASE Construct an instance of this class
-            %   Detailed explanation goes here
+            %   
             obj.name="empty phase";
             obj.number=1;
             obj.phase_names = [];
