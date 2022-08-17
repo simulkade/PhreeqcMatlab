@@ -40,7 +40,7 @@ edl_in = [element_names(ind_charge+1:end); edl_special]
 edl_call = strjoin(cellfun(@(x)(['EDL("' x '","' surf_name '")']), edl_in, 'UniformOutput', false))
 
 %% the string
-solution_so = sw.solution_selected_output();
+solution_so = sw.selected_output_string();
 
 so_string = strjoin(["\nSELECTED_OUTPUT" num2str(sw.number+1) "\n"]);
 so_string = strjoin([so_string  "-reset false\n"]);
@@ -65,7 +65,7 @@ phreeqc_rm.RM_FindComponents(); % always run it first
 phreeqc_rm.RM_SetSelectedOutputOn(true);
 phreeqc_rm.RM_SetComponentH2O(true);
 phreeqc_rm.RM_SetUnitsSolution(2);
-phreeqc_rm.RM_SetSpeciesSaveOn(false);
+phreeqc_rm.RM_SetSpeciesSaveOn(true);
 ic1 = -1*ones(7, 1);
 ic2 = -1*ones(7, 1);
 % 1 solution, 2 eq phase, 3 exchange, 4 surface, 5 gas, 6 solid solution, 7 kinetic

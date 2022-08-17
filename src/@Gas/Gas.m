@@ -50,7 +50,7 @@ classdef Gas
             else
                 data_file = 'phreeqc.dat';
             end
-
+            
 
         end
         
@@ -61,6 +61,17 @@ classdef Gas
             else
                 data_file = 'phreeqc.dat';
             end
+        end
+
+        function so_string = selected_output_string(obj)
+            % a selected_output block for the gas object
+            so_string = strjoin(["SELECTED_OUTPUT" num2str(obj.number) "\n"]);
+            so_string = strjoin([so_string  "-high_precision	 true \n"]);
+            so_string = strjoin([so_string  "-reset    false \n"]);
+            so_string = strjoin([so_string  "-gases   " obj.phase_names "\n"]);
+            so_string = strjoin([so_string  "-saturation_indices   " obj.phase_names "\n"]);
+            so_string = strjoin([so_string  "END"]);
+
         end
 
 

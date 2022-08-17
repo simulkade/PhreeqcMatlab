@@ -1,6 +1,20 @@
 classdef Solution
     %SOLUTION Summary of this class goes here
-    %   Detailed explanation goes here
+    %    name(1,1) string
+    %    number(1,1) double {mustBeNonnegative, mustBeInteger}
+    %    unit(1,1) string
+    %    components(1,:) string
+    %    concentrations(1,:) double
+    %    charge_balance_component(1,1) string
+    %    ph_charge_balance(1,1) {mustBeNumericOrLogical}
+    %    density(1,1) double
+    %    density_calculation(1,1) {mustBeNumericOrLogical}
+    %    pH {mustBeScalarOrEmpty} = []
+    %    pe {mustBeScalarOrEmpty} = []
+    %    alkalinity {mustBeScalarOrEmpty} = []
+    %    alkalinity_component(1,1) string
+    %    pressure {mustBeScalarOrEmpty}
+    %    temperature {mustBeScalarOrEmpty}
     
     properties
         name(1,1) string
@@ -95,8 +109,8 @@ classdef Solution
             end
         end
         
-        function so_string = solution_selected_output(obj)
-            % so_string = solution_selected_output(obj)
+        function so_string = selected_output_string(obj)
+            % so_string = selected_output_string(obj)
             % returns a selected output string that can be appended to the
             % current phreeqc string of the solution object to obtain all
             % the physical and chemical properties calculated by phreeqc
@@ -126,7 +140,7 @@ classdef Solution
             phreeqc_rm = phreeqc_rm.RM_Create(); % create a PhreeqcRM instance
             iph_string = phreeqc_string(obj);
             % add a selected output block to the string before running
-            iph_string = [iph_string solution_selected_output(obj)];
+            iph_string = [iph_string selected_output_string(obj)];
             if nargin>1
                 data_file = varargin{end};
             else
@@ -145,25 +159,8 @@ classdef Solution
                 ic1(1) = obj.number;              % Solution 1
                 phreeqc_rm.RM_InitialPhreeqc2Module(ic1, ic2, f1);
                 phreeqc_rm.RM_RunCells();
-                t_out = phreeqc_rm.GetSelectedOutputTable(obj.number);
-                
-                SR = SolutionResult(obj);
-                SR.temperature = t_out('temp(C)');
-                SR.components = string(phreeqc_rm.GetComponents())';
-                SR.concentrations = phreeqc_rm.GetConcentrations();
-                SR.species = string(phreeqc_rm.GetSpeciesNames())';
-                SR.species_concentrations = phreeqc_rm.GetSpeciesConcentrations();
-                SR.species_molalities = 10.^phreeqc_rm.GetSpeciesLog10Molalities();
-                SR.species_activity_coef = 10.^phreeqc_rm.GetSpeciesLog10Gammas();
-                SR.species_charge = phreeqc_rm.GetSpeciesZ();
-                SR.alkalinity = t_out('Alk(eq/kgw)');
-                SR.pH = t_out('pH');
-                SR.pe = t_out('pe');
-                SR.ionic_strength = t_out('mu');
-                SR.water_mass = t_out('mass_H2O');
-                SR.charge_balance = t_out('charge(eq)');
-                SR.density = phreeqc_rm.GetDensity();
-                SR.percent_error = t_out('pct_err');
+
+                SR = results_from_phreeqcrm(obj, phreeqc_rm);
                 
                 phreeqc_rm.RM_Destroy();
             catch
@@ -171,6 +168,27 @@ classdef Solution
                 disp('An error occured running PhreeqcRM. Please check the solution definition');
                 phreeqc_rm.RM_Destroy();
             end
+        end
+
+        function SR = results_from_phreeqcrm(obj, phreeqc_rm)
+            t_out = phreeqc_rm.GetSelectedOutputTable(obj.number);
+            SR = SolutionResult(obj);
+            SR.temperature = t_out('temp(C)');
+            SR.components = string(phreeqc_rm.GetComponents())';
+            SR.concentrations = phreeqc_rm.GetConcentrations();
+            SR.species = string(phreeqc_rm.GetSpeciesNames())';
+            SR.species_concentrations = phreeqc_rm.GetSpeciesConcentrations();
+            SR.species_molalities = 10.^phreeqc_rm.GetSpeciesLog10Molalities();
+            SR.species_activity_coef = 10.^phreeqc_rm.GetSpeciesLog10Gammas();
+            SR.species_charge = phreeqc_rm.GetSpeciesZ();
+            SR.alkalinity = t_out('Alk(eq/kgw)');
+            SR.pH = t_out('pH');
+            SR.pe = t_out('pe');
+            SR.ionic_strength = t_out('mu');
+            SR.water_mass = t_out('mass_H2O');
+            SR.charge_balance = t_out('charge(eq)');
+            SR.density = phreeqc_rm.GetDensity();
+            SR.percent_error = t_out('pct_err');
         end
     end
     

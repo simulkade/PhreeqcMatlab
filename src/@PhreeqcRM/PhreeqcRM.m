@@ -712,6 +712,8 @@ classdef PhreeqcRM
             % GetSelectedOutputTable returns the selected output with user
             % number n_user in the form of a container map
             %SEE ALSO GetSelectedOutput, GetSelectedOutputHeadings
+            % Note: convert the output to a table by
+            % cell2table(tab_out.values, 'VariableNames', string(tab_out.keys))
             h_out = obj.GetSelectedOutputHeadings(n_user);
             s_out = obj.GetSelectedOutput(n_user);
             [~, n] = size(s_out);

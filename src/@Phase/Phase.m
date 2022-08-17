@@ -76,7 +76,7 @@ classdef Phase
             phase_string = sprintf(char(phase_string));
         end
         
-        function so_string = phase_selected_output(obj)
+        function so_string = selected_output_string(obj)
             % creates a selected output string with typical values for a 
             % phase object; this is a convenience function and similar
             % selected output strings can be defined in the code. This
@@ -122,8 +122,8 @@ classdef Phase
             warning('It is not possible to run a phase without an aqueous solution. Pleas define a SingleCell and run it')
         end
 
-        function out_string = equilibrate_with_in_phreeqc(obj, solution, varargin)
-            % equilibrate_with_in_phreeqc(obj, solution, varargin)
+        function out_string = equilibrate_in_phreeqc(obj, solution, varargin)
+            % equilibrate_in_phreeqc(obj, solution, varargin)
             % equilibrates the phase with a solution by creating a phreeqc
             % string and running it in an IPhreeqc instance
             iph_string = obj.combine_phase_solution_string(solution);
@@ -165,8 +165,8 @@ classdef Phase
             out_string = sprintf(char(out_string));
         end
 
-        function so_string = selected_output(obj, solution, varargin)
-            % so_string = selected_output(obj, solution, varargin)
+        function so_string = combine_selected_output(obj, solution, varargin)
+            % so_string = combine_selected_output(obj, solution, varargin)
             % the last argument is an optional database file that must be
             % in the database folder
             % returns a selected output string that can be appended to the
@@ -190,7 +190,7 @@ classdef Phase
             phreeqc_rm.RM_FindComponents(); % always run it first
             phreeqc_rm.GetComponents();
 
-            solution_so = solution.solution_selected_output();
+            solution_so = solution.selected_output_string();
             % TBD
             
         end

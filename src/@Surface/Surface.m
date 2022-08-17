@@ -86,7 +86,7 @@ classdef Surface
             surface_string = sprintf(char(surface_string));
         end
 
-        function [all_string, solution_string, surf_string, dl_string] = surf_selected_output(obj, solution, varargin)
+        function [all_string, solution_string, surf_string, dl_string] = selected_output_string(obj, solution, varargin)
             % so_string = surf_selected_output(obj, solution, varargin)
             % the last argument is an optional database file that must be
             % in the database folder
@@ -128,7 +128,7 @@ classdef Surface
             % surf_string that is the surface properties and composition
             % dl_string that is the composition of the double layer
             % 1- Solution selected output
-            solution_string = solution.solution_selected_output();
+            solution_string = solution.selected_output_string();
             % 2- surface selected output
             surf_string = strjoin(["\nSELECTED_OUTPUT" num2str(solution.number+1) "\n"]);
             surf_string = strjoin([surf_string  "-reset false\n"]);
@@ -183,13 +183,40 @@ classdef Surface
             % surface and solution, and the combined string is run in PhreeqcRM
             % I have some problems with IPhreeqc on Windows machines, which is something I will 
             % fix later (if possible, and not a priority)
+            phreeqc_rm = PhreeqcRM(1, 1); % one cell, one thread
             iph_string = obj.combine_surface_solution_string(solution);
+            so_string = obj.selected_output_string(solution, varargin{end});
+            all_string = combine_phreeqc_strings(iph_string, so_string);
             if nargin>2
                 data_file = varargin{end};
             else
                 data_file = 'phreeqc.dat';
             end
+            phreeqc_rm.RM_LoadDatabase(database_file(data_file));
+            phreeqc_rm.RM_RunString(true, true, true, all_string);
+            phreeqc_rm.RM_FindComponents(); % always run it first
+            % initialize phreeqcRM
+            phreeqc_rm.RM_SetSelectedOutputOn(true);
+            phreeqc_rm.RM_SetComponentH2O(true);
+            phreeqc_rm.RM_SetUnitsSolution(2);
+            phreeqc_rm.RM_SetSpeciesSaveOn(ture);
+            ic1 = -1*ones(7, 1);
+            ic2 = -1*ones(7, 1);
+            % 1 solution, 2 eq phase, 3 exchange, 4 surface, 5 gas, 6 solid solution, 7 kinetic
+            f1 = ones(7, 1);
+            ic1(1) = solution.number;              % Solution seawater
+            ic1(4) = obj.number;         % Surface calcite
+            phreeqc_rm.RM_InitialPhreeqc2Module(ic1, ic2, f1);
+            phreeqc_rm.RM_RunCells();
+            t_out1 = phreeqc_rm.GetSelectedOutputTable(obj.number);
+            t_out2 = phreeqc_rm.GetSelectedOutputTable(obj.number+1);
+            t_out3 = phreeqc_rm.GetSelectedOutputTable(obj.number+2);
+            v_out= phreeqc_rm.GetSelectedOutput(obj.number)
+            h_out = phreeqc_rm.GetSelectedOutputHeadings(obj.number)
 
+            % prepare the output
+            solution_result = solution.results_from_phreeqcrm(phreeqc_rm);
+            % TBD
         end
 
         function out_string = combine_surface_solution_string(obj, solution)
