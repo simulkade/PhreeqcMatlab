@@ -6,13 +6,10 @@ SOLUTION 1 Pure water
 EQUILIBRIUM_PHASES 1
         Gypsum          0.0     1.0
         Anhydrite       0.0     1.0
-END
-
 SELECTED_OUTPUT 1
         -reset false
         -si     Anhydrite  Gypsum
 USER_PUNCH
         -headings equi_anhydrite
         10 PUNCH EQUI("Anhydrite")
-
 END
