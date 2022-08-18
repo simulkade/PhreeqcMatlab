@@ -510,7 +510,7 @@ classdef IPhreeqc
             [status, output_value] = calllib('libiphreeqc','GetSelectedOutputValue', obj.id, row, col, pvar);
         end
         
-        function [status, output_type, dval, sval, s_length] = GetSelectedOutputValue2(obj, row, col, vtype, dvalue, svalue, svalue_length)
+        function [status, output_type, dval, sval] = GetSelectedOutputValue2(obj, row, col, vtype, dvalue, svalue, svalue_length)
             % Returns the associated data with the specified row and column. The current SELECTED_OUTPUT block is set using the SetCurrentSelectedOutputUserNumber method.
 
             % Parameters
@@ -533,7 +533,7 @@ classdef IPhreeqc
             % Row 0 contains the column headings to the selected_ouput.
 
             % Needs further tests
-            [status, output_type, dval, sval, s_length] = calllib('libiphreeqc','GetSelectedOutputValue2', obj.id, row, col, vtype, dvalue, svalue, svalue_length);
+            [status, output_type, dval, sval] = calllib('libiphreeqc','GetSelectedOutputValue2', obj.id, row, col, vtype, dvalue, svalue, svalue_length);
         end
         
         function version_string = GetVersionString(obj)

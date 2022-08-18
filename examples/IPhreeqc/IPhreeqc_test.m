@@ -16,16 +16,18 @@ n_col = iph.GetSelectedOutputColumnCount();
 val = zeros(n_row-1, n_col);
 
 iph.GetSelectedOutputString()
-n=2;
-nPtr=libpointer('int64Ptr', n);
+n=0;
+nPtr=libpointer('int32Ptr', n);
 c = 0;
 cPtr = libpointer('doublePtr', c);
-h = "aaaaaaaaaa";
+h = 'aaaaaaaaaa';
 hPtr = libpointer('stringPtr', h);
-iph.GetSelectedOutputValue2(1, 1, nPtr, cPtr, hPtr, uint32(length(h)));
+[aa, bb, cc, dd] = iph.GetSelectedOutputValue2(2, 0, nPtr, cPtr, h, length(h))
 % for 
 % for i=1:n_col
 %     iph.GetSelectedOutputValue2()
 % end
 
-% iph.DestroyIPhreeqc();
+% [a,b] = iph.GetSelectedOutputValue(int64(1), int64(1), cPtr)
+
+iph.DestroyIPhreeqc();

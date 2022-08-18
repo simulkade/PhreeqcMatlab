@@ -9,7 +9,7 @@ EQUILIBRIUM_PHASES 1
 SELECTED_OUTPUT 1
         -reset false
         -si     Anhydrite  Gypsum
-USER_PUNCH
+USER_PUNCH 1
         -headings equi_anhydrite
         10 PUNCH EQUI("Anhydrite")
 END
