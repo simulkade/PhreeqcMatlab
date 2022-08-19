@@ -2,9 +2,9 @@
 % Note that IPhree
 iph = IPhreeqc(); % load the library
 iph = iph.CreateIPhreeqc(); % create an IPhreeqc instance
-iph.SetSelectedOutputStringOn(1);
-iph.SetOutputStringOn(true);
 iph.LoadDatabase(database_file('phreeqc.dat'));
+iph.SetOutputStringOn(true);
+iph.SetSelectedOutputStringOn(1);
 iph.RunFile('ex2_input.pqc');
 out_string = iph.GetOutputString();
 disp(out_string); % display the phreeqc output string
@@ -15,14 +15,14 @@ n_row = iph.GetSelectedOutputRowCount();
 n_col = iph.GetSelectedOutputColumnCount();
 val = zeros(n_row-1, n_col);
 
-iph.GetSelectedOutputString()
+s_out = iph.GetSelectedOutputString()
 n=0;
 nPtr=libpointer('int32Ptr', n);
 c = 0;
 cPtr = libpointer('doublePtr', c);
-h = 'aaaaaaaaaa';
+h = 'aaaaaaaaaaaaaaaaaaa';
 hPtr = libpointer('stringPtr', h);
-[aa, bb, cc, dd] = iph.GetSelectedOutputValue2(2, 0, nPtr, cPtr, h, length(h))
+[aa, bb, cc, dd] = iph.GetSelectedOutputValue2(0, 0, nPtr, cPtr, h, length(h))
 % for 
 % for i=1:n_col
 %     iph.GetSelectedOutputValue2()
