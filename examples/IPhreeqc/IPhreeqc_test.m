@@ -5,7 +5,7 @@ iph = iph.CreateIPhreeqc(); % create an IPhreeqc instance
 iph.LoadDatabase(database_file('phreeqc.dat'));
 iph.SetOutputStringOn(true);
 iph.SetSelectedOutputStringOn(1);
-iph.RunFile('ex2_input.pqc');
+iph.RunFile('ex2_input_mod.pqc');
 out_string = iph.GetOutputString();
 disp(out_string); % display the phreeqc output string
 % for i=1:iph.GetSelectedOutputCount
@@ -20,14 +20,14 @@ n=0;
 nPtr=libpointer('int32Ptr', n);
 c = 0;
 cPtr = libpointer('doublePtr', c);
-h = 'aaaaaaaaaaaaaaaaaaa';
+h = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 hPtr = libpointer('stringPtr', h);
-[aa, bb, cc, dd] = iph.GetSelectedOutputValue2(0, 0, nPtr, cPtr, h, length(h))
+[aa, bb, cc, dd] = iph.GetSelectedOutputValue2(1, 0, nPtr, cPtr, h, length(h))
 % for 
 % for i=1:n_col
 %     iph.GetSelectedOutputValue2()
 % end
 
-% [a,b] = iph.GetSelectedOutputValue(int64(1), int64(1), cPtr)
+[a,b] = iph.GetSelectedOutputTable(1)
 
 iph.DestroyIPhreeqc();

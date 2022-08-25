@@ -891,7 +891,9 @@ classdef IPhreeqc
             % GetSelectedOutputFileOn, GetSelectedOutputStringOn, GetSelectedOutputString, GetSelectedOutputStringLine, GetSelectedOutputStringLineCount, SetCurrentSelectedOutputUserNumber, SetSelectedOutputFileOn
             status = calllib('libiphreeqc','SetSelectedOutputStringOn', obj.id, sel_string_on);
         end
-        
+        % ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        % +============================ EXTRA METHODS ===================+
+        % ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         % Extra methods added for convenience
         function out_string = RunPhreeqcFile(obj, file_name, data_file)
             % RunPhreeqcFile(obj, file_name, data_file)
@@ -911,6 +913,40 @@ classdef IPhreeqc
             obj.LoadDatabase(data_file);
             obj.RunString(sprintf(input_string));
             out_string = obj.GetOutputString();
+        end
+
+        function [heading, val] = GetSelectedOutputTable(obj, s_id)
+            % GetSelectedOutputTable(obj, s_id)
+            % returns the results of the selected output block with number
+            % s_id in a matlab container
+            SetCurrentSelectedOutputUserNumber(obj, s_id)
+            n_row = GetSelectedOutputRowCount(obj);
+            n_col = GetSelectedOutputColumnCount(obj);
+            val = zeros(n_row-1, n_col);
+            heading = strings(n_col, 1);
+            n=0;
+            nPtr=libpointer('int32Ptr', n);
+            c = 0;
+            cPtr = libpointer('doublePtr', c);
+            for i = 2:n_row
+                for j = 1:n_col
+                    h = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+                    GetSelectedOutputValue2(obj, i, j, nPtr, cPtr, h, length(h));
+                    [status, c_int, c_double, d_string] = GetSelectedOutputValue2(obj, i-1, j-1, nPtr, cPtr, h, length(h));
+                    val(i-1,j)=c_double;
+                end
+            end
+            for j = 1:n_col
+                h = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+                [status, c_int, c_double, d_string] = GetSelectedOutputValue2(obj, 0, j-1, nPtr, cPtr, h, length(h));
+                heading(j) = d_string;
+            end
+        end
+
+        function GetSelectedOutputHeadings(obj, s_id)
+        end
+
+        function GetSelectedOutputValues(obj, s_id)
         end
     end
 end
