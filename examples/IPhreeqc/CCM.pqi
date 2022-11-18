@@ -1,0 +1,53 @@
+# Constant Capacitance model example input file
+SURFACE_MASTER_SPECIES
+    Surf_a    Surf_aOH
+    Surf_c    Surf_cOH
+SURFACE_SPECIES
+    Surf_aOH = Surf_aOH
+    log_k   0.0
+    Surf_cOH = Surf_cOH
+    log_k   0.0
+    Surf_cOH = Surf_cO- + H+
+    log_k   -4.9
+    delta_h 0.0
+    Surf_cOH + Ca+2 = Surf_cOCa+ + H+
+    log_k   -2.8
+    delta_h 0.0
+    Surf_cOH + Mg+2 = Surf_cOMg+ + H+
+    log_k   -2.2
+    delta_h 0.0
+    Surf_aOH + H+ = Surf_aOH2+
+    log_k   12.2
+    delta_h 0.0
+    Surf_aOH = Surf_aO- + H+
+    log_k   -17.0
+    delta_h 0.0
+    Surf_aOH + SO4-2 = Surf_aSO4- + OH-
+    log_k   2.89
+    delta_h 0.0
+SOLUTION 1
+    units mol/kgw
+    Na 0.102
+    Ca 0.01
+    Mg 0.02
+    Cl 0.16
+    S  0.001
+    pH 7 charge
+SURFACE 1
+    -sites_units density
+    Surf_c 4.95 2 100
+    Surf_a 4.95
+    -ccm 1.0
+
+SELECTED_OUTPUT 1
+	-reset false
+	-pH    true
+    -ionic_strength true
+    USER_PUNCH
+        -headings    dielec   sigma_surf  psi_surf    Surf    RHO(kg/L)
+        10 PUNCH EPS_R
+        20 PUNCH EDL("sigma", "Surf")
+        50 PUNCH EDL("psi", "Surf")
+        60 PUNCH TOTMOLE("Surf")
+        70 PUNCH RHO
+    END
