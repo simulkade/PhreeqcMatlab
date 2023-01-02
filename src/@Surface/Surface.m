@@ -8,7 +8,7 @@ classdef Surface
         number(1,1) double {mustBeNonnegative, mustBeInteger}
         mass(1,1) double
         scm(1,1) string
-        site_density(1,:) double
+        site_density(:,1) double
         surface_master_species(:, 1) string
         surface_species_reactions(:, 1) string
         log_k(:,1) double
@@ -18,7 +18,7 @@ classdef Surface
         edl_model(1,1) string
         edl_thickness {mustBeScalarOrEmpty}
         only_counter_ions(1,1) logical
-        capacitances(1,2) double
+        capacitances(:,1) double
         cd_music_coeffs(:,:) double
     end
     

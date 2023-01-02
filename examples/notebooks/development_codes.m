@@ -38,6 +38,8 @@ surf_call = strjoin(cellfun(@(x)(['SURF("' x '","' surf_name '")']), element_nam
 edl_special = [{'Charge'}; {'Charge1'}; {'Charge2'}; {'sigma'}; {'sigma1'}; {'sigma2'}; {'psi'}; {'psi1'}; {'psi2'}; {'water'}]
 edl_in = [element_names(ind_charge+1:end); edl_special]
 edl_call = strjoin(cellfun(@(x)(['EDL("' x '","' surf_name '")']), edl_in, 'UniformOutput', false))
+% TODO: try with EDL_SPECIES as well
+% https://water.usgs.gov/water-resources/software/PHREEQC/documentation/phreeqc3-html/phreeqc3-61.htm#50593797_44206
 
 %% the string
 solution_so = sw.selected_output_string();
