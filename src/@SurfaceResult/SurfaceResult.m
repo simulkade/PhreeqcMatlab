@@ -35,8 +35,7 @@ classdef SurfaceResult
             % input Surface object
             obj.name = s.name;
             obj.number = s.number;
-            obj.species = [];
-            obj.species_concentrations = [];
+            obj.mass = s.mass;
         end
         
     end

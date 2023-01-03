@@ -71,7 +71,7 @@ classdef Surface
                 surface_string = strjoin([surface_string ms(1) num2str(obj.site_density(i)) "\n"]);
             end
             if strcmpi(obj.scm, 'cd_music')
-                surface_string = strjoin([surface_string "-capacitances " num2str(obj.capacitances) "\n"]);
+                surface_string = strjoin([surface_string "-capacitances " num2str(obj.capacitances') "\n"]);
             end
             if strcmpi(obj.edl_model, 'diffuse_layer')
                 surface_string = strjoin([surface_string "-diffuse_layer " num2str(obj.edl_thickness) "\n"]);
@@ -87,7 +87,7 @@ classdef Surface
         end
 
         function [all_string, solution_string, surf_string, dl_string] = selected_output_string(obj, solution, varargin)
-            % so_string = surf_selected_output(obj, solution, varargin)
+            % [all_string, solution_string, surf_string, dl_string] = selected_output_string(obj, solution, varargin)
             % the last argument is an optional database file that must be
             % in the database folder
             % returns a selected output string that can be appended to the
@@ -129,6 +129,7 @@ classdef Surface
             % dl_string that is the composition of the double layer
             % 1- Solution selected output
             solution_string = solution.selected_output_string();
+            solution_string = solution_string(1:end-3); % remove the END statement
             % 2- surface selected output
             surf_string = strjoin(["\nSELECTED_OUTPUT" num2str(solution.number+1) "\n"]);
             surf_string = strjoin([surf_string  "-reset false\n"]);
@@ -136,17 +137,20 @@ classdef Surface
             surf_string = strjoin([surf_string  "USER_PUNCH" num2str(solution.number+1) "\n"]);
             surf_string = strjoin([surf_string  "-headings "  element_names(ind_charge+1:end)' "\n"]);
             surf_string = strjoin([surf_string  "10 PUNCH" surf_call "\n"]);
-            surf_string = strjoin([surf_string  "END"]);
+            
             % 3- DL selected output
             dl_string = strjoin(["\nSELECTED_OUTPUT" num2str(solution.number+2) "\n"]);
             dl_string = strjoin([dl_string  "-reset false\n"]);
             dl_string = strjoin([dl_string  "USER_PUNCH"  num2str(solution.number+2) "\n"]);
             dl_string = strjoin([dl_string  "-headings "  edl_in' "\n"]);
             dl_string = strjoin([dl_string  "10 PUNCH" edl_call "\n"]);
+            
+            % combined strings:
+            all_string = sprintf(char([solution_string(1:end-3) surf_string dl_string]));
+            surf_string = strjoin([surf_string  "END"]);
+            surf_string = sprintf(char(surf_string));
             dl_string = strjoin([dl_string  "END"]);
             dl_string = sprintf(char(dl_string));
-            % combined strings:
-            all_string = sprintf(char([solution_string surf_string dl_string]));
         end
     
         function out_string = equilibrate_in_phreeqc(obj, solution, varargin)
@@ -183,15 +187,16 @@ classdef Surface
             % surface and solution, and the combined string is run in PhreeqcRM
             % I have some problems with IPhreeqc on Windows machines, which is something I will 
             % fix later (if possible, and not a priority)
-            phreeqc_rm = PhreeqcRM(1, 1); % one cell, one thread
-            iph_string = obj.combine_surface_solution_string(solution);
-            so_string = obj.selected_output_string(solution, varargin{end});
-            all_string = combine_phreeqc_strings(iph_string, so_string);
             if nargin>2
                 data_file = varargin{end};
             else
                 data_file = 'phreeqc.dat';
             end
+            phreeqc_rm = PhreeqcRM(1, 1); % one cell, one thread
+            phreeqc_rm = phreeqc_rm.RM_Create();
+            iph_string = obj.combine_surface_solution_string(solution);
+            so_string = obj.selected_output_string(solution, data_file);
+            all_string = combine_phreeqc_strings(iph_string, so_string);
             phreeqc_rm.RM_LoadDatabase(database_file(data_file));
             phreeqc_rm.RM_RunString(true, true, true, all_string);
             phreeqc_rm.RM_FindComponents(); % always run it first
@@ -199,7 +204,7 @@ classdef Surface
             phreeqc_rm.RM_SetSelectedOutputOn(true);
             phreeqc_rm.RM_SetComponentH2O(true);
             phreeqc_rm.RM_SetUnitsSolution(2);
-            phreeqc_rm.RM_SetSpeciesSaveOn(ture);
+            phreeqc_rm.RM_SetSpeciesSaveOn(1);
             ic1 = -1*ones(7, 1);
             ic2 = -1*ones(7, 1);
             % 1 solution, 2 eq phase, 3 exchange, 4 surface, 5 gas, 6 solid solution, 7 kinetic
@@ -211,19 +216,23 @@ classdef Surface
             t_out1 = phreeqc_rm.GetSelectedOutputTable(obj.number);
             t_out2 = phreeqc_rm.GetSelectedOutputTable(obj.number+1);
             t_out3 = phreeqc_rm.GetSelectedOutputTable(obj.number+2);
-            v_out= phreeqc_rm.GetSelectedOutput(obj.number)
-            h_out = phreeqc_rm.GetSelectedOutputHeadings(obj.number)
-
-            % prepare the output
+            v_out= phreeqc_rm.GetSelectedOutput(obj.number);
+            h_out = phreeqc_rm.GetSelectedOutputHeadings(obj.number);
+            
+            % prepare the output for the surface (as a SurfaceResults
+            % class)
+            % TBD: convert the output tables to a SurfaceResults class
+            
+            % Get solution results from phreeqcrm
             solution_result = solution.results_from_phreeqcrm(phreeqc_rm);
-            % TBD
+
         end
 
         function out_string = combine_surface_solution_string(obj, solution)
             % combines the phreeqc string of a solution and a surface to be equilibrated with each other
             sol_string = solution.phreeqc_string();
             [surf_string, surf_master_string, surf_sp_string] = obj.phreeqc_string();
-            out_string = strjoin([surf_master_string, surf_sp_string, sol_string, surf_string, "-equilibrate ", num2str(solution.number), "\nEND"]);
+            out_string = strjoin([surf_master_string, surf_sp_string, sol_string, surf_string, "-equilibrate ", num2str(solution.number), "\nEND\n"]);
             out_string = sprintf(char(out_string));
         end
     end

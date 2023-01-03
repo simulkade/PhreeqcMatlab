@@ -916,9 +916,10 @@ classdef IPhreeqc
         end
 
         function [heading, val] = GetSelectedOutputTable(obj, s_id)
-            % GetSelectedOutputTable(obj, s_id)
+            % [heading, val] = GetSelectedOutputTable(obj, s_id)
             % returns the results of the selected output block with number
-            % s_id in a matlab container
+            % s_id as an array of strings for headers and the corresponding
+            % values in a matrix of values
             SetCurrentSelectedOutputUserNumber(obj, s_id)
             n_row = GetSelectedOutputRowCount(obj);
             n_col = GetSelectedOutputColumnCount(obj);
@@ -930,23 +931,53 @@ classdef IPhreeqc
             cPtr = libpointer('doublePtr', c);
             for i = 2:n_row
                 for j = 1:n_col
-                    h = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+                    h = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'; % lazy me!
                     GetSelectedOutputValue2(obj, i, j, nPtr, cPtr, h, length(h));
                     [status, c_int, c_double, d_string] = GetSelectedOutputValue2(obj, i-1, j-1, nPtr, cPtr, h, length(h));
                     val(i-1,j)=c_double;
                 end
             end
             for j = 1:n_col
-                h = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+                h = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
                 [status, c_int, c_double, d_string] = GetSelectedOutputValue2(obj, 0, j-1, nPtr, cPtr, h, length(h));
                 heading(j) = d_string;
             end
         end
 
-        function GetSelectedOutputHeadings(obj, s_id)
+        function heading = GetSelectedOutputHeadings(obj, s_id)
+            SetCurrentSelectedOutputUserNumber(obj, s_id)
+            n_col = GetSelectedOutputColumnCount(obj);
+            heading = strings(n_col, 1);
+            n=0;
+            nPtr=libpointer('int32Ptr', n);
+            c = 0;
+            cPtr = libpointer('doublePtr', c);
+          
+            for j = 1:n_col
+                h = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+                [status, c_int, c_double, d_string] = ...
+                    GetSelectedOutputValue2(obj, 0, j-1, nPtr, cPtr, h, length(h));
+                heading(j) = d_string;
+            end
         end
 
-        function GetSelectedOutputValues(obj, s_id)
+        function val = GetSelectedOutputValues(obj, s_id)
+            SetCurrentSelectedOutputUserNumber(obj, s_id)
+            n_row = GetSelectedOutputRowCount(obj);
+            n_col = GetSelectedOutputColumnCount(obj);
+            val = zeros(n_row-1, n_col);
+            n=0;
+            nPtr=libpointer('int32Ptr', n);
+            c = 0;
+            cPtr = libpointer('doublePtr', c);
+            for i = 2:n_row
+                for j = 1:n_col
+                    h = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'; % lazy me!
+                    GetSelectedOutputValue2(obj, i, j, nPtr, cPtr, h, length(h));
+                    [status, c_int, c_double, d_string] = GetSelectedOutputValue2(obj, i-1, j-1, nPtr, cPtr, h, length(h));
+                    val(i-1,j)=c_double;
+                end
+            end
         end
     end
 end

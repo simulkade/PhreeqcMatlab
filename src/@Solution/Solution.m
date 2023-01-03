@@ -115,7 +115,7 @@ classdef Solution
             % current phreeqc string of the solution object to obtain all
             % the physical and chemical properties calculated by phreeqc
             % for a solution
-            so_string = strjoin(["SELECTED_OUTPUT" num2str(obj.number) "\n"]);
+            so_string = strjoin(["\nSELECTED_OUTPUT" num2str(obj.number) "\n"]);
             so_string = strjoin([so_string  "-high_precision	 true \n"]);
             so_string = strjoin([so_string  "-reset    false \n"]);
             so_string = strjoin([so_string  "-pH    true \n"]);
