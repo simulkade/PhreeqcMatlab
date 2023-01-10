@@ -26,6 +26,11 @@ classdef SolutionResult
         charge_balance(1,1) double
         percent_error(1,1) double
         density(1,1) double
+        water_density(1,1) double
+        specific_conductance(1,1) double
+        relative_dielectric_constant(1,1) double
+        osmotic_coefficient(1,1) double
+        viscosity(1,1) double
         % diffusivity(1,:) matlab restarts when it is called
     end
     
