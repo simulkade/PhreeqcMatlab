@@ -126,7 +126,10 @@ classdef Solution
             so_string = strjoin([so_string  "-water    true \n"]);
             so_string = strjoin([so_string  "-charge_balance    true \n"]);
             so_string = strjoin([so_string  "-percent_error    true \n"]);
-            so_string = strjoin([so_string  "-molalities \n"]);  
+            so_string = strjoin([so_string  "-molalities \n"]);
+            so_string = strjoin([so_string  "USER_PUNCH" num2str(obj.number) "\n"]);
+            so_string = strjoin([so_string  "-headings density density_w conductance_r eps_r osmotic viscosity\n"]);
+            so_string = strjoin([so_string  "10 PUNCH RHO RHO_0 SC EPS_R OSMOTIC VISCOS\n"]);
             % so_string = strjoin([so_string  "\n"]);
             % so_string = strjoin([so_string  "\n"]);
             so_string = strjoin([so_string  "END"]);
@@ -189,6 +192,11 @@ classdef Solution
             SR.charge_balance = t_out('charge(eq)');
             SR.density = phreeqc_rm.GetDensity();
             SR.percent_error = t_out('pct_err');
+            SR.water_density = t_out('density_w');
+            SR.specific_conductance = t_out('conductance_r'); 
+            SR.relative_dielectric_constant = t_out('eps_r'); 
+            SR.osmotic_coefficient = t_out('osmotic'); 
+            SR.viscosity = t_out('viscosity');
         end
     end
     
