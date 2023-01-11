@@ -134,6 +134,7 @@ classdef Surface
             surf_string = strjoin(["\nSELECTED_OUTPUT" num2str(solution.number+1) "\n"]);
             surf_string = strjoin([surf_string  "-reset false\n"]);
             surf_string = strjoin([surf_string "-molalities" sur_sp_list "\n"]);
+            surf_string = strjoin([surf_string "-activities" sur_sp_list "\n"]);
             surf_string = strjoin([surf_string  "USER_PUNCH" num2str(solution.number+1) "\n"]);
             surf_string = strjoin([surf_string  "-headings "  element_names(ind_charge+1:end)' "\n"]);
             surf_string = strjoin([surf_string  "10 PUNCH" surf_call "\n"]);
@@ -218,14 +219,22 @@ classdef Surface
             t_out3 = phreeqc_rm.GetSelectedOutputTable(obj.number+2);
             v_out= phreeqc_rm.GetSelectedOutput(obj.number);
             h_out = phreeqc_rm.GetSelectedOutputHeadings(obj.number);
+%             v_out= phreeqc_rm.GetSelectedOutput(obj.number);
+%             h_out = phreeqc_rm.GetSelectedOutputHeadings(obj.number);
+%             v_out_s = phreeqc_rm.GetSelectedOutput(obj.number+1);
+%             h_out_s = phreeqc_rm.GetSelectedOutputHeadings(obj.number+1);
             
             % prepare the output for the surface (as a SurfaceResults
             % class)
-            % TBD: convert the output tables to a SurfaceResults class
+            surface_result = SurfaceResult(obj);
+            surface_result.surface_species = string(phreeqc_rm.GetSurfaceSpeciesNames())';
+            n_surf_species = length(surface_result.surface_species);
+            surf_composition = cell2mat(t_out2.values); % surface species composition
+            surface_result.surface_species_molalities = surf_composition(end-n_surf_species:end);
             
             % Get solution results from phreeqcrm
             solution_result = solution.results_from_phreeqcrm(phreeqc_rm);
-
+            
         end
 
         function out_string = combine_surface_solution_string(obj, solution)

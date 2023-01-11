@@ -9,10 +9,11 @@ classdef SurfaceResult
         name(1,1) string
         number(1,1) double {mustBeNonnegative, mustBeInteger}
         mass(1,1) double
+        surface_primary_species(1,:) string
         surface_species(1,:) string
         surface_species_mole_fraction(1,:) double
         surface_species_molalities(1,:) double
-        surface_species_activity_coef(:,1) double
+        surface_species_activity(:,1) double
         charge_density_plane_0(1,1) double
         charge_density_plane_1(1,1) double
         charge_density_plane_2(1,1) double
