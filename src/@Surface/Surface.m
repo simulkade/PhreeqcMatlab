@@ -112,15 +112,18 @@ classdef Surface
             phreeqc_rm.RM_RunString(true, true, true, iph_string);
             phreeqc_rm.RM_FindComponents(); % always run it first
             element_names = phreeqc_rm.GetComponents();
+            element_names(strcmpi(element_names, 'Charge')) = [];
+            element_names(strcmpi(element_names, 'H2O')) = [];
+
             % surf_sp_name = phreeqc_rm.GetSurfaceSpeciesNames();
             surf_type = phreeqc_rm.GetSurfaceTypes();
             b = split(surf_type{1}, '_');
             surf_name = strjoin(b(1:end-1), '_');
             sur_sp_list = strjoin(phreeqc_rm.GetSurfaceSpeciesNames());
-            ind_charge = find(strcmpi(element_names, 'Charge'));
-            surf_call = strjoin(cellfun(@(x)(['SURF("' x '","' surf_name '")']), element_names(ind_charge+1:end), 'UniformOutput', false));
+            
+            surf_call = strjoin(cellfun(@(x)(['SURF("' x '","' surf_name '")']), element_names, 'UniformOutput', false));
             edl_special = [{'Charge'}; {'Charge1'}; {'Charge2'}; {'sigma'}; {'sigma1'}; {'sigma2'}; {'psi'}; {'psi1'}; {'psi2'}; {'water'}];
-            edl_in = [element_names(ind_charge+1:end); edl_special];
+            edl_in = [element_names; edl_special];
             edl_call = strjoin(cellfun(@(x)(['EDL("' x '","' surf_name '")']), edl_in, 'UniformOutput', false));
             
             % we create three different selected output blocks
@@ -136,7 +139,7 @@ classdef Surface
             surf_string = strjoin([surf_string "-molalities" sur_sp_list "\n"]);
             surf_string = strjoin([surf_string "-activities" sur_sp_list "\n"]);
             surf_string = strjoin([surf_string  "USER_PUNCH" num2str(solution.number+1) "\n"]);
-            surf_string = strjoin([surf_string  "-headings "  element_names(ind_charge+1:end)' "\n"]);
+            surf_string = strjoin([surf_string  "-headings "  element_names' "\n"]);
             surf_string = strjoin([surf_string  "10 PUNCH" surf_call "\n"]);
             
             % 3- DL selected output
@@ -214,27 +217,53 @@ classdef Surface
             ic1(4) = obj.number;         % Surface calcite
             phreeqc_rm.RM_InitialPhreeqc2Module(ic1, ic2, f1);
             phreeqc_rm.RM_RunCells();
-            t_out1 = phreeqc_rm.GetSelectedOutputTable(obj.number);
-            t_out2 = phreeqc_rm.GetSelectedOutputTable(obj.number+1);
-            t_out3 = phreeqc_rm.GetSelectedOutputTable(obj.number+2);
-            v_out= phreeqc_rm.GetSelectedOutput(obj.number);
-            h_out = phreeqc_rm.GetSelectedOutputHeadings(obj.number);
+%             t_out_solution = phreeqc_rm.GetSelectedOutputTable(obj.number);
+            t_out_surface = phreeqc_rm.GetSelectedOutputTable(obj.number+1);
+            t_out_dl = phreeqc_rm.GetSelectedOutputTable(obj.number+2);
 %             v_out= phreeqc_rm.GetSelectedOutput(obj.number);
 %             h_out = phreeqc_rm.GetSelectedOutputHeadings(obj.number);
-%             v_out_s = phreeqc_rm.GetSelectedOutput(obj.number+1);
-%             h_out_s = phreeqc_rm.GetSelectedOutputHeadings(obj.number+1);
+%             v_out= phreeqc_rm.GetSelectedOutput(obj.number);
+%             h_out = phreeqc_rm.GetSelectedOutputHeadings(obj.number);
+            v_out_dl = phreeqc_rm.GetSelectedOutput(obj.number+2);
+            h_out_dl = phreeqc_rm.GetSelectedOutputHeadings(obj.number+2);
             
             % prepare the output for the surface (as a SurfaceResults
             % class)
             surface_result = SurfaceResult(obj);
             surface_result.surface_species = string(phreeqc_rm.GetSurfaceSpeciesNames())';
             n_surf_species = length(surface_result.surface_species);
-            surf_composition = cell2mat(t_out2.values); % surface species composition
-            surface_result.surface_species_molalities = surf_composition(end-n_surf_species:end);
-            
+            h = t_out_surface.keys;
+            surf_elements = h(1:end-2*n_surf_species);
+            surface_result.surface_elements = string(surf_elements);
+            surf_composition = cell2mat(t_out_surface.values); % surface species composition
+            surface_result.surface_species_molalities = surf_composition(end-n_surf_species+1:end);
+            surface_result.surface_species_mole_fraction = surface_result.surface_species_molalities/sum(surface_result.surface_species_molalities);
+            surface_result.surface_species_log_activity = surf_composition(end-2*n_surf_species+1:end-n_surf_species);
+
+            n_elements = length(surf_elements);
+            dl_moles = zeros(1,n_elements);
+            for i = 1:n_elements
+                dl_moles(i) = t_out_dl(surf_elements{i});
+            end
+            surface_result.elements_edl = string(surf_elements);
+            surface_result.element_moles_edl = dl_moles;
+            % TODO: add surface species to the results
+            % needs basid function EDL_SPECIES and more information about
+            % the double layer thickness and surface area of the solid
+            surface_result.charge_plane_0 = t_out_dl('Charge');
+            surface_result.charge_plane_1 = t_out_dl('Charge1');
+            surface_result.charge_plane_2 = t_out_dl('Charge2');
+            surface_result.charge_density_plane_0 = t_out_dl('sigma');
+            surface_result.charge_density_plane_1 = t_out_dl('sigma1');
+            surface_result.charge_density_plane_2 = t_out_dl('sigma2');
+            surface_result.potential_plane_0 = t_out_dl('psi');
+            surface_result.potential_plane_1 = t_out_dl('psi1');
+            surface_result.potential_plane_2 = t_out_dl('psi2');
+            surface_result.water_mass_dl = t_out_dl('water');
+
             % Get solution results from phreeqcrm
             solution_result = solution.results_from_phreeqcrm(phreeqc_rm);
-            
+            surface_result.water_mass = solution_result.water_mass;
         end
 
         function out_string = combine_surface_solution_string(obj, solution)

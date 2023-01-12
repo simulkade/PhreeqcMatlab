@@ -5,7 +5,10 @@ classdef Exchange
     properties
         name(1,1) string
         number(1,1) double {mustBeNonnegative, mustBeInteger}
-        
+        exchange_master_species(:, 1) string
+        exchange_species_reactions(:, 1) string
+        log_k(:,1) double
+        dh(:,1) double
     end
 
     methods

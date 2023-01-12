@@ -16,7 +16,7 @@ classdef SingleCell
         equilibrium_phase
         surface_specie
         exchanger
-        reation_rate
+        reaction_rate
         gas_phase
     end
     
