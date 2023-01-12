@@ -1,24 +1,20 @@
-classdef Exchange
-    % Exchange defines an ion exchanger that can be equilibrated with an
-    % aqueous solution
-
+classdef Kinetics
+    %KINETICS Summary of this class goes here
+    %   Detailed explanation goes here
+    
     properties
         name(1,1) string
         number(1,1) double {mustBeNonnegative, mustBeInteger}
-        exchange_master_species(:, 1) string
-        exchange_species_reactions(:, 1) string
-        log_k(:,1) double
-        dh(:,1) double
     end
-
+    
     methods
-        function obj = Exchange()
-            %UNTITLED Construct an instance of this class
+        function obj = Kinetics()
+            %KINETICS Construct an instance of this class
             %   Detailed explanation goes here
-            obj.name = "exchange 1";
+            obj.name = "kinetics 1";
             obj.number = 1;
         end
-
+        
         function outputArg = method1(obj,inputArg)
             %METHOD1 Summary of this method goes here
             %   Detailed explanation goes here
@@ -26,3 +22,4 @@ classdef Exchange
         end
     end
 end
+
