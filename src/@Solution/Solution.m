@@ -109,31 +109,60 @@ classdef Solution
             end
         end
         
+        function so_obj = selected_output_object(obj)
+            so_obj = SelectedOutput();
+            so_obj.name = "Solution";
+            so_obj.number = obj.number;
+            so_content = strings(1,11);
+            so_content(1) = "-high_precision    true";
+            so_content(2) = "-reset    false";
+            so_content(3) = "-pH    true";
+            so_content(4) = "-pe    true";
+            so_content(5) = "-temperature    true";
+            so_content(6) = "-alkalinity    true";
+            so_content(7) = "-ionic_strength    true";
+            so_content(8) = "-water    true";
+            so_content(9) = "-charge_balance    true";
+            so_content(10) = "-percent_error    true";
+            so_content(11) = "-molalities";
+            so_obj.content = so_content;
+
+            so_punch = strings(1,2);
+            so_punch(1) = "-headings density density_w conductance_r eps_r osmotic viscosity";
+            so_punch(2) = "10 PUNCH RHO RHO_0 SC EPS_R OSMOTIC VISCOS";
+            so_obj.punch = so_punch;
+
+        end
+
         function so_string = selected_output_string(obj)
             % so_string = selected_output_string(obj)
             % returns a selected output string that can be appended to the
             % current phreeqc string of the solution object to obtain all
             % the physical and chemical properties calculated by phreeqc
-            % for a solution
-            so_string = strjoin(["\nSELECTED_OUTPUT" num2str(obj.number) "\n"]);
-            so_string = strjoin([so_string  "-high_precision	 true \n"]);
-            so_string = strjoin([so_string  "-reset    false \n"]);
-            so_string = strjoin([so_string  "-pH    true \n"]);
-            so_string = strjoin([so_string  "-pe    true \n"]);
-            so_string = strjoin([so_string  "-temperature    true \n"]);
-            so_string = strjoin([so_string  "-alkalinity    true \n"]);
-            so_string = strjoin([so_string  "-ionic_strength    true \n"]);
-            so_string = strjoin([so_string  "-water    true \n"]);
-            so_string = strjoin([so_string  "-charge_balance    true \n"]);
-            so_string = strjoin([so_string  "-percent_error    true \n"]);
-            so_string = strjoin([so_string  "-molalities \n"]);
-            so_string = strjoin([so_string  "USER_PUNCH" num2str(obj.number) "\n"]);
-            so_string = strjoin([so_string  "-headings density density_w conductance_r eps_r osmotic viscosity\n"]);
-            so_string = strjoin([so_string  "10 PUNCH RHO RHO_0 SC EPS_R OSMOTIC VISCOS\n"]);
+            % for a solution. The following string will be created:
+            % so_string = strjoin(["\nSELECTED_OUTPUT" num2str(obj.number) "\n"]);
+            % so_string = strjoin([so_string  "-high_precision    true \n"]);
+            % so_string = strjoin([so_string  "-reset    false \n"]);
+            % so_string = strjoin([so_string  "-pH    true \n"]);
+            % so_string = strjoin([so_string  "-pe    true \n"]);
+            % so_string = strjoin([so_string  "-temperature    true \n"]);
+            % so_string = strjoin([so_string  "-alkalinity    true \n"]);
+            % so_string = strjoin([so_string  "-ionic_strength    true \n"]);
+            % so_string = strjoin([so_string  "-water    true \n"]);
+            % so_string = strjoin([so_string  "-charge_balance    true \n"]);
+            % so_string = strjoin([so_string  "-percent_error    true \n"]);
+            % so_string = strjoin([so_string  "-molalities \n"]);
+            % so_string = strjoin([so_string  "USER_PUNCH" num2str(obj.number) "\n"]);
+            % so_string = strjoin([so_string  "-headings density density_w conductance_r eps_r osmotic viscosity\n"]);
+            % so_string = strjoin([so_string  "10 PUNCH RHO RHO_0 SC EPS_R OSMOTIC VISCOS\n"]);
             % so_string = strjoin([so_string  "\n"]);
             % so_string = strjoin([so_string  "\n"]);
-            so_string = strjoin([so_string  "END"]);
-            so_string = sprintf(char(so_string));
+            % so_string = strjoin([so_string  "END"]);
+            % so_string = sprintf(char(so_string));
+            
+            so_obj = selected_output_object(obj);
+            so_string = so_obj.phreeqc_string();
+
         end
         
         function SR = run(obj, varargin)

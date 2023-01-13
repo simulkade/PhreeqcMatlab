@@ -86,11 +86,11 @@ classdef Surface
             surface_string = sprintf(char(surface_string));
         end
 
-        function [all_string, solution_string, surf_string, dl_string] = selected_output_string(obj, solution, varargin)
-            % [all_string, solution_string, surf_string, dl_string] = selected_output_string(obj, solution, varargin)
+        function [sol_so_obj, surf_so_obj, dl_so_obj] = selected_output_object(obj, solution, varargin)
+            % [sol_so_obj, surf_so_obj, dl_so_obj] = selected_output_object(obj, solution, varargin)
             % the last argument is an optional database file that must be
             % in the database folder
-            % returns a selected output string that can be appended to the
+            % returns three selected output objects that can be appended to the
             % current phreeqc string of the surface object to obtain most of
             % the physical and chemical properties calculated by phreeqc
             % for a surface in equilibrium with a solution
@@ -131,30 +131,56 @@ classdef Surface
             % surf_string that is the surface properties and composition
             % dl_string that is the composition of the double layer
             % 1- Solution selected output
-            solution_string = solution.selected_output_string();
-            solution_string = solution_string(1:end-3); % remove the END statement
+            sol_so_obj = solution.selected_output_object();
+            
             % 2- surface selected output
-            surf_string = strjoin(["\nSELECTED_OUTPUT" num2str(solution.number+1) "\n"]);
-            surf_string = strjoin([surf_string  "-reset false\n"]);
-            surf_string = strjoin([surf_string "-molalities" sur_sp_list "\n"]);
-            surf_string = strjoin([surf_string "-activities" sur_sp_list "\n"]);
-            surf_string = strjoin([surf_string  "USER_PUNCH" num2str(solution.number+1) "\n"]);
-            surf_string = strjoin([surf_string  "-headings "  element_names' "\n"]);
-            surf_string = strjoin([surf_string  "10 PUNCH" surf_call "\n"]);
+            surf_so_obj = SelectedOutput();
+            surf_so_obj.name = "Surface";
+            surf_so_obj.number = solution.number+1;
+            surf_content = strings(1,3);
+            surf_content(1) = "-reset false";
+            surf_content(2) = strjoin(["-molalities" sur_sp_list]);
+            surf_content(3) = strjoin(["-activities" sur_sp_list]);
+            surf_punch = strings(1,2);
+            surf_punch(1) = strjoin(["-headings "  element_names']);
+            surf_punch(2) = strjoin(["10 PUNCH" surf_call]);
+            surf_so_obj.content= surf_content;
+            surf_so_obj.punch = surf_punch;
             
             % 3- DL selected output
-            dl_string = strjoin(["\nSELECTED_OUTPUT" num2str(solution.number+2) "\n"]);
-            dl_string = strjoin([dl_string  "-reset false\n"]);
-            dl_string = strjoin([dl_string  "USER_PUNCH"  num2str(solution.number+2) "\n"]);
-            dl_string = strjoin([dl_string  "-headings "  edl_in' "\n"]);
-            dl_string = strjoin([dl_string  "10 PUNCH" edl_call "\n"]);
-            
-            % combined strings:
-            all_string = sprintf(char([solution_string(1:end-3) surf_string dl_string]));
-            surf_string = strjoin([surf_string  "END"]);
-            surf_string = sprintf(char(surf_string));
-            dl_string = strjoin([dl_string  "END"]);
-            dl_string = sprintf(char(dl_string));
+            dl_so_obj = SelectedOutput();
+            dl_so_obj.number = solution.number+2;
+            dl_so_obj.name = "Double layer";
+            dl_so_obj.content(1) = "-reset false";
+            dl_so_obj.punch(1) = strjoin(["-headings "  edl_in']);
+            dl_so_obj.punch(2) = strjoin(["10 PUNCH" edl_call]);
+        end
+
+        function [all_string, solution_string, surf_string, dl_string] = selected_output_string(obj, solution, varargin)
+            % [all_string, solution_string, surf_string, dl_string] = selected_output_string(obj, solution, varargin)
+            % the last argument is an optional database file that must be
+            % in the database folder
+            % returns a selected output string that can be appended to the
+            % current phreeqc string of the surface object to obtain most of
+            % the physical and chemical properties calculated by phreeqc
+            % for a surface in equilibrium with a solution
+            % a solution must be specified since some of the selected output lines
+            % are constructed after running a Phreeqc equilibration
+            % note that the new string must be called followed by the
+            % RM_RunCells to obtain the selected output values
+            if nargin>2
+                data_file = varargin{end};
+            else
+                data_file = 'phreeqc.dat';
+            end
+            [sol_so_obj, surf_so_obj, dl_so_obj] = selected_output_object(obj, solution, data_file);
+            solution_string = sol_so_obj.phreeqc_string();
+            surf_string = surf_so_obj.phreeqc_string();
+            dl_string = dl_so_obj.phreeqc_string();
+
+            all_string = sprintf([sol_so_obj.phreeqc_string_without_end ...
+                surf_so_obj.phreeqc_string_without_end ...
+                dl_so_obj.phreeqc_string_without_end '\nEND\n']);
         end
     
         function out_string = equilibrate_in_phreeqc(obj, solution, varargin)
@@ -224,8 +250,8 @@ classdef Surface
 %             h_out = phreeqc_rm.GetSelectedOutputHeadings(obj.number);
 %             v_out= phreeqc_rm.GetSelectedOutput(obj.number);
 %             h_out = phreeqc_rm.GetSelectedOutputHeadings(obj.number);
-            v_out_dl = phreeqc_rm.GetSelectedOutput(obj.number+2);
-            h_out_dl = phreeqc_rm.GetSelectedOutputHeadings(obj.number+2);
+%             v_out_dl = phreeqc_rm.GetSelectedOutput(obj.number+2);
+%             h_out_dl = phreeqc_rm.GetSelectedOutputHeadings(obj.number+2);
             
             % prepare the output for the surface (as a SurfaceResults
             % class)
