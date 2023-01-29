@@ -2,7 +2,7 @@ classdef Datafile
     %DATAFILE
     % datafile is a class that works with phreeqc data files
     % Currently, it is only used to extract the relevant data for the user
-    % interface 
+    % interface
     
     properties
         datafile_abs_path % absolute path to the data file
