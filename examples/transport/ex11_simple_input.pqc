@@ -1,0 +1,26 @@
+TITLE Example 11.--Transport and cation exchange.
+SOLUTION 0  CaCl2
+        units            mmol/kgw
+        temp             50.0
+        pH               7.0     charge
+        Ca               0.6
+        Cl               1.2
+       density          1.0   calculate
+SOLUTION 1-40  Initial solution for column
+        units            mmol/kgw
+        temp             50.0
+        pH               7.0     charge
+        Na               1.0
+        K                1.0
+        Cl               1.0
+        density          1.0   calculate
+END
+EXCHANGE 1-40
+        -equilibrate 1
+        X                0.001
+END
+SELECTED_OUTPUT
+        -reset           false
+        -step
+        -totals          Na Cl K Ca
+END
