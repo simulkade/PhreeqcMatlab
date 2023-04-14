@@ -94,13 +94,13 @@ This package probably won't be broken by sudden changes. So you can start using 
   + ~~More tests~~
   + Documentation (please help)
   + New classes for solution, phases, surfaces, etc (in progress)
-  + Utility functions for the IPhreeqc wrapper
-  + More examples for both IPhreeqc and PhreeqcRM
+  + Utility functions for the IPhreeqc wrapper (in progress)
+  + More examples for both IPhreeqc and PhreeqcRM (in progress)
   + More keywords in the new input file specific to PhreeqcMatlab
-  + Simple GUI (in progress as part of a DHRTC project)
+  + Simple GUI (in progress as part of a DOTC project)
 
 # Author
-The original package was written by [Ali A. Eftekhari](https://www.oilgas.dtu.dk/service/telefonbog/person?id=112240&cpid=203787&tab=2&qt=dtupublicationquery) in his free time. It is/will be used in some of the projects/publications at the [Danish Hydrocarbon Research and Technology Centre](https://www.oilgas.dtu.dk/) (DHRTC) at the [Technical University of Denmark](https://www.dtu.dk/). Some of the current development is done as part of an ongoing project at the DHRTC.
+The original package was written by [Ali A. Eftekhari](https://www.dtu.dk/english/Person/ali-akbar-eftekhari?id=112240&entity=profile) in his free time. It is/will be used in some of the projects/publications at the [Danish Offshore Technology Centre](https://offshore.dtu.dk/) (DOTC) at the [Technical University of Denmark](https://www.dtu.dk/). Some of the current development is done as part of an ongoing project at the DOTC.
 
 # Citation
 Please cite as
