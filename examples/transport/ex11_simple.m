@@ -3,3 +3,4 @@
 plot(squeeze(c_x_t(:, 4:end, end))); % plot the concentrations at the outlet
 comps = phreeqc_rm.GetComponents();
 legend(comps{4:end});
+% writematrix(squeeze(c_x_t(:, 1:end, end)), 'simple_ion_exchange.csv')

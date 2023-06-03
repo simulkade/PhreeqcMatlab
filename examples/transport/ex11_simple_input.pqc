@@ -11,8 +11,8 @@ SOLUTION 1-40  Initial solution for column
         temp             50.0
         pH               7.0     charge
         Na               1.0
-        K                1.0
-        Cl               1.0
+        K                0.4
+        Cl               1.4
         density          1.0   calculate
 END
 EXCHANGE 1-40
