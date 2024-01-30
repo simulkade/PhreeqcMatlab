@@ -167,7 +167,7 @@ classdef PhreeqcRM
             %}
             ncomps = obj.RM_FindComponents();
             components = cell(ncomps, 1);
-            s_name = '000000000000000000000000000'; % untill I find a more elegant solution
+            s_name = blanks(27); % untill I find a more elegant solution
             for i=1:ncomps
                 [~, components{i}] = obj.RM_GetComponent(i-1, s_name, length(s_name));
             end
@@ -260,7 +260,7 @@ classdef PhreeqcRM
             % ncomps = obj.RM_FindComponents();
             n_eq_phases = obj.RM_GetEquilibriumPhasesCount();
             components = cell(n_eq_phases, 1);
-            s_name = '000000000000000000000000000'; % untill I find a more elegant solution
+            s_name = blanks(27); % untill I find a more elegant solution
             for i=1:n_eq_phases
                 [~, components{i}] = obj.RM_GetEquilibriumPhasesName(i-1, s_name, length(s_name));
             end
@@ -328,8 +328,8 @@ classdef PhreeqcRM
             % ncomps = obj.RM_FindComponents();
             n_ex_phases = obj.RM_GetExchangeSpeciesCount();
             components = cell(n_ex_phases, 1);
-            s_name = '000000000000000000000000000'; % untill I find a more elegant solution
-            s_name2 = '000000000000000000000000000';
+            s_name = blanks(27); % untill I find a more elegant solution
+            s_name2 = blanks(27);
             for i=1:n_ex_phases
                 [~, s1] = obj.RM_GetExchangeSpeciesName(i-1, s_name, length(s_name));
                 [~, s2] = obj.RM_GetExchangeName(i-1, s_name2, length(s_name));
@@ -416,12 +416,11 @@ classdef PhreeqcRM
         function components = GetGasComponentsNames(obj)
            %{
             Get all the gas components name and return as a cell vector
-            %}
-            ncomps = obj.RM_FindComponents();
+           %}
             n_gas_comp = obj.RM_GetGasComponentsCount();
             components = cell(n_gas_comp, 1);
-            s_name = '000000000000000000000000000'; % untill I find a more elegant solution
-            for i=1:ncomps
+            s_name = blanks(27); % untill I find a more elegant solution
+            for i=1:n_gas_comp
                 [~, components{i}] = obj.RM_GetGasComponentsName(i-1, s_name, length(s_name));
             end
         end
@@ -703,7 +702,7 @@ classdef PhreeqcRM
             headings = cell(col, 1);
             
             for j = 1:col
-                headings{j} = '000000000000000000000';
+                headings{j} = blanks(21);
                 [~, headings{j}] = calllib('libphreeqcrm','RM_GetSelectedOutputHeading', obj.id, j-1, headings{j}, length(headings{j}));
             end
         end
@@ -882,7 +881,7 @@ classdef PhreeqcRM
             nspecies = obj.RM_GetSpeciesCount();
             name = cell(nspecies, 1);
             for i=1:nspecies
-                name{i} = '00000000000000000000';
+                name{i} = blanks(21);
                 [~, name{i}] = calllib('libphreeqcrm','RM_GetSpeciesName', obj.id, i-1, name{i}, length(name{i}));
             end
         end
@@ -1156,6 +1155,16 @@ classdef PhreeqcRM
             status = calllib('libphreeqcrm','RM_OpenFiles', obj.id);
         end
         
+            %{
+            Returns the MPI task number. For the OPENMP version, the task number is always zero and the result of @ref RM_GetMpiTasks is one. For the MPI version,
+            the root task number is zero, and all workers have a task number greater than zero.
+            The number of tasks can be obtained with @ref RM_GetMpiTasks. The number of tasks and computer hosts are determined at run time by the mpiexec command, and the
+            number of reaction-module processes is defined by the communicator used in constructing the reaction modules (@ref RM_Create). 
+            %}
+        function nMPI = RM_GetMpiMyself(obj)
+            nMPI = calllib('libphreeqcrm','RM_GetMpiMyself', obj.id);
+        end
+
         function status = RM_OutputMessage(obj, msg_str)
             %{
             Print a message to the output file. 
@@ -1697,7 +1706,7 @@ classdef PhreeqcRM
 %             n_ex_species = obj.RM_GetExchangeSpeciesCount();
 %             ex_name = cell(n_ex_species, 1);
 %             for i = 1:n_ex_species
-%                 ex_name{i} = '00000000000000000000';
+%                 ex_name{i} = blanks(21);
 %                 [status, ex_name{i}] = calllib('libphreeqcrm','RM_GetExchangeSpeciesName', ...
 %                     obj.id, i, ex_name{i}, length(ex_name{i}));
 %             end
@@ -1730,7 +1739,7 @@ classdef PhreeqcRM
             n_ex_species = obj.RM_GetExchangeSpeciesCount();
             ex_name = cell(n_ex_species, 1);
             for i = 1:n_ex_species
-                ex_name{i} = '00000000000000000000';
+                ex_name{i} = blanks(21);
                 [~, ex_name{i}] = calllib('libphreeqcrm','RM_GetExchangeName', ...
                     obj.id, i-1, ex_name{i}, length(ex_name{i}));
             end
@@ -1970,7 +1979,7 @@ classdef PhreeqcRM
             n_surf_species = obj.RM_GetSurfaceSpeciesCount();
             name_out = cell(n_surf_species, 1);
             for i=1:n_surf_species
-                name_out{i} = '00000000000000000000';
+                name_out{i} = blanks(21);
                 [~, name_out{i}] = calllib('libphreeqcrm','RM_GetSurfaceSpeciesName', ...
                 obj.id, i-1, name_out{i}, length(name_out{i}));
             end
@@ -1997,7 +2006,7 @@ classdef PhreeqcRM
             n_surf_species = obj.RM_GetSurfaceSpeciesCount();
             name_out = cell(n_surf_species, 1);
             for i=1:n_surf_species
-                name_out{i} = '00000000000000000000';
+                name_out{i} = blanks(21);
                 [~, name_out{i}] = calllib('libphreeqcrm','RM_GetSurfaceType', ...
                 obj.id, i-1, name_out{i}, length(name_out{i}));
             end
