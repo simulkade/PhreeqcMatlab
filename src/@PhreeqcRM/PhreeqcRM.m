@@ -4,6 +4,7 @@ classdef PhreeqcRM
 		id
 		ncells
 		nthreads
+        libName
 	end
 	
 	methods
@@ -14,11 +15,13 @@ classdef PhreeqcRM
             n_cells: number of reaction cells
             n_threads: number of CPU cores for OpenMP
             %}
-            if ~libisloaded('libphreeqcrm')
-                loadlibrary('libphreeqcrm','RM_interface_C.h');
+            phrm.libName = 'libphreeqcrm'; %'libphreeqcrm';
+            if ~libisloaded(phrm.libName)
+                loadlibrary(phrm.libName,'RM_interface_C.h');
             end
 			phrm.ncells = n_cells;
 			phrm.nthreads = n_threads;
+            phrm = phrm.RM_Create();
         end
         
         function phrm = RM_Create(obj)
@@ -27,7 +30,7 @@ classdef PhreeqcRM
             %}
             phrm = obj;
             if isempty(obj.id)
-    			id_out= calllib('libphreeqcrm','RM_Create', obj.ncells, obj.nthreads);
+    			id_out= calllib(obj.libName,'RM_Create', obj.ncells, obj.nthreads);
                 phrm.id = id_out;
             else
                 warning('The PhreeqcRM object is already created. Please call this function with an empty PhreeqcRM object');
@@ -52,15 +55,15 @@ classdef PhreeqcRM
                 status = RunString(iphreeqc_id, str);
                 if (status != 0) status = RM_Abort(id, status, "IPhreeqc RunString failed");
             %}
-			status = calllib('libphreeqcrm', 'RM_Abort', obj.id, result, err_str);
+			status = calllib(obj.libName, 'RM_Abort', obj.id, result, err_str);
         end
         
         function status = RM_CloseFiles(obj)
             % Close the output and log files.
-            status = calllib('libphreeqcrm','RM_CloseFiles', obj.id);
+            status = calllib(obj.libName,'RM_CloseFiles', obj.id);
         end
         
-        function status = RM_Concentrations2Utility(obj, c,	n, tc, p_atm)
+        function iphreeqc_id = RM_Concentrations2Utility(obj, c,	n, tc, p_atm)
             %{
             N sets of component concentrations are converted to SOLUTIONs numbered 1-n in the Utility IPhreeqc. The solutions can be reacted and manipulated with the methods of IPhreeqc. If solution concentration units (RM_SetUnitsSolution) are per liter, one liter of solution is created in the Utility instance; if solution concentration units are mass fraction, one kilogram of solution is created in the Utility instance. The motivation for this method is the mixing of solutions in wells, where it may be necessary to calculate solution properties (pH for example) or react the mixture to form scale minerals. The code fragments below make a mixture of concentrations and then calculate the pH of the mixture.
 
@@ -87,7 +90,7 @@ classdef PhreeqcRM
                 status = SetCurrentSelectedOutputUserNumber(iphreeqc_id, 5);
                 status = GetSelectedOutputValue2(iphreeqc_id, 1, 0, &vtype, &pH, svalue, 100);
             %}
-            status = calllib('libphreeqcrm','RM_Concentrations2Utility', ...
+            iphreeqc_id = calllib(obj.libName,'RM_Concentrations2Utility', ...
                 obj.id, c, n, tc, p_atm);
         end
         
@@ -97,17 +100,18 @@ classdef PhreeqcRM
             id	The instance id returned from RM_Create.
             grid2chem	An array of integers: Nonnegative is a reaction cell number (0 based), negative is an inactive cell. Array of size nxyz (number of grid cells). 
             %}
-            status = calllib('libphreeqcrm','RM_CreateMapping', ...
+            status = calllib(obj.libName,'RM_CreateMapping', ...
                 obj.id, grid2chem);
         end
         
         function status = RM_DecodeError(obj, e)
-            status = calllib('libphreeqcrm','RM_DecodeError', obj.id, e);
+            status = calllib(obj.libName,'RM_DecodeError', obj.id, e);
         end
         
         
         function status = RM_Destroy(obj)
-            status = calllib('libphreeqcrm','RM_Destroy', obj.id);
+            status = calllib(obj.libName,'RM_Destroy', obj.id);
+            %unloadlibrary(obj.libName) % causes the library to crash
         end
         
         function status = RM_DumpModule(obj, dump_on, appnd)
@@ -117,21 +121,21 @@ classdef PhreeqcRM
             appnd	Signal to append to the contents of the dump file: 1 true, 0 false. 
             %}
             
-            status = calllib('libphreeqcrm','RM_DumpModule', obj.id, dump_on, appnd);
+            status = calllib(obj.libName,'RM_DumpModule', obj.id, dump_on, appnd);
         end
         
         function status = RM_ErrorMessage(obj, errstr)
             %{
             errstr	String to be printed. 
             %}
-            status = calllib('libphreeqcrm','RM_ErrorMessage', obj.id, errstr);
+            status = calllib(obj.libName,'RM_ErrorMessage', obj.id, errstr);
         end
         
         function ncomps = RM_FindComponents(obj)
             %{
             ncomps number of components currently in the list, or IRM_RESULT error code (see RM_DecodeError). 
             %}
-            ncomps = calllib('libphreeqcrm','RM_FindComponents', obj.id);
+            ncomps = calllib(obj.libName,'RM_FindComponents', obj.id);
         end
         
         function status = RM_GetBackwardMapping(obj, n, list, list_size)
@@ -140,7 +144,7 @@ classdef PhreeqcRM
             list	Array to store the user cell numbers mapped to PhreeqcRM cell n.
             list_size	Input, the allocated size of list; it is an error if the array is too small. Output, the number of cells mapped to cell n. 
             %}
-            status = calllib('libphreeqcrm','RM_GetBackwardMapping', ...
+            status = calllib(obj.libName,'RM_GetBackwardMapping', ...
                 obj.id, n, list, list_size);
         end
         
@@ -148,7 +152,7 @@ classdef PhreeqcRM
             %{
             n	of chemistry cells, or IRM_RESULT error code (see RM_DecodeError). 
             %}
-            n = calllib('libphreeqcrm','RM_GetChemistryCellCount', obj.id);
+            n = calllib(obj.libName,'RM_GetChemistryCellCount', obj.id);
         end
         
         function [status, chem_name_out] = RM_GetComponent(obj, num, chem_name, l)
@@ -157,7 +161,7 @@ classdef PhreeqcRM
             chem_name	The string value associated with component num.
             l	The length of the maximum number of characters for chem_name. 
             %}
-            [status, chem_name_out] = calllib('libphreeqcrm','RM_GetComponent', ...
+            [status, chem_name_out] = calllib(obj.libName,'RM_GetComponent', ...
                 obj.id, num, chem_name, l);
         end
         
@@ -177,7 +181,7 @@ classdef PhreeqcRM
             %{
             Returns the number of components in the reaction-module component list. The component list is generated by calls to RM_FindComponents. The return value from the last call to RM_FindComponents is equal to the return value from RM_GetComponentCount. 
             %}
-            n = calllib('libphreeqcrm','RM_GetComponentCount', obj.id);
+            n = calllib(obj.libName,'RM_GetComponentCount', obj.id);
         end
         
         function [status, c_out] = RM_GetConcentrations(obj, c)
@@ -188,7 +192,7 @@ classdef PhreeqcRM
             id	The instance id returned from RM_Create.
             c	Array to receive the concentrations. Dimension of the array is equivalent to Fortran (nxyz, ncomps), where nxyz is the number of user grid cells and ncomps is the result of RM_FindComponents or RM_GetComponentCount. Values for inactive cells are set to 1e30. 
             %}
-            [status, c_out] = calllib('libphreeqcrm','RM_GetConcentrations', obj.id, c);
+            [status, c_out] = calllib(obj.libName,'RM_GetConcentrations', obj.id, c);
         end
         
         function c = GetConcentrations(obj)
@@ -201,7 +205,7 @@ classdef PhreeqcRM
             nxyz = obj.ncells;
             ncomps = obj.RM_FindComponents();
             c = zeros(nxyz, ncomps);
-            [~, c] = calllib('libphreeqcrm','RM_GetConcentrations', obj.id, c);
+            [~, c] = obj.RM_GetConcentrations(c);
         end
         
         
@@ -209,7 +213,7 @@ classdef PhreeqcRM
             %{
             density	Array to receive the densities. Dimension of the array is nxyz, where nxyz is the number of user grid cells (RM_GetGridCellCount). Values for inactive cells are set to 1e30. 
             %}
-            [status, density_out] = calllib('libphreeqcrm','RM_GetDensity', obj.id, density);
+            [status, density_out] = calllib(obj.libName,'RM_GetDensity', obj.id, density);
         end
         
         function density = GetDensity(obj)
@@ -217,7 +221,7 @@ classdef PhreeqcRM
             density	Array to receive the densities. Dimension of the array is nxyz, where nxyz is the number of user grid cells (RM_GetGridCellCount). Values for inactive cells are set to 1e30. 
             %}
             density = zeros(obj.ncells, 1);
-            [~, density] = calllib('libphreeqcrm','RM_GetDensity', obj.id, density);
+            [~, density] = obj.RM_GetDensity(density);
         end
         
         function [status, ec_out] = RM_GetEndCell(obj, ec)
@@ -228,14 +232,14 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 ec	Array to receive the ending cell numbers. Dimension of the array is the number of threads (OpenMP) or the number of processes (MPI). 
             %}
-            [status, ec_out] = calllib('libphreeqcrm','RM_GetEndCell', obj.id, ec);
+            [status, ec_out] = calllib(obj.libName,'RM_GetEndCell', obj.id, ec);
         end
         
         function n = RM_GetEquilibriumPhasesCount(obj)
             %{
             Returns the number of equilibrium phases in the initial-phreeqc module. RM_FindComponents must be called before RM_GetEquilibriumPhasesCount. This method may be useful when generating selected output definitions related to equilibrium phases. 
             %}
-            n = calllib('libphreeqcrm','RM_GetEquilibriumPhasesCount', obj.id);
+            n = calllib(obj.libName,'RM_GetEquilibriumPhasesCount', obj.id);
         end
         
         
@@ -249,7 +253,7 @@ classdef PhreeqcRM
                 name	The equilibrium phase name at number num.
                 l1	The length of the maximum number of characters for name. 
             %}
-            [status, chem_name_out] = calllib('libphreeqcrm','RM_GetEquilibriumPhasesName', ...
+            [status, chem_name_out] = calllib(obj.libName,'RM_GetEquilibriumPhasesName', ...
                 obj.id, num, chem_name, l);
         end
         
@@ -275,21 +279,21 @@ classdef PhreeqcRM
                 errstr	The error string related to the last call to a PhreeqcRM method.
                 l	Maximum number of characters that can be written to the argument (errstr). 
             %}
-            [status, msg_out] = calllib('libphreeqcrm','RM_GetErrorString', obj.id, errstr, l);
+            [status, msg_out] = calllib(obj.libName,'RM_GetErrorString', obj.id, errstr, l);
         end
         
         function l = RM_GetErrorStringLength(obj)
             %{
             
             %}
-            l = calllib('libphreeqcrm','RM_GetErrorStringLength', obj.id);
+            l = calllib(obj.libName,'RM_GetErrorStringLength', obj.id);
         end
         
         function n = RM_GetExchangeSpeciesCount(obj)
             %{
             Returns the number of exchange species in the initial-phreeqc module. RM_FindComponents must be called before RM_GetExchangeSpeciesCount. This method may be useful when generating selected output definitions related to exchangers. 
             %}
-            n = calllib('libphreeqcrm','RM_GetExchangeSpeciesCount', obj.id);
+            n = calllib(obj.libName,'RM_GetExchangeSpeciesCount', obj.id);
         end
         
         
@@ -303,7 +307,7 @@ classdef PhreeqcRM
                 name	The exchange name associated with exchange species num.
                 l1	The length of the maximum number of characters for name. 
             %}
-            [status, chem_name_out] = calllib('libphreeqcrm','RM_GetExchangeName', ...
+            [status, chem_name_out] = calllib(obj.libName,'RM_GetExchangeName', ...
                 obj.id, num, chem_name, l);
         end
         
@@ -317,7 +321,7 @@ classdef PhreeqcRM
                 name	The exchange species name at number num.
                 l1	The length of the maximum number of characters for name. 
             %}
-            [status, chem_name_out] = calllib('libphreeqcrm','RM_GetExchangeSpeciesName', ...
+            [status, chem_name_out] = calllib(obj.libName,'RM_GetExchangeSpeciesName', ...
                 obj.id, num, chem_name, l);
         end
         
@@ -356,7 +360,7 @@ classdef PhreeqcRM
 
 
             %}
-            [status, prefix_out] = calllib('libphreeqcrm','RM_GetFilePrefix', obj.id, prefix, l);
+            [status, prefix_out] = calllib(obj.libName,'RM_GetFilePrefix', obj.id, prefix, l);
         end
         
         function [status, c_out] = RM_GetGasCompMoles(obj, c)
@@ -367,7 +371,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 gas_moles	Vector to receive the moles of gas components. Dimension of the vector must be ngas_comps times nxyz, where, ngas_comps is the result of RM_GetGasComponentsCount, and nxyz is the number of user grid cells (RM_GetGridCellCount). If a gas component is not defined for a cell, the number of moles is set to -1. Values for inactive cells are set to 1e30. 
             %}
-            [status, c_out] = calllib('libphreeqcrm','RM_GetGasCompMoles', obj.id, c);
+            [status, c_out] = calllib(obj.libName,'RM_GetGasCompMoles', obj.id, c);
         end
         
         function [status, c_out] = RM_SetGasCompMoles(obj, c)
@@ -378,14 +382,14 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 gas_moles	Vector of moles of gas components. Dimension of the vector must be ngas_comps times nxyz, where, ngas_comps is the result of RM_GetGasComponentsCount, and nxyz is the number of user grid cells (RM_GetGridCellCount). If the number of moles is set to a negative number, the gas component will not be defined for the GAS_PHASE of the reaction cell. 
             %}
-            [status, c_out] = calllib('libphreeqcrm','RM_SetGasCompMoles', obj.id, c);
+            [status, c_out] = calllib(obj.libName,'RM_SetGasCompMoles', obj.id, c);
         end
         
         function n = RM_GetGasComponentsCount(obj)
             %{
             Returns the number of gas phase components in the initial-phreeqc module. RM_FindComponents must be called before RM_GetGasComponentsCount. This method may be useful when generating selected output definitions related to gas phases. 
             %}
-            n = calllib('libphreeqcrm','RM_GetGasComponentsCount', obj.id);
+            n = calllib(obj.libName,'RM_GetGasComponentsCount', obj.id);
         end
         
         function c = GetGasCompMoles(obj)
@@ -396,7 +400,7 @@ classdef PhreeqcRM
             obj.RM_FindComponents(); % need to call it first
             n_gas_comp = obj.RM_GetGasComponentsCount();
             c = zeros(nxyz, n_gas_comp);
-            [~, c] = calllib('libphreeqcrm','RM_GetGasCompMoles', obj.id, c);
+            [~, c] = obj.RM_GetGasCompMoles(c);
         end
         
         function [status, chem_name_out] = RM_GetGasComponentsName(obj, num, chem_name, l)
@@ -409,7 +413,7 @@ classdef PhreeqcRM
                 name	The gas component name at number num.
                 l1	The length of the maximum number of characters for name. 
             %}
-            [status, chem_name_out] = calllib('libphreeqcrm','RM_GetGasComponentsName', ...
+            [status, chem_name_out] = calllib(obj.libName,'RM_GetGasComponentsName', ...
                 obj.id, num, chem_name, l);
         end
         
@@ -434,7 +438,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 gas_phi	Vector to receive the fugacity coefficients of gas components. Dimension of the vector must be ngas_comps times nxyz, where, ngas_comps is the result of RM_GetGasComponentsCount, and nxyz is the number of user grid cells (RM_GetGridCellCount). If a gas component is not defined for a cell, the fugacity coefficient is set to -1. Values for inactive cells are set to 1e30. 
            %}
-            [status, c_out] = calllib('libphreeqcrm','RM_GetGasCompPhi', obj.id, c);
+            [status, c_out] = calllib(obj.libName,'RM_GetGasCompPhi', obj.id, c);
         end
         
         function c = GetGasCompPhi(obj)
@@ -449,7 +453,7 @@ classdef PhreeqcRM
             obj.RM_FindComponents(); % need to call it first
             n_gas_comp = obj.RM_GetGasComponentsCount();
             c = zeros(nxyz, n_gas_comp);
-            [~, c] = calllib('libphreeqcrm','RM_GetGasCompPhi', obj.id, c);
+            [~, c] = obj.RM_GetGasCompPhi(c);
         end
         
         function [status, c_out] = RM_GetGasCompPressures(obj, c)
@@ -460,7 +464,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 gas_pressure	Vector to receive the pressures of gas components. Dimension of the vector must be ngas_comps times nxyz, where, ngas_comps is the result of RM_GetGasComponentsCount, and nxyz is the number of user grid cells (RM_GetGridCellCount). If a gas component is not defined for a cell, the pressure is set to -1. Values for inactive cells are set to 1e30. 
             %}
-            [status, c_out] = calllib('libphreeqcrm','RM_GetGasCompPressures', obj.id, c);
+            [status, c_out] = calllib(obj.libName,'RM_GetGasCompPressures', obj.id, c);
         end
         
         function c = GetGasCompPressures(obj)
@@ -471,7 +475,7 @@ classdef PhreeqcRM
             obj.RM_FindComponents(); % need to call it first
             n_gas_comp = obj.RM_GetGasComponentsCount();
             c = zeros(nxyz, n_gas_comp);
-            [~, c] = calllib('libphreeqcrm','RM_GetGasCompPressures', obj.id, c);
+            [~, c] = obj.RM_GetGasCompPressures(c);
         end
         
         function [status, c_out] = RM_GetGasPhaseVolume(obj, c)
@@ -482,7 +486,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 gas_volume	Array to receive the gas phase volumes. Dimension of the vector must be nxyz, where, nxyz is the number of user grid cells (RM_GetGridCellCount). If a gas phase is not defined for a cell, the volume is set to -1. Values for inactive cells are set to 1e30. 
             %}
-            [status, c_out] = calllib('libphreeqcrm','RM_GetGasPhaseVolume', obj.id, c);
+            [status, c_out] = calllib(obj.libName,'RM_GetGasPhaseVolume', obj.id, c);
         end
         
         function [status, c_out] = RM_SetGasPhaseVolume(obj, c)
@@ -493,7 +497,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 gas_volume	Vector of volumes for each gas phase. Dimension of the vector must be nxyz, where, nxyz is the number of user grid cells (RM_GetGridCellCount). If the volume is set to a negative number for a cell, the gas-phase volume for that cell is not changed. 
             %}
-            [status, c_out] = calllib('libphreeqcrm','RM_SetGasPhaseVolume', obj.id, c);
+            [status, c_out] = calllib(obj.libName,'RM_SetGasPhaseVolume', obj.id, c);
         end
         
         function c = GetGasPhaseVolume(obj)
@@ -503,7 +507,7 @@ classdef PhreeqcRM
             %}
             nxyz = obj.ncells;
             c = zeros(nxyz, 1);
-            [~, c] = calllib('libphreeqcrm','RM_GetGasPhaseVolume', obj.id, c);
+            [~, c] = obj.RM_GetGasPhaseVolume(c);
         end
         
         function [status, gfw_out] = RM_GetGfw(obj, gfw)
@@ -514,7 +518,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 gfw	Array to receive the gram formula weights. Dimension of the array is ncomps, where ncomps is the number of components in the component list. 
             %}
-            [status, gfw_out] = calllib('libphreeqcrm','RM_GetGfw', obj.id, gfw);
+            [status, gfw_out] = calllib(obj.libName,'RM_GetGfw', obj.id, gfw);
         end
         
         function gfw = GetGfw(obj)
@@ -527,14 +531,14 @@ classdef PhreeqcRM
             %}
             ncomps = obj.RM_FindComponents();
             gfw = zeros(ncomps, 1);
-            [~, gfw] = calllib('libphreeqcrm','RM_GetGfw', obj.id, gfw);
+            [~, gfw] = obj.RM_GetGfw(gfw);
         end
         
         function n = RM_GetGridCellCount(obj)
             %{
             Returns the number of grid cells in the user's model, which is defined in the call to RM_Create. The mapping from grid cells to reaction cells is defined by RM_CreateMapping. The number of reaction cells may be less than the number of grid cells if there are inactive regions or symmetry in the model definition. 
             %}
-            n = calllib('libphreeqcrm','RM_GetGridCellCount', obj.id);
+            n = calllib(obj.libName,'RM_GetGridCellCount', obj.id);
         end
         
         function status = RM_GetIPhreeqcId(obj, l)
@@ -547,10 +551,10 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 l	The number of the IPhreeqc instance to be retrieved (0 based). 
             %}
-            status = calllib('libphreeqcrm','RM_GetIPhreeqcId', obj.id, l);
+            status = calllib(obj.libName,'RM_GetIPhreeqcId', obj.id, l);
         end
         
-        function status = RM_GetNthSelectedOutputUserNumber(obj, n)
+        function value = RM_GetNthSelectedOutputUserNumber(obj, n)
             %{
             Returns the user number for the nth selected-output definition. Definitions are sorted by user number. Phreeqc allows multiple selected-output definitions, each of which is assigned a nonnegative integer identifier by the user. The number of definitions can be obtained by RM_GetSelectedOutputCount. To cycle through all of the definitions, RM_GetNthSelectedOutputUserNumber can be used to identify the user number for each selected-output definition in sequence. RM_SetCurrentSelectedOutputUserNumber is then used to select that user number for selected-output processing.
 
@@ -561,7 +565,7 @@ classdef PhreeqcRM
             Return values
                 The	user number of the nth selected-output definition, negative is failure (See RM_DecodeError). 
             %}
-            status = calllib('libphreeqcrm','RM_GetNthSelectedOutputUserNumber', obj.id, n);
+            value = calllib(obj.libName,'RM_GetNthSelectedOutputUserNumber', obj.id, n);
         end
         
         function [status, sat_out] = RM_GetSaturation(obj, sat_calc)
@@ -572,7 +576,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 sat_calc	Vector to receive the saturations. Dimension of the array is set to nxyz, where nxyz is the number of user grid cells (RM_GetGridCellCount). Values for inactive cells are set to 1e30. 
             %}
-            [status, sat_out] = calllib('libphreeqcrm','RM_GetSaturation', obj.id, sat_calc);
+            [status, sat_out] = calllib(obj.libName,'RM_GetSaturation', obj.id, sat_calc);
         end
         
         function sat = GetSaturation(obj)
@@ -584,7 +588,7 @@ classdef PhreeqcRM
                 sat_calc	Vector to receive the saturations. Dimension of the array is set to nxyz, where nxyz is the number of user grid cells (RM_GetGridCellCount). Values for inactive cells are set to 1e30. 
             %}
             sat = zeros(obj.ncells, 1);
-            [~, sat] = calllib('libphreeqcrm','RM_GetSaturation', obj.id, sat);
+            [~, sat] = obj.RM_GetSaturation(sat);
         end
         
         function [status, s_out] = RM_GetSelectedOutput(obj, so)
@@ -607,7 +611,7 @@ classdef PhreeqcRM
                   free(selected_out);
                 }
             %}
-            [status, s_out] = calllib('libphreeqcrm','RM_GetSelectedOutput', obj.id, so);
+            [status, s_out] = calllib(obj.libName,'RM_GetSelectedOutput', obj.id, so);
         end
         
         function s_out = GetSelectedOutput(obj, n_user)
@@ -633,21 +637,21 @@ classdef PhreeqcRM
             col = obj.RM_GetSelectedOutputColumnCount();
             nxyz = obj.ncells;
             s_out = zeros(nxyz, col);
-            [~, s_out] = calllib('libphreeqcrm','RM_GetSelectedOutput', obj.id, s_out);
+            [~, s_out] = obj.RM_GetSelectedOutput(s_out);
         end
         
         function n = RM_GetSelectedOutputColumnCount(obj)
             %{
             Returns the number of columns in the current selected-output definition. RM_SetCurrentSelectedOutputUserNumber determines which of the selected-output definitions is used. 
             %}
-            n = calllib('libphreeqcrm','RM_GetSelectedOutputColumnCount', obj.id);
+            n = calllib(obj.libName,'RM_GetSelectedOutputColumnCount', obj.id);
         end
         
         function n = RM_GetSelectedOutputCount(obj)
             %{
             Returns the number of selected-output definitions. RM_SetCurrentSelectedOutputUserNumber determines which of the selected-output definitions is used. 
             %}
-            n = calllib('libphreeqcrm','RM_GetSelectedOutputCount', obj.id);
+            n = calllib(obj.libName,'RM_GetSelectedOutputCount', obj.id);
         end
         
         function [status, h_out] = RM_GetSelectedOutputHeading(obj, icol, heading, l)
@@ -674,7 +678,7 @@ classdef PhreeqcRM
                   }
                 }
             %}
-            [status, h_out] = calllib('libphreeqcrm','RM_GetSelectedOutputHeading', obj.id, icol, heading, l);
+            [status, h_out] = calllib(obj.libName,'RM_GetSelectedOutputHeading', obj.id, icol, heading, l);
         end
         
         function headings = GetSelectedOutputHeadings(obj, n_user)
@@ -703,7 +707,7 @@ classdef PhreeqcRM
             
             for j = 1:col
                 headings{j} = blanks(21);
-                [~, headings{j}] = calllib('libphreeqcrm','RM_GetSelectedOutputHeading', obj.id, j-1, headings{j}, length(headings{j}));
+                [~, headings{j}] = obj.RM_GetSelectedOutputHeading(j-1, headings{j}, length(headings{j}));
             end
         end
         
@@ -751,14 +755,14 @@ classdef PhreeqcRM
                   free(selected_out);
                 }
             %}
-            n = calllib('libphreeqcrm','RM_GetSelectedOutputRowCount', obj.id);
+            n = calllib(obj.libName,'RM_GetSelectedOutputRowCount', obj.id);
         end
         
         function [status, v_out] = RM_GetSolutionVolume(obj, vol)
             %{
             Transfer solution volumes from the reaction cells to the array given in the argument list (vol). Solution volumes are those calculated by the reaction module. Only the following databases distributed with PhreeqcRM have molar volume information needed to accurately calculate solution volume: phreeqc.dat, Amm.dat, and pitzer.dat.
             %}
-            [status, v_out] = calllib('libphreeqcrm','RM_GetSolutionVolume', obj.id, vol);
+            [status, v_out] = calllib(obj.libName,'RM_GetSolutionVolume', obj.id, vol);
         end
         
         function v_out = GetSolutionVolume(obj)
@@ -766,7 +770,7 @@ classdef PhreeqcRM
             Transfer solution volumes from the reaction cells to the array given in the argument list (vol). Solution volumes are those calculated by the reaction module. Only the following databases distributed with PhreeqcRM have molar volume information needed to accurately calculate solution volume: phreeqc.dat, Amm.dat, and pitzer.dat.
             %}
             v_out = zeros(obj.ncells, 1);
-            v_out = calllib('libphreeqcrm','RM_GetSolutionVolume', obj.id, v_out);
+            [~, v_out] = obj.RM_GetSolutionVolume(v_out);
         end
         
         function [status, c_out] = RM_GetSpeciesConcentrations(obj, species_conc)
@@ -777,7 +781,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 species_conc	Array to receive the aqueous species concentrations. Dimension of the array is (nxyz, nspecies), where nxyz is the number of user grid cells (RM_GetGridCellCount), and nspecies is the number of aqueous species (RM_GetSpeciesCount). Concentrations are moles per liter. Values for inactive cells are set to 1e30. 
             %}
-            [status, c_out] = calllib('libphreeqcrm','RM_GetSpeciesConcentrations', obj.id, species_conc);
+            [status, c_out] = calllib(obj.libName,'RM_GetSpeciesConcentrations', obj.id, species_conc);
         end
         
         function c_out = GetSpeciesConcentrations(obj)
@@ -793,14 +797,14 @@ classdef PhreeqcRM
             obj.RM_FindComponents(); % must run to update species list
             nspecies = obj.RM_GetSpeciesCount();
             c_out = zeros(obj.ncells, nspecies);
-            [~, c_out] = calllib('libphreeqcrm','RM_GetSpeciesConcentrations', obj.id, c_out);
+            [~, c_out] = obj.RM_GetSpeciesConcentrations(c_out);
         end
         
         function status = RM_GetSpeciesCount(obj)
             %{
             The number of aqueous species used in the reaction module. This method is intended for use with multicomponent-diffusion transport calculations, and RM_SetSpeciesSaveOn must be set to true. The list of aqueous species is determined by RM_FindComponents and includes all aqueous species that can be made from the set of components.
             %}
-            status = calllib('libphreeqcrm','RM_GetSpeciesCount', obj.id);
+            status = calllib(obj.libName,'RM_GetSpeciesCount', obj.id);
         end
         
         function [status, d_out] = RM_GetSpeciesD25(obj, diffc)
@@ -810,7 +814,11 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 diffc	Array to receive the diffusion coefficients at 25 C, m^2/s. Dimension of the array is nspecies, where nspecies is is the number of aqueous species (RM_GetSpeciesCount). 
             %}
-            [status, d_out] = calllib('libphreeqcrm','RM_GetSpeciesD25', obj.id, diffc);
+            try
+                [status, d_out] = calllib(obj.libName,'RM_GetSpeciesD25', obj.id, diffc);
+            catch ME
+                disp(getReport(ME));
+            end
         end
         
         function d_out = GetSpeciesD25(obj)
@@ -820,11 +828,12 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 diffc	Array to receive the diffusion coefficients at 25 C, m^2/s. Dimension of the array is nspecies, where nspecies is is the number of aqueous species (RM_GetSpeciesCount). 
             %}
+            
             obj.RM_SetSpeciesSaveOn(1);
             obj.RM_FindComponents(); % must run to update species list
             nspecies = obj.RM_GetSpeciesCount();
             d_out = zeros(nspecies, 1);
-            [~, d_out] = calllib('libphreeqcrm','RM_GetSpeciesD25', obj.id, d_out);
+            [~, d_out] = obj.RM_GetSpeciesD25(d_out);
         end
         
         function [status, name] = RM_GetSpeciesName(obj, i, name, l)
@@ -850,7 +859,7 @@ classdef PhreeqcRM
                   fprintf(stderr, "%s\n", name);
                 }
             %}
-            [status, name] = calllib('libphreeqcrm','RM_GetSpeciesName', obj.id, i, name, l);
+            [status, name] = calllib(obj.libName,'RM_GetSpeciesName', obj.id, i, name, l);
         end
         
         function name = GetSpeciesNames(obj)
@@ -876,13 +885,14 @@ classdef PhreeqcRM
                   fprintf(stderr, "%s\n", name);
                 }
             %}
+            
             obj.RM_SetSpeciesSaveOn(1);
             obj.RM_FindComponents(); % must run to update species list
             nspecies = obj.RM_GetSpeciesCount();
             name = cell(nspecies, 1);
             for i=1:nspecies
                 name{i} = blanks(21);
-                [~, name{i}] = calllib('libphreeqcrm','RM_GetSpeciesName', obj.id, i-1, name{i}, length(name{i}));
+                [~, name{i}] = obj.RM_GetSpeciesName(i-1, name{i}, length(name{i}));
             end
         end
         
@@ -896,7 +906,7 @@ classdef PhreeqcRM
             Return values
                 IRM_RESULT	0, species are not saved; 1, species are saved; negative is failure (See RM_DecodeError). 
             %}
-            status = calllib('libphreeqcrm','RM_GetSpeciesSaveOn', obj.id);
+            status = calllib(obj.libName,'RM_GetSpeciesSaveOn', obj.id);
         end
         
         function [status, z_out] = RM_GetSpeciesZ(obj, z)
@@ -910,7 +920,7 @@ classdef PhreeqcRM
             Return values
                 IRM_RESULT	0 is success, negative is failure (See RM_DecodeError). 
             %}
-            [status, z_out] = calllib('libphreeqcrm','RM_GetSpeciesZ', obj.id, z);
+            [status, z_out] = calllib(obj.libName,'RM_GetSpeciesZ', obj.id, z);
         end
         
         function z_out = GetSpeciesZ(obj)
@@ -928,7 +938,7 @@ classdef PhreeqcRM
             obj.RM_FindComponents(); % must run to update species list
             nspecies = obj.RM_GetSpeciesCount();
             z_out = zeros(nspecies, 1);
-            [~, z_out] = calllib('libphreeqcrm','RM_GetSpeciesZ', obj.id, z_out);
+            [~, z_out] = obj.RM_GetSpeciesZ(z_out);
         end
         
         function [status, sc_out] = RM_GetStartCell(obj, sc)
@@ -939,21 +949,21 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 sc	Array to receive the starting cell numbers. Dimension of the array is the number of threads (OpenMP) or the number of processes (MPI). 
             %}
-            [status, sc_out] = calllib('libphreeqcrm','RM_GetStartCell', obj.id, sc);
+            [status, sc_out] = calllib(obj.libName,'RM_GetStartCell', obj.id, sc);
         end
         
         function n = RM_GetThreadCount(obj)
             %{
             Returns the number of threads, which is equal to the number of workers used to run in parallel with OPENMP. For the OPENMP version, the number of threads is set implicitly or explicitly with RM_Create. For the MPI version, the number of threads is always one for each process. 
             %}
-            n = calllib('libphreeqcrm','RM_GetThreadCount', obj.id);
+            n = calllib(obj.libName,'RM_GetThreadCount', obj.id);
         end
         
         function t = RM_GetTime(obj)
             %{
             Returns the current simulation time in seconds. The reaction module does not change the time value, so the returned value is equal to the default (0.0) or the last time set by RM_SetTime. 
             %}
-            t = calllib('libphreeqcrm','RM_GetTime', obj.id);
+            t = calllib(obj.libName,'RM_GetTime', obj.id);
         end
         
         function tc = RM_GetTimeConversion(obj)
@@ -962,7 +972,7 @@ classdef PhreeqcRM
             Return values
                 Multiplier	to convert seconds to another time unit. 
             %}
-            tc = calllib('libphreeqcrm','RM_GetTimeConversion', obj.id);
+            tc = calllib(obj.libName,'RM_GetTimeConversion', obj.id);
         end
         
         function ts = RM_GetTimeStep(obj)
@@ -975,10 +985,10 @@ classdef PhreeqcRM
             Return values
                 The	current simulation time step in seconds. 
             %}
-            ts = calllib('libphreeqcrm','RM_GetTimeStep', obj.id);
+            ts = calllib(obj.libName,'RM_GetTimeStep', obj.id);
         end
         
-        function [status, c_out] = RM_InitialPhreeqc2Concentrations(obj, ...
+        function [status, c] = RM_InitialPhreeqc2Concentrations(obj, ...
                 c, n_boundary, boundary_solution1, boundary_solution2, fraction1)
             %{
             Fills an array (c) with concentrations from solutions in the InitialPhreeqc instance. 
@@ -1016,7 +1026,7 @@ classdef PhreeqcRM
                 }
                 status = RM_InitialPhreeqc2Concentrations(id, bc_conc, nbound, bc1, bc2, bc_f1);
             %}
-            [status, c_out] = calllib('libphreeqcrm','RM_InitialPhreeqc2Concentrations', obj.id, ...
+            [status, c] = calllib(obj.libName,'RM_InitialPhreeqc2Concentrations', obj.id, ...
                 c, n_boundary, boundary_solution1, boundary_solution2, fraction1);
         end
         
@@ -1024,7 +1034,7 @@ classdef PhreeqcRM
                 n_boundary, boundary_solution1, boundary_solution2, fraction1)
             ncomps = obj.RM_FindComponents();
             c_out = zeros(n_boundary*ncomps, 1);
-            [~, c_out] = calllib('libphreeqcrm','RM_InitialPhreeqc2Concentrations', obj.id, ...
+            [~, c_out] = obj.RM_InitialPhreeqc2Concentrations(...
                 c_out, n_boundary, boundary_solution1, boundary_solution2, fraction1);
         end
         
@@ -1075,11 +1085,11 @@ classdef PhreeqcRM
                 // No mixing is defined, so the following is equivalent
                 status = RM_InitialPhreeqc2Module(id, ic1, NULL, NULL);
             %}
-            status = calllib('libphreeqcrm','RM_InitialPhreeqc2Module', obj.id, ...
+            status = calllib(obj.libName,'RM_InitialPhreeqc2Module', obj.id, ...
                 initial_conditions1, initial_conditions2, fraction1);
         end
         
-        function [status, c_out] = RM_InitialPhreeqc2SpeciesConcentrations(obj, ...
+        function [status, species_c] = RM_InitialPhreeqc2SpeciesConcentrations(obj, ...
                 species_c, n_boundary, boundary_solution1, boundary_solution2, fraction1)
             %{
             Fills an array (species_c) with aqueous species concentrations from solutions in the InitialPhreeqc instance. This method is intended for use with multicomponent-diffusion transport calculations, and RM_SetSpeciesSaveOn must be set to true. The method is used to obtain aqueous species concentrations for boundary conditions. If a negative value is used for a cell in boundary_solution1, then the highest numbered solution in the InitialPhreeqc instance will be used for that cell. Concentrations may be a mixture of two solutions, boundary_solution1 and boundary_solution2, with a mixing fraction for boundary_solution1 1 of fraction1 and mixing fraction for boundary_solution2 of (1 - fraction1). A negative value for boundary_solution2 implies no mixing, and the associated value for fraction1 is ignored. If boundary_solution2 and fraction1 are NULL, no mixing is used; concentrations are derived from boundary_solution1 only.
@@ -1107,7 +1117,7 @@ classdef PhreeqcRM
                 }
                 status = RM_InitialPhreeqc2SpeciesConcentrations(id, bc_conc, nbound, bc1, bc2, bc_f1);
             %}
-            [status, c_out] = calllib('libphreeqcrm','RM_InitialPhreeqc2SpeciesConcentrations', obj.id, ...
+            [status, species_c] = calllib(obj.libName,'RM_InitialPhreeqc2SpeciesConcentrations', obj.id, ...
                 species_c, n_boundary, boundary_solution1, boundary_solution2, fraction1);
         end
         
@@ -1130,7 +1140,7 @@ classdef PhreeqcRM
                 // copies solution and reactants to cells 18 and 19
                 status = RM_InitialPhreeqcCell2Module(id, -1, module_cells, 2);
             %}
-            status = calllib('libphreeqcrm','RM_InitialPhreeqcCell2Module', obj.id, ...
+            status = calllib(obj.libName,'RM_InitialPhreeqcCell2Module', obj.id, ...
                 n, module_numbers, dim_module_numbers);
         end
         
@@ -1138,21 +1148,21 @@ classdef PhreeqcRM
             %{
             Load a database for all IPhreeqc instances???workers, InitialPhreeqc, and Utility. All definitions of the reaction module are cleared (SOLUTION_SPECIES, PHASES, SOLUTIONs, etc.), and the database is read. 
             %}
-            status = calllib('libphreeqcrm','RM_LoadDatabase', obj.id, db_name);
+            status = calllib(obj.libName,'RM_LoadDatabase', obj.id, db_name);
         end
         
         function status = RM_LogMessage(obj, msg_str)
             %{
             Print a message to the log file. 
             %}
-            status = calllib('libphreeqcrm','RM_LogMessage', obj.id, msg_str);
+            status = calllib(obj.libName,'RM_LogMessage', obj.id, msg_str);
         end
         
         function status = RM_OpenFiles(obj)
             %{
             Opens the output and log files. Files are named prefix.chem.txt and prefix.log.txt based on the prefix defined by RM_SetFilePrefix. 
             %}
-            status = calllib('libphreeqcrm','RM_OpenFiles', obj.id);
+            status = calllib(obj.libName,'RM_OpenFiles', obj.id);
         end
         
             %{
@@ -1162,7 +1172,19 @@ classdef PhreeqcRM
             number of reaction-module processes is defined by the communicator used in constructing the reaction modules (@ref RM_Create). 
             %}
         function nMPI = RM_GetMpiMyself(obj)
-            nMPI = calllib('libphreeqcrm','RM_GetMpiMyself', obj.id);
+            nMPI = calllib(obj.libName,'RM_GetMpiMyself', obj.id);
+        end
+        %{
+        Returns the number of MPI processes (tasks) assigned to the reaction module. For the MPI version, the number of tasks and computer hosts is specified at run time by the mpiexec command. The number of MPI processes used for reaction calculations is determined by the MPI communicator used in constructing the reaction modules. The communicator may define a subset of the total number of MPI processes. The root task number is zero, and all other MPI tasks have unique task numbers greater than zero. For the OPENMP version, the number of tasks is one, and the task number returned by GetMpiMyself is zero.
+        
+        Return values
+        The	number of MPI processes assigned to the reaction module.
+        See also
+        GetMpiMyself, PhreeqcRM::PhreeqcRM.
+        %}
+
+        function nMPI = RM_GetMpiTasks(obj)
+            nMPI = calllib(obj.libName,'RM_GetMpiTasks', obj.id);
         end
 
         function status = RM_OutputMessage(obj, msg_str)
@@ -1186,7 +1208,7 @@ classdef PhreeqcRM
                 sprintf(str1, "Number of components for transport:               %d\n", RM_GetComponentCount(id));
                 status = RM_OutputMessage(id, str1);
             %}
-            status = calllib('libphreeqcrm','RM_OutputMessage', obj.id, msg_str);
+            status = calllib(obj.libName,'RM_OutputMessage', obj.id, msg_str);
         end
         
         function status = RM_RunCells(obj)
@@ -1205,7 +1227,7 @@ classdef PhreeqcRM
                 status = RM_GetDensity(id, density);           // Density after reaction
                 status = RM_GetSolutionVolume(id, volume);     // Solution volume after reaction
             %}
-            status = calllib('libphreeqcrm','RM_RunCells', obj.id);
+            status = calllib(obj.libName,'RM_RunCells', obj.id);
         end
         
         function status = RM_RunFile(obj, workers, ...
@@ -1220,7 +1242,7 @@ classdef PhreeqcRM
                 utility	1, the Utility instance will run the file; 0, the Utility instance will not run the file.
                 chem_name	Name of the file to run. 
             %}
-            status = calllib('libphreeqcrm','RM_RunFile', obj.id, workers, ...
+            status = calllib(obj.libName,'RM_RunFile', obj.id, workers, ...
                 initial_phreeqc, utility, chem_name);
         end
         
@@ -1238,7 +1260,7 @@ classdef PhreeqcRM
 
 
             %}
-            status = calllib('libphreeqcrm','RM_RunString', obj.id, workers, ...
+            status = calllib(obj.libName,'RM_RunString', obj.id, workers, ...
                 initial_phreeqc, utility, sprintf(input_string));
         end
         
@@ -1246,7 +1268,7 @@ classdef PhreeqcRM
             %{
             Print message to the screen. 
             %}
-            status = calllib('libphreeqcrm','RM_ScreenMessage', obj.id, msg_str);
+            status = calllib(obj.libName,'RM_ScreenMessage', obj.id, msg_str);
         end
         
         function status = RM_SetErrorOn(obj, tf)
@@ -1257,7 +1279,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 tf	1, enable error messages; 0, disable error messages. Default is 1. 
             %}
-            status = calllib('libphreeqcrm','RM_SetErrorOn', obj.id, tf);
+            status = calllib(obj.libName,'RM_SetErrorOn', obj.id, tf);
         end
         
         function status = RM_SetComponentH2O(obj, tf)
@@ -1268,7 +1290,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 tf	0, total H and O are included in the component list; 1, excess H, excess O, and water are included in the component list. 
             %}
-            status = calllib('libphreeqcrm','RM_SetComponentH2O', obj.id, tf);
+            status = calllib(obj.libName,'RM_SetComponentH2O', obj.id, tf);
         end
         
         function status = RM_SetConcentrations(obj, c)
@@ -1279,7 +1301,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 c	Array of component concentrations. Size of array is equivalent to Fortran (nxyz, ncomps), where nxyz is the number of grid cells in the user's model (RM_GetGridCellCount), and ncomps is the number of components as determined by RM_FindComponents or RM_GetComponentCount. 
             %}
-            status = calllib('libphreeqcrm','RM_SetConcentrations', obj.id, c);
+            status = calllib(obj.libName,'RM_SetConcentrations', obj.id, c);
         end
         
         function status = RM_SetCurrentSelectedOutputUserNumber(obj, n_user)
@@ -1303,7 +1325,7 @@ classdef PhreeqcRM
 }
 
             %}
-            status = calllib('libphreeqcrm','RM_SetCurrentSelectedOutputUserNumber', obj.id, n_user);
+            status = calllib(obj.libName,'RM_SetCurrentSelectedOutputUserNumber', obj.id, n_user);
         end
         
         function status = RM_SetDensity(obj, density)
@@ -1314,14 +1336,14 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 density	Array of densities. Size of array is nxyz, where nxyz is the number of grid cells in the user's model (RM_GetGridCellCount). 
             %}
-            status = calllib('libphreeqcrm','RM_SetDensity', obj.id, density);
+            status = calllib(obj.libName,'RM_SetDensity', obj.id, density);
         end
         
         function status = RM_SetDumpFileName(obj, dump_name)
             %{
             Set the name of the dump file. It is the name used by RM_DumpModule. 
             %}
-            status = calllib('libphreeqcrm','RM_SetDumpFileName', obj.id, dump_name);
+            status = calllib(obj.libName,'RM_SetDumpFileName', obj.id, dump_name);
         end
         
         function status = RM_SetErrorHandlerMode(obj, err_mode)
@@ -1332,14 +1354,14 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 mode	Error handling mode: 0, 1, or 2. 
             %}
-            status = calllib('libphreeqcrm','RM_SetErrorHandlerMode', obj.id, err_mode);
+            status = calllib(obj.libName,'RM_SetErrorHandlerMode', obj.id, err_mode);
         end
         
         function status = RM_SetFilePrefix(obj, prefix)
             %{
             Set the prefix for the output (prefix.chem.txt) and log (prefix.log.txt) files. These files are opened by RM_OpenFiles. 
             %}
-            status = calllib('libphreeqcrm','RM_SetFilePrefix', obj.id, prefix);
+            status = calllib(obj.libName,'RM_SetFilePrefix', obj.id, prefix);
         end
         
         function status = RM_SetPartitionUZSolids(obj, tf)
@@ -1352,7 +1374,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 tf	True, the fraction of solids and gases available for reaction is equal to the saturation; False (default), all solids and gases are reactive regardless of saturation. 
             %}
-            status = calllib('libphreeqcrm','RM_SetPartitionUZSolids', obj.id, tf);
+            status = calllib(obj.libName,'RM_SetPartitionUZSolids', obj.id, tf);
         end
         
         function status = RM_SetPorosity(obj, por)
@@ -1363,7 +1385,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 por	Array of porosities, unitless. Default is 0.1. Size of array is nxyz, where nxyz is the number of grid cells in the user's model (RM_GetGridCellCount). 
             %}
-            status = calllib('libphreeqcrm','RM_SetPorosity', obj.id, por);
+            status = calllib(obj.libName,'RM_SetPorosity', obj.id, por);
         end
         
         function status = RM_SetPressure(obj, p)
@@ -1374,7 +1396,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 p	Array of pressures, in atm. Size of array is nxyz, where nxyz is the number of grid cells in the user's model (RM_GetGridCellCount). 
             %}
-            status = calllib('libphreeqcrm','RM_SetPressure', obj.id, p);
+            status = calllib(obj.libName,'RM_SetPressure', obj.id, p);
         end
         
         function status = RM_SetPrintChemistryMask(obj, cell_mask)
@@ -1385,7 +1407,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 cell_mask	Array of integers. Size of array is nxyz, where nxyz is the number of grid cells in the user's model (RM_GetGridCellCount). A value of 0 will disable printing detailed output for the cell; a value of 1 will enable printing detailed output for a cell. 
             %}
-            status = calllib('libphreeqcrm','RM_SetPrintChemistryMask', obj.id, cell_mask);
+            status = calllib(obj.libName,'RM_SetPrintChemistryMask', obj.id, cell_mask);
         end
         
         function status = RM_SetPrintChemistryOn(obj, ...
@@ -1399,7 +1421,7 @@ classdef PhreeqcRM
                 initial_phreeqc	0, disable detailed printing in the InitialPhreeqc instance, 1, enable detailed printing in the InitialPhreeqc instances.
                 utility	0, disable detailed printing in the Utility instance, 1, enable detailed printing in the Utility instance. 
             %}
-            status = calllib('libphreeqcrm','RM_SetPrintChemistryOn', obj.id,  workers, initial_phreeqc, utility);
+            status = calllib(obj.libName,'RM_SetPrintChemistryOn', obj.id,  workers, initial_phreeqc, utility);
         end
         
         function status = RM_SetRebalanceByCell(obj, method)
@@ -1410,7 +1432,7 @@ classdef PhreeqcRM
             id	The instance id returned from RM_Create.
             method	0, indicates average times are used in rebalancing; 1 indicates individual cell times are used in rebalancing (default). 
             %}
-            status = calllib('libphreeqcrm','RM_SetRebalanceByCell', obj.id, method);
+            status = calllib(obj.libName,'RM_SetRebalanceByCell', obj.id, method);
         end
         
         function status = RM_SetRebalanceFraction(obj, f)
@@ -1421,7 +1443,7 @@ classdef PhreeqcRM
             id	The instance id returned from RM_Create.
             f	Fraction from 0.0 to 1.0. 
             %}
-            status = calllib('libphreeqcrm','RM_SetRebalanceFraction', obj.id, f);
+            status = calllib(obj.libName,'RM_SetRebalanceFraction', obj.id, f);
         end
         
         function status = RM_SetRepresentativeVolume(obj, rv)
@@ -1432,7 +1454,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 rv	Vector of representative volumes, in liters. Default is 1.0 liter. Size of array is nxyz, where nxyz is the number of grid cells in the user's model (RM_GetGridCellCount). 
             %}
-            status = calllib('libphreeqcrm','RM_SetRepresentativeVolume', obj.id, rv);
+            status = calllib(obj.libName,'RM_SetRepresentativeVolume', obj.id, rv);
         end
         
         function status = RM_SetSaturation(obj, sat)
@@ -1443,7 +1465,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 sat	Array of saturations, unitless. Size of array is nxyz, where nxyz is the number of grid cells in the user's model (RM_GetGridCellCount). 
             %}
-            status = calllib('libphreeqcrm','RM_SetSaturation', obj.id, sat);
+            status = calllib(obj.libName,'RM_SetSaturation', obj.id, sat);
         end
         
         function status = RM_SetScreenOn(obj, tf)
@@ -1454,7 +1476,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 tf	1, enable screen messages; 0, disable screen messages. Default is 1. 
             %}
-            status = calllib('libphreeqcrm','RM_SetScreenOn', obj.id, tf);
+            status = calllib(obj.libName,'RM_SetScreenOn', obj.id, tf);
         end
         
         function status = RM_SetSelectedOutputOn(obj, selected_output)
@@ -1465,7 +1487,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 selected_output	0, disable selected output; 1, enable selected output. 
             %}
-            status = calllib('libphreeqcrm','RM_SetSelectedOutputOn', ...
+            status = calllib(obj.libName,'RM_SetSelectedOutputOn', ...
                 obj.id, selected_output);
         end
         
@@ -1477,7 +1499,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 save_on	0, indicates species concentrations are not saved; 1, indicates species concentrations are saved. 
             %}
-            status = calllib('libphreeqcrm','RM_SetSpeciesSaveOn', obj.id, save_on);
+            status = calllib(obj.libName,'RM_SetSpeciesSaveOn', obj.id, save_on);
         end
         
         function status = RM_SetTemperature(obj, t)
@@ -1488,7 +1510,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 t	Array of temperatures, in degrees C. Size of array is nxyz, where nxyz is the number of grid cells in the user's model (RM_GetGridCellCount). 
             %}
-            status = calllib('libphreeqcrm','RM_SetTemperature', obj.id, t);
+            status = calllib(obj.libName,'RM_SetTemperature', obj.id, t);
         end
         
         function status = RM_SetTime(obj, t)
@@ -1496,7 +1518,7 @@ classdef PhreeqcRM
             Set current simulation time for the reaction module. 
             t: Current simulation time, in seconds. 
             %}
-            status = calllib('libphreeqcrm','RM_SetTime', obj.id, t);
+            status = calllib(obj.libName,'RM_SetTime', obj.id, t);
         end
         
         function status = RM_SetTimeConversion(obj, conv_factor)
@@ -1504,7 +1526,7 @@ classdef PhreeqcRM
             Set a factor to convert to user time units. Factor times seconds produces user time units. 
             conv_factor	Factor to convert seconds to user time units. 
             %}
-            status = calllib('libphreeqcrm','RM_SetTimeConversion', obj.id, conv_factor);
+            status = calllib(obj.libName,'RM_SetTimeConversion', obj.id, conv_factor);
         end
         
         function status = RM_SetTimeStep(obj, time_step)
@@ -1512,7 +1534,7 @@ classdef PhreeqcRM
             Set current time step for the reaction module. This is the length of time over which kinetic reactions are integrated. 
             time_step	Current time step, in seconds. 
             %}
-            status = calllib('libphreeqcrm','RM_SetTimeStep', obj.id, time_step);
+            status = calllib(obj.libName,'RM_SetTimeStep', obj.id, time_step);
         end
         
         function status = RM_SetUnitsExchange(obj, option)
@@ -1527,7 +1549,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 option	Units option for exchangers: 0, 1, or 2. 
             %}
-            status = calllib('libphreeqcrm','RM_SetUnitsExchange', obj.id, option);
+            status = calllib(obj.libName,'RM_SetUnitsExchange', obj.id, option);
         end
         
         function status = RM_SetUnitsGasPhase(obj, option)
@@ -1542,7 +1564,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 option	Units option for gas phases: 0, 1, or 2. 
             %}
-            status = calllib('libphreeqcrm','RM_SetUnitsGasPhase', obj.id, option);
+            status = calllib(obj.libName,'RM_SetUnitsGasPhase', obj.id, option);
         end
         
         function status = RM_SetUnitsKinetics(obj, option)
@@ -1563,7 +1585,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 option	Units option for kinetic reactants: 0, 1, or 2. 
             %}
-            status = calllib('libphreeqcrm','RM_SetUnitsKinetics', obj.id, option);
+            status = calllib(obj.libName,'RM_SetUnitsKinetics', obj.id, option);
         end
         
         function status = RM_SetUnitsPPassemblage(obj, option)
@@ -1578,7 +1600,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 option	Units option for equilibrium phases: 0, 1, or 2. 
             %}
-            status = calllib('libphreeqcrm','RM_SetUnitsPPassemblage', ...
+            status = calllib(obj.libName,'RM_SetUnitsPPassemblage', ...
                 obj.id, option);
         end
         
@@ -1595,7 +1617,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 option	Units option for solutions: 1, 2, or 3, default is 1, mg/L. 
             %}
-            status = calllib('libphreeqcrm','RM_SetUnitsSolution', ...
+            status = calllib(obj.libName,'RM_SetUnitsSolution', ...
                 obj.id, option);
         end
         
@@ -1610,7 +1632,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 option	Units option for solid solutions: 0, 1, or 2. 
             %}
-            status = calllib('libphreeqcrm','RM_SetUnitsSSassemblage', ...
+            status = calllib(obj.libName,'RM_SetUnitsSSassemblage', ...
                 obj.id, option);
         end
         
@@ -1626,7 +1648,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 option	Units option for surfaces: 0, 1, or 2. 
             %}
-            status = calllib('libphreeqcrm','RM_SetUnitsSurface', ...
+            status = calllib(obj.libName,'RM_SetUnitsSurface', ...
                 obj.id, option);
         end
         
@@ -1648,7 +1670,7 @@ classdef PhreeqcRM
                 status = RM_SpeciesConcentrations2Module(id, species_c);
                 status = RM_RunCells(id);
             %}
-            status = calllib('libphreeqcrm','RM_SpeciesConcentrations2Module', ...
+            status = calllib(obj.libName,'RM_SpeciesConcentrations2Module', ...
                 obj.id, c);
         end
         
@@ -1660,7 +1682,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 tf	True indicates that the solution density and volume as calculated by PHREEQC will be used to calculate concentrations. False indicates that the solution density set by RM_SetDensity and the volume determined by the product of RM_SetSaturation, RM_SetPorosity, and RM_SetRepresentativeVolume, will be used to calculate concentrations retrieved by RM_GetConcentrations. 
             %}
-            status = calllib('libphreeqcrm','RM_UseSolutionDensityVolume', ...
+            status = calllib(obj.libName,'RM_UseSolutionDensityVolume', ...
                 obj.id, tf);
         end
         
@@ -1668,7 +1690,7 @@ classdef PhreeqcRM
             %{
             Print a warning message to the screen and the log file. 
             %}
-            status = calllib('libphreeqcrm','RM_WarningMessage', obj.id, warn_str);
+            status = calllib(obj.libName,'RM_WarningMessage', obj.id, warn_str);
         end
         
  % New methods:
@@ -1676,7 +1698,7 @@ classdef PhreeqcRM
 %             %{
 %             	Returns the number of exchange species in the initial-phreeqc module. RM_FindComponents must be called before RM_GetExchangeSpeciesCount. This method may be useful when generating selected output definitions related to exchangers. 
 %             %}
-%             status = calllib('libphreeqcrm','RM_GetExchangeSpeciesCount', obj.id);
+%             status = calllib(obj.libName,'RM_GetExchangeSpeciesCount', obj.id);
 %         end
 %         
 %         function [status, ex_name] = RM_GetExchangeSpeciesName(obj, num, name, l)
@@ -1689,7 +1711,7 @@ classdef PhreeqcRM
 %                 name	The exchange species name at number num.
 %                 l1	The length of the maximum number of characters for name. 
 %             %}
-%             [status, ex_name] = calllib('libphreeqcrm','RM_GetExchangeSpeciesName', ...
+%             [status, ex_name] = calllib(obj.libName,'RM_GetExchangeSpeciesName', ...
 %                 obj.id, num, name, l);
 %         end
         
@@ -1707,7 +1729,7 @@ classdef PhreeqcRM
 %             ex_name = cell(n_ex_species, 1);
 %             for i = 1:n_ex_species
 %                 ex_name{i} = blanks(21);
-%                 [status, ex_name{i}] = calllib('libphreeqcrm','RM_GetExchangeSpeciesName', ...
+%                 [status, ex_name{i}] = calllib(obj.libName,'RM_GetExchangeSpeciesName', ...
 %                     obj.id, i, ex_name{i}, length(ex_name{i}));
 %             end
 %         end
@@ -1722,7 +1744,7 @@ classdef PhreeqcRM
 %                 name	The exchange name associated with exchange species num.
 %                 l1	The length of the maximum number of characters for name. 
 %             %}
-%             [status, ex_name] = calllib('libphreeqcrm','RM_GetExchangeName', ...
+%             [status, ex_name] = calllib(obj.libName,'RM_GetExchangeName', ...
 %                 obj.id, num, name, l);
 %         end
         
@@ -1740,7 +1762,7 @@ classdef PhreeqcRM
             ex_name = cell(n_ex_species, 1);
             for i = 1:n_ex_species
                 ex_name{i} = blanks(21);
-                [~, ex_name{i}] = calllib('libphreeqcrm','RM_GetExchangeName', ...
+                [~, ex_name{i}] = calllib(obj.libName,'RM_GetExchangeName', ...
                     obj.id, i-1, ex_name{i}, length(ex_name{i}));
             end
         end
@@ -1750,7 +1772,7 @@ classdef PhreeqcRM
 %             %{
 %             Returns the number of equilibrium phases in the initial-phreeqc module. RM_FindComponents must be called before RM_GetEquilibriumPhasesCount. This method may be useful when generating selected output definitions related to equilibrium phases. 
 %             %}
-%             status = calllib('libphreeqcrm','RM_GetEquilibriumPhasesCount', obj.id);
+%             status = calllib(obj.libName,'RM_GetEquilibriumPhasesCount', obj.id);
 %         end
         
 %         function [status, phase_name] = RM_GetEquilibriumPhasesName(obj, num, name, l)
@@ -1763,7 +1785,7 @@ classdef PhreeqcRM
 %                 name	The equilibrium phase name at number num.
 %                 l1	The length of the maximum number of characters for name. 
 %             %}
-%             [status, phase_name] = calllib('libphreeqcrm','RM_GetEquilibriumPhasesName', ...
+%             [status, phase_name] = calllib(obj.libName,'RM_GetEquilibriumPhasesName', ...
 %                 obj.id, num, name, l);
 %         end
         
@@ -1771,7 +1793,7 @@ classdef PhreeqcRM
 %             %{
 %             Returns the number of gas phase components in the initial-phreeqc module. RM_FindComponents must be called before RM_GetGasComponentsCount. This method may be useful when generating selected output definitions related to gas phases. 
 %             %}
-%             status = calllib('libphreeqcrm','RM_GetGasComponentsCount', obj.id);
+%             status = calllib(obj.libName,'RM_GetGasComponentsCount', obj.id);
 %         end
 %         
 %         function [status, gas_name] = RM_GetGasComponentsName(obj, num, name, l)
@@ -1784,7 +1806,7 @@ classdef PhreeqcRM
 %                 name	The gas component name at number num.
 %                 l1	The length of the maximum number of characters for name. 
 %             %}
-%             [status, gas_name] = calllib('libphreeqcrm','RM_GetGasComponentsName', obj.id, ...
+%             [status, gas_name] = calllib(obj.libName,'RM_GetGasComponentsName', obj.id, ...
 %                 num, name, l);
 %         end
         
@@ -1792,7 +1814,7 @@ classdef PhreeqcRM
             %{
             Returns the number of kinetic reactions in the initial-phreeqc module. RM_FindComponents must be called before RM_GetKineticReactionsCount. This method may be useful when generating selected output definitions related to kinetic reactions. 
             %}
-            status = calllib('libphreeqcrm','RM_GetKineticReactionsCount', obj.id);
+            status = calllib(obj.libName,'RM_GetKineticReactionsCount', obj.id);
         end
         
         function [status, name_out] = RM_GetKineticReactionsName(obj, num, name, l)
@@ -1805,7 +1827,7 @@ classdef PhreeqcRM
                 name	The kinetic reaction name at number num.
                 l1	The length of the maximum number of characters for name. 
             %}
-            [status, name_out] = calllib('libphreeqcrm','RM_GetKineticReactionsName', ...
+            [status, name_out] = calllib(obj.libName,'RM_GetKineticReactionsName', ...
                 obj.id, num, name, l);
         end
         
@@ -1813,7 +1835,7 @@ classdef PhreeqcRM
             %{
             Returns the number of phases in the initial-phreeqc module for which saturation indices can be calculated. RM_FindComponents must be called before RM_GetSICount. This method may be useful when generating selected output definitions related to saturation indices. 
             %}
-            status = calllib('libphreeqcrm','RM_GetSICount', obj.id);
+            status = calllib(obj.libName,'RM_GetSICount', obj.id);
         end
         
         function [status, name_out] = RM_GetSIName(obj, num, name, l)
@@ -1826,7 +1848,7 @@ classdef PhreeqcRM
                 l1	The length of the maximum number of characters for name.
 
             %}
-            [status, name_out] = calllib('libphreeqcrm','RM_GetSIName', ...
+            [status, name_out] = calllib(obj.libName,'RM_GetSIName', ...
                 obj.id, num, name, l);
         end
         
@@ -1834,7 +1856,7 @@ classdef PhreeqcRM
             %{
             Returns the number of solid solution components in the initial-phreeqc module. RM_FindComponents must be called before RM_GetSolidSolutionComponentsCount. This method may be useful when generating selected output definitions related to solid solutions. 
             %}
-            status = calllib('libphreeqcrm','RM_GetSolidSolutionComponentsCount', obj.id);
+            status = calllib(obj.libName,'RM_GetSolidSolutionComponentsCount', obj.id);
         end
         
         function [status, name_out] = RM_GetSolidSolutionComponentsName(obj, num, name, l)
@@ -1847,7 +1869,7 @@ classdef PhreeqcRM
                 name	The solid solution compnent name at number num.
                 l1	The length of the maximum number of characters for name. 
             %}
-            [status, name_out] = calllib('libphreeqcrm','RM_GetSolidSolutionComponentsName', ...
+            [status, name_out] = calllib(obj.libName,'RM_GetSolidSolutionComponentsName', ...
                 obj.id, num, name, l);
         end
         
@@ -1861,7 +1883,7 @@ classdef PhreeqcRM
                 name	The solid solution name at number num.
                 l1	The length of the maximum number of characters for name. 
             %}
-            [status, name_out] = calllib('libphreeqcrm','RM_GetSolidSolutionName', ...
+            [status, name_out] = calllib(obj.libName,'RM_GetSolidSolutionName', ...
                 obj.id, num, name, l);
         end
         
@@ -1873,7 +1895,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 species_log10gammas	Array to receive the aqueous species concentrations. Dimension of the array is (nxyz, nspecies), where nxyz is the number of user grid cells (RM_GetGridCellCount), and nspecies is the number of aqueous species (RM_GetSpeciesCount). Values for inactive cells are set to 1e30. 
             %}
-            [status, log10_gamma] = calllib('libphreeqcrm','RM_GetSpeciesLog10Gammas', ...
+            [status, log10_gamma] = calllib(obj.libName,'RM_GetSpeciesLog10Gammas', ...
                 obj.id, species_log10gammas);
         end
         
@@ -1887,8 +1909,7 @@ classdef PhreeqcRM
             %}
             nspecies = obj.RM_GetSpeciesCount();
             log10_gamma = zeros(obj.ncells, nspecies);
-            [~, log10_gamma] = calllib('libphreeqcrm','RM_GetSpeciesLog10Gammas', ...
-                obj.id, log10_gamma);
+            [~, log10_gamma] = obj.RM_GetSpeciesLog10Gammas(log10_gamma);
         end
         
         function [status, log10_gamma] = RM_GetSpeciesLog10Molalities(obj, species_log10gammas)
@@ -1899,7 +1920,7 @@ classdef PhreeqcRM
                 id	The instance id returned from RM_Create.
                 species_log10molalities	Array to receive the aqueous species log10 molalities. Dimension of the array is (nxyz, nspecies), where nxyz is the number of user grid cells (RM_GetGridCellCount), and nspecies is the number of aqueous species (RM_GetSpeciesCount). Values for inactive cells are set to 1e30. 
             %}
-            [status, log10_gamma] = calllib('libphreeqcrm','RM_GetSpeciesLog10Molalities', ...
+            [status, log10_gamma] = calllib(obj.libName,'RM_GetSpeciesLog10Molalities', ...
                 obj.id, species_log10gammas);
         end
         
@@ -1913,8 +1934,7 @@ classdef PhreeqcRM
             %}
             nspecies = obj.RM_GetSpeciesCount();
             log10_gamma = zeros(obj.ncells, nspecies);
-            [~, log10_gamma] = calllib('libphreeqcrm','RM_GetSpeciesLog10Molalities', ...
-                obj.id, log10_gamma);
+            [~, log10_gamma] = obj.RM_GetSpeciesLog10Molalities(log10_gamma);
         end
         
         function [status, name_out] = RM_GetSurfaceName(obj, num, name, l)
@@ -1937,7 +1957,7 @@ classdef PhreeqcRM
                 strcat(input, line);
                 }
             %}
-            [status, name_out] = calllib('libphreeqcrm','RM_GetSurfaceName', ...
+            [status, name_out] = calllib(obj.libName,'RM_GetSurfaceName', ...
                 obj.id, num, name, l);
         end
         
@@ -1945,7 +1965,7 @@ classdef PhreeqcRM
             %{
             Returns the number of surface species (such as "Hfo_wOH") in the initial-phreeqc module. RM_FindComponents must be called before RM_GetSurfaceSpeciesCount. This method may be useful when generating selected output definitions related to surfaces. 
             %}
-            status = calllib('libphreeqcrm','RM_GetSurfaceSpeciesCount', obj.id);
+            status = calllib(obj.libName,'RM_GetSurfaceSpeciesCount', obj.id);
         end
         
         function [status, name_out] = RM_GetSurfaceSpeciesName(obj, num, name, l)
@@ -1968,7 +1988,7 @@ classdef PhreeqcRM
                 strcat(input, line);
                 }
             %}
-            [status, name_out] = calllib('libphreeqcrm','RM_GetSurfaceSpeciesName', ...
+            [status, name_out] = calllib(obj.libName,'RM_GetSurfaceSpeciesName', ...
                 obj.id, num, name, l);
         end
         
@@ -1980,8 +2000,7 @@ classdef PhreeqcRM
             name_out = cell(n_surf_species, 1);
             for i=1:n_surf_species
                 name_out{i} = blanks(21);
-                [~, name_out{i}] = calllib('libphreeqcrm','RM_GetSurfaceSpeciesName', ...
-                obj.id, i-1, name_out{i}, length(name_out{i}));
+                [~, name_out{i}] = obj.RM_GetSurfaceSpeciesName(i-1, name_out{i}, length(name_out{i}));
             end
         end
         
@@ -1995,7 +2014,7 @@ classdef PhreeqcRM
                 name	The surface type associated with surface species num.
                 l1	The length of the maximum number of characters for name. 
             %}
-            [status, name_out] = calllib('libphreeqcrm','RM_GetSurfaceType', ...
+            [status, name_out] = calllib(obj.libName,'RM_GetSurfaceType', ...
                 obj.id, num, name, l);
         end
         
@@ -2007,8 +2026,7 @@ classdef PhreeqcRM
             name_out = cell(n_surf_species, 1);
             for i=1:n_surf_species
                 name_out{i} = blanks(21);
-                [~, name_out{i}] = calllib('libphreeqcrm','RM_GetSurfaceType', ...
-                obj.id, i-1, name_out{i}, length(name_out{i}));
+                [~, name_out{i}] = obj.RM_GetSurfaceType(i-1, name_out{i}, length(name_out{i}));
             end
         end
         
@@ -2030,7 +2048,7 @@ classdef PhreeqcRM
                 status = RM_StateApply(id, 1);
                 status = RM_StateDelete(id, 1);
             %}
-            status = calllib('libphreeqcrm','RM_StateSave', obj.id, istate);
+            status = calllib(obj.libName,'RM_StateSave', obj.id, istate);
         end
         
         function status = RM_StateDelete(obj, istate)
@@ -2049,7 +2067,7 @@ classdef PhreeqcRM
                 status = RM_StateApply(id, 1);
                 status = RM_StateDelete(id, 1);
             %}
-            status = calllib('libphreeqcrm','RM_StateDelete', obj.id, istate);
+            status = calllib(obj.libName,'RM_StateDelete', obj.id, istate);
         end
         
         function status = RM_StateApply(obj, istate)
@@ -2068,7 +2086,7 @@ classdef PhreeqcRM
                 status = RM_StateApply(id, 1);
                 status = RM_StateDelete(id, 1);
             %}
-            status = calllib('libphreeqcrm','RM_StateApply', obj.id, istate);
+            status = calllib(obj.libName,'RM_StateApply', obj.id, istate);
         end
         
         % Helper functions: all functions that start without RM_
