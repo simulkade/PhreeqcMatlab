@@ -11,7 +11,7 @@
 
 # Test cases
 
-[`SimpleAdvect.m`'](https://github.com/behzaadh/PhreeqcMatlab/blob/master/tests/SimpleAdvect.m) and `Advect.m`(https://github.com/behzaadh/PhreeqcMatlab/blob/master/tests/Advect.m) demonstrate advection simulation for Phreeqc reactive transport modeling software. It sets up initial conditions, defines boundary conditions, and runs a transient loop simulating advection.
+[`SimpleAdvect.m`'](https://github.com/behzaadh/PhreeqcMatlab/blob/master/tests/SimpleAdvect.m) and [`Advect.m`](https://github.com/behzaadh/PhreeqcMatlab/blob/master/tests/Advect.m) demonstrate advection simulation for Phreeqc reactive transport modeling software. It sets up initial conditions, defines boundary conditions, and runs a transient loop simulating advection.
 [`Species.m`](https://github.com/behzaadh/PhreeqcMatlab/blob/master/tests/Species.m) demonstrates species transport using PhreeqcRM.
 [`Gas_m.m`](https://github.com/behzaadh/PhreeqcMatlab/blob/master/tests/Gas_m.m) demonstrates the equilibration of gas with an aqueous phase
 
