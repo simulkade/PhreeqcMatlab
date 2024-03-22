@@ -10,7 +10,16 @@
 `PhreeqcMatlab` automatically downloads the latest compiled phreeqcRM `.dll` on Windows and `.so` on Linux machines, from [this](https://github.com/simulkade/PhreeqcRM) repository. I don't have access to macOS; hence, no library there and you'll have to compile PhreeqcRM yourself for mac. On Windows, you will need to have [Visual C++ Redistributable for VC 2019](https://www.microsoft.com/en-us/download/details.aspx?id=48145) installed. All you need to do is to download or clone this repository and run the `startup.m` file. Before running the example, make sure that [C/C++ compiler](https://www.mathworks.com/matlabcentral/fileexchange/52848-matlab-support-for-mingw-w64-c-c-compiler) is already installed in your Matlab. Please let me know if you have any error messages when running the file.  
 
 # Test cases
-Go to the [examples](https://github.com/simulkade/PhreeqcMatlab/tree/master/examples/basetest) folder and run the files. Don't forget to run the `startup` file before running the examples.  
+
+[`SimpleAdvect.m`'](https://github.com/behzaadh/PhreeqcMatlab/blob/master/tests/SimpleAdvect.m) and [`Advect.m`](https://github.com/behzaadh/PhreeqcMatlab/blob/master/tests/Advect.m) demonstrate advection simulation for Phreeqc reactive transport modeling software. It sets up initial conditions, defines boundary conditions, and runs a transient loop simulating advection.
+[`Species.m`](https://github.com/behzaadh/PhreeqcMatlab/blob/master/tests/Species.m) demonstrates species transport using PhreeqcRM.
+[`Gas_m.m`](https://github.com/behzaadh/PhreeqcMatlab/blob/master/tests/Gas_m.m) demonstrates the equilibration of gas with an aqueous phase
+
+You can run all tests by executing [`main.m`](https://github.com/behzaadh/PhreeqcMatlab/blob/master/tests/main.m).
+
+Need more examples? Go to the [examples](https://github.com/simulkade/PhreeqcMatlab/tree/master/examples/basetest) folder and run the files. 
+
+Don't forget to run the [`startup`](https://github.com/behzaadh/PhreeqcMatlab/blob/master/startup.m) file before running the examples.  
 
 ## Simple cases
 ### Running a Phreeqc input file or string:
