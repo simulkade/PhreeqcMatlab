@@ -11,15 +11,15 @@
 
 # Test cases
 
-[`SimpleAdvect.m`'](https://github.com/behzaadh/PhreeqcMatlab/blob/master/tests/SimpleAdvect.m) and [`Advect.m`](https://github.com/behzaadh/PhreeqcMatlab/blob/master/tests/Advect.m) demonstrate advection simulation for Phreeqc reactive transport modeling software. It sets up initial conditions, defines boundary conditions, and runs a transient loop simulating advection.
-[`Species.m`](https://github.com/behzaadh/PhreeqcMatlab/blob/master/tests/Species.m) demonstrates species transport using PhreeqcRM.
-[`Gas_m.m`](https://github.com/behzaadh/PhreeqcMatlab/blob/master/tests/Gas_m.m) demonstrates the equilibration of gas with an aqueous phase
+[`SimpleAdvect.m`](tests/SimpleAdvect.m) and [`Advect.m`](tests/Advect.m) demonstrate advection simulation for Phreeqc reactive transport modeling software. It sets up initial conditions, defines boundary conditions, and runs a transient loop simulating advection.
+[`Species.m`](tests/Species.m) demonstrates species transport using PhreeqcRM.
+[`Gas_m.m`](tests/Gas_m.m) demonstrates the equilibration of gas with an aqueous phase
 
-You can run all tests by executing [`main.m`](https://github.com/behzaadh/PhreeqcMatlab/blob/master/tests/main.m).
+You can run all tests by executing [`main.m`](tests/main.m).
 
-Need more examples? Go to the [examples](https://github.com/simulkade/PhreeqcMatlab/tree/master/examples/basetest) folder and run the files. 
+Need more examples? Go to the [examples](examples/basetest) folder and run the files. 
 
-Don't forget to run the [`startup`](https://github.com/behzaadh/PhreeqcMatlab/blob/master/startup.m) file before running the examples.  
+Don't forget to run the [`startup`](startup.m) file before running the examples.  
 
 ## Simple cases
 ### Running a Phreeqc input file or string:
