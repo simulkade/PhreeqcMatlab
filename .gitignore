@@ -3,3 +3,14 @@
 *.asv
 *.lib
 examples/notebooks/.ipynb_checkpoints/development-ideas-checkpoint.ipynb
+
+# build artifacts
+*.mltbx
+libs/.phreeqc_version
+matlab_crash_dump.*
+
+# PhreeqcRM/IPhreeqc run artifacts
+*.chem.txt
+*.log.txt
+phreeqc.log
+sel.out

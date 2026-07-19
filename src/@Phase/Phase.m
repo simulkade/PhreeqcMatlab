@@ -46,9 +46,9 @@ classdef Phase
             % converts a phase object to a phreeqc string
             n_phase = length(obj.phase_names);
             if n_phase==0
-                phase string = "\n";
+                phase_string = "\n";
             else
-                phase_string = strjoin(["EQUILIBRIUM_PHASE " num2str(obj.number) " " obj.name "\n"]);
+                phase_string = strjoin(["EQUILIBRIUM_PHASES " num2str(obj.number) " " obj.name "\n"]);
                 for i = 1:n_phase
                     phase_string = strjoin([phase_string obj.phase_names(i)]); % phase name
                     phase_string = strjoin([phase_string "  " num2str(obj.saturation_indices(i))]); % saturation index
@@ -112,9 +112,9 @@ classdef Phase
             so_obj.name = "Phase";
             so_obj.number = obj.number;
             so_obj.content(1) = "-high_precision    true";
-            so_obj.content(1) = "-reset    false";
-            so_obj.content(1) = strjoin(["-equilibrium_phases   " obj.phase_names]);
-            so_obj.content(1) = strjoin(["-saturation_indices   " obj.phase_names]);
+            so_obj.content(2) = "-reset    false";
+            so_obj.content(3) = strjoin(["-equilibrium_phases   " obj.phase_names]);
+            so_obj.content(4) = strjoin(["-saturation_indices   " obj.phase_names]);
         end
 
         function so_string = selected_output_string(obj)
@@ -188,9 +188,10 @@ classdef Phase
             try
                 out_string = iph.RunPhreeqcString(iph_string, database_file(data_file));
                 iph.DestroyIPhreeqc();
-            catch
+            catch ME
                 out_string = 0;
-                disp('An error occured running Phreeqc. Please check the solution and phase definition');
+                warning('PhreeqcMatlab:runFailed', ...
+                    'Error running Phreeqc (check the solution and phase definition): %s', ME.message);
                 iph.DestroyIPhreeqc();
             end
         end
@@ -272,8 +273,9 @@ classdef Phase
             end
 
             if isfield(phase_field, 'Composition')
-                obj.components = fieldnames(phase_field.Composition); % get the list of phases
-                obj.moles = cellfun(@(x)getfield(phase_field.Composition, {1}, x), obj.components); % get the moles
+                comp_names = fieldnames(phase_field.Composition); % cell column of phase names
+                obj.phase_names = string(comp_names(:))';         % row string array
+                obj.moles = cellfun(@(x)getfield(phase_field.Composition, {1}, x), comp_names)'; % row of moles
             end
             
             if isfield(phase_field, 'AlternativeFormula')

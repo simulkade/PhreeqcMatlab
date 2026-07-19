@@ -102,9 +102,10 @@ classdef Solution
             try
                 out_string = iph.RunPhreeqcString(iph_string, database_file(data_file));
                 iph.DestroyIPhreeqc();
-            catch
+            catch ME
                 out_string = 0;
-                disp('An error occured running Phreeqc. Please check the solution definition');
+                warning('PhreeqcMatlab:runFailed', ...
+                    'Error running Phreeqc (check the solution definition): %s', ME.message);
                 iph.DestroyIPhreeqc();
             end
         end
@@ -195,9 +196,10 @@ classdef Solution
                 SR = results_from_phreeqcrm(obj, phreeqc_rm);
                 
                 phreeqc_rm.RM_Destroy();
-            catch
+            catch ME
                 SR = 0;
-                disp('An error occured running PhreeqcRM. Please check the solution definition');
+                warning('PhreeqcMatlab:runFailed', ...
+                    'Error running PhreeqcRM (check the solution definition): %s', ME.message);
                 phreeqc_rm.RM_Destroy();
             end
         end

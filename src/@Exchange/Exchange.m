@@ -13,16 +13,11 @@ classdef Exchange
 
     methods
         function obj = Exchange()
-            %UNTITLED Construct an instance of this class
-            %   Detailed explanation goes here
+            % Exchange constructs an empty ion-exchanger definition.
+            % phreeqc_string()/run()/read_json() are implemented in the
+            % Milestone 3 object-model work (see ROADMAP.md).
             obj.name = "exchange 1";
             obj.number = 1;
-        end
-
-        function outputArg = method1(obj,inputArg)
-            %METHOD1 Summary of this method goes here
-            %   Detailed explanation goes here
-            outputArg = obj.Property1 + inputArg;
         end
     end
 end

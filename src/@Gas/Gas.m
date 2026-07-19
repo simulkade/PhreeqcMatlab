@@ -28,17 +28,19 @@ classdef Gas
             gas_string = strjoin(["GAS_PHASE " num2str(obj.number) " " obj.name "\n"]);
             n_gas = length(obj.phase_names);
             if obj.fixed_pressure
-                gas_string = strjoin([gas_string "-fixed_pressure"]);
-                gas_string = strjoin([gas_string "-pressure" num2str(obj.pressure)]);
+                gas_string = strjoin([gas_string "-fixed_pressure" "\n"]);
+                if ~isempty(obj.pressure)
+                    gas_string = strjoin([gas_string "-pressure" num2str(obj.pressure) "\n"]);
+                end
             else
-                gas_string = strjoin([gas_string "-fixed_volume"]);
+                gas_string = strjoin([gas_string "-fixed_volume" "\n"]);
             end
-            gas_string = strjoin([gas_string "-temperature" num2str(obj.temperature)]);
+            gas_string = strjoin([gas_string "-temperature" num2str(obj.temperature) "\n"]);
             if ~isempty(obj.volume)
-                gas_string = strjoin([gas_string "-volume" num2str(obj.volume)]);
+                gas_string = strjoin([gas_string "-volume" num2str(obj.volume) "\n"]);
             end
             for i=1:n_gas
-                gas_string = strjoin([gas_string obj.phase_names(i) obj.partial_pressure(i) "\n"]);
+                gas_string = strjoin([gas_string obj.phase_names(i) num2str(obj.partial_pressure(i)) "\n"]);
             end
             gas_string = sprintf(char(gas_string));
         end

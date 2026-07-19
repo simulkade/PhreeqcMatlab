@@ -6,8 +6,7 @@ function phreeqc_rm = PhreeqcSingleCell(input_file, data_base)
 % file. The input file must be clean at the moment. No commenting out the
 % lines, although I do a bit of clean up in the input file.
 
-phreeqc_rm = PhreeqcRM(1, 1); % one cell, one thread
-phreeqc_rm = phreeqc_rm.RM_Create(); % create a PhreeqcRM instance
+phreeqc_rm = PhreeqcRM(1, 1); % one cell, one thread (constructor also calls RM_Create)
 status = phreeqc_rm.RM_SetComponentH2O(false);
 status = phreeqc_rm.RM_SetUnitsSolution(2);           % 1, mg/L; 2, mol/L; 3, kg/kgs
 status = phreeqc_rm.RM_SetUnitsPPassemblage(1);       % 0, mol/L cell; 1, mol/L water; 2 mol/L rock

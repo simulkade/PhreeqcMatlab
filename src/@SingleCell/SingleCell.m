@@ -38,8 +38,7 @@ classdef SingleCell
             % Runs the simulation defined by a mixture of the aqueous
             % solution with other phase, surface, exchanger, etc. in a
             % phreeqcRM cell
-            phreeqc_rm = PhreeqcRM(1, 1); % one cell, one thread
-            phreeqc_rm = phreeqc_rm.RM_Create(); % create a PhreeqcRM instance
+            phreeqc_rm = PhreeqcRM(1, 1); % one cell, one thread (constructor also calls RM_Create)
             status = phreeqc_rm.RM_SetComponentH2O(true);
             status = phreeqc_rm.RM_SetUnitsSolution(2);           % 1, mg/L; 2, mol/L; 3, kg/kgs
             status = phreeqc_rm.RM_SetUnitsPPassemblage(1);       % 0, mol/L cell; 1, mol/L water; 2 mol/L rock

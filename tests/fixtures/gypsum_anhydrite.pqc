@@ -1,0 +1,11 @@
+SOLUTION 1 Pure water
+        pH      7.0
+        temp    25.0
+EQUILIBRIUM_PHASES 1
+        Gypsum          0.0     1.0
+        Anhydrite       0.0     1.0
+SELECTED_OUTPUT 1
+        -reset          false
+        -temperature    true
+        -si             Anhydrite  Gypsum
+END

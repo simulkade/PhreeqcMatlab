@@ -1,23 +1,26 @@
-classdef SingleCellResults
-    %SINGLECELLRESULTS Summary of this class goes here
-    %   Detailed explanation goes here
-    
+classdef SingleCellResult
+    % SingleCellResult holds the parsed output of running a @SingleCell in
+    % PhreeqcRM. This is a minimal placeholder that loads and can be populated
+    % by assignment; the full parsed field set is added in the Milestone 3
+    % object-model work (see ROADMAP.md).
+    %
+    % NOTE: the classdef name must match the @SingleCellResult folder, or
+    % MATLAB cannot load the class.
+
     properties
-        Property1
+        name(1,1) string
+        temperature(1,1) double
+        pressure(1,1) double
     end
-    
+
     methods
-        function obj = SingleCellResults(inputArg1,inputArg2)
-            %SINGLECELLRESULTS Construct an instance of this class
-            %   Detailed explanation goes here
-            obj.Property1 = inputArg1 + inputArg2;
-        end
-        
-        function outputArg = method1(obj,inputArg)
-            %METHOD1 Summary of this method goes here
-            %   Detailed explanation goes here
-            outputArg = obj.Property1 + inputArg;
+        function obj = SingleCellResult(cell)
+            % creates an (empty) result object, optionally seeded from a SingleCell
+            if nargin > 0
+                obj.name = cell.name;
+                obj.temperature = cell.temperature;
+                obj.pressure = cell.pressure;
+            end
         end
     end
 end
-

@@ -1,23 +1,21 @@
 classdef PhaseResult
-    %PHASERESULT Summary of this class goes here
-    %   Detailed explanation goes here
-    
+    % PhaseResult holds the parsed output of equilibrating a @Phase object
+    % with a solution. This is a minimal placeholder that loads and can be
+    % populated by assignment; the full parsed field set is added in the
+    % Milestone 3 object-model work (see ROADMAP.md).
+
     properties
-        Property1
+        name(1,1) string
+        number(1,1) double {mustBeNonnegative, mustBeInteger}
     end
-    
+
     methods
-        function obj = PhaseResult(inputArg1,inputArg2)
-            %PHASERESULT Construct an instance of this class
-            %   Detailed explanation goes here
-            obj.Property1 = inputArg1 + inputArg2;
-        end
-        
-        function outputArg = method1(obj,inputArg)
-            %METHOD1 Summary of this method goes here
-            %   Detailed explanation goes here
-            outputArg = obj.Property1 + inputArg;
+        function obj = PhaseResult(phase)
+            % creates an (empty) result object, optionally seeded from a Phase
+            if nargin > 0
+                obj.name = phase.name;
+                obj.number = phase.number;
+            end
         end
     end
 end
-

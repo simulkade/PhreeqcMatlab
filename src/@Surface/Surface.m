@@ -203,9 +203,10 @@ classdef Surface
             try
                 out_string = iph.RunPhreeqcString(iph_string, database_file(data_file));
                 iph.DestroyIPhreeqc();
-            catch
+            catch ME
                 out_string = 0;
-                disp('An error occured running Phreeqc. Please check the solution and surface definition');
+                warning('PhreeqcMatlab:runFailed', ...
+                    'Error running Phreeqc (check the solution and surface definition): %s', ME.message);
                 iph.DestroyIPhreeqc();
             end
         end
