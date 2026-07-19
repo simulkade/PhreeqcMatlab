@@ -128,12 +128,14 @@ This is the highest-leverage refactor; do it before finishing individual classes
       `pe  `/`density 0` malformed lines and the fragile `num2str(vector)` calls. Every block
       round-trips through IPhreeqc with no parse error; covered by `stringBuilder` and
       `surfaceStringRoundTrip` tests.
-- [ ] **Centralize the initial-condition vector.** The hardcoded 7-slot `ic1` vector is
-      duplicated across `Solution.m:188`, `Surface.m:238`, `SingleCell.m:65`,
-      `PhreeqcSingleCell.m:45`, `InitializePhreeqcAdvection.m:44`, `InitializePhreeqcFVTool.m:45`.
-      Replace with either (a) a single helper that maps reactant type → slot, or preferably
-      (b) the new per-reactant `RM_Initial*2Module` functions from 3.8.6, so each reactant
-      registers itself.
+- [x] **Centralize the initial-condition vector** — DONE (approach a). Added
+      `src/Tools/InitialConditions.m` with named slot constants (`SOLUTION`…`KINETICS`), a
+      `detect(C)` input scan, and `vectors(present, nxyz)` that builds ic1/ic2/f1 (single-cell
+      1×7 or multi-cell nxyz×7). `PhreeqcSingleCell`, `InitializePhreeqcAdvection`,
+      `InitializePhreeqcFVTool` now share it (was three copies of the keyword scan);
+      `Solution.run`/`Surface.equilibrate_with` use the slot constants instead of magic indices.
+      Behavior-preserving, covered by the `initialConditionsHelper` test. (Approach b — wiring
+      the new per-reactant `RM_Initial*2Module` functions — is left for M4 when those get wrapped.)
 - [ ] **Robust result parsing.** Replace hardcoded PHREEQC column-header keys
       (Solution.m:205-229) and positional column arithmetic (Surface.m:262-288) with a
       header→field mapping layer that validates presence and fails loudly. Use the new

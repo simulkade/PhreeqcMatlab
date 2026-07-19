@@ -248,12 +248,11 @@ classdef Surface < Reactant
             phreeqc_rm.RM_SetComponentH2O(true);
             phreeqc_rm.RM_SetUnitsSolution(2);
             phreeqc_rm.RM_SetSpeciesSaveOn(1);
-            ic1 = -1*ones(7, 1);
-            ic2 = -1*ones(7, 1);
-            % 1 solution, 2 eq phase, 3 exchange, 4 surface, 5 gas, 6 solid solution, 7 kinetic
-            f1 = ones(7, 1);
-            ic1(1) = solution.number;              % Solution seawater
-            ic1(4) = obj.number;         % Surface calcite
+            ic1 = -1*ones(InitialConditions.N_REACTANTS, 1);
+            ic2 = -1*ones(InitialConditions.N_REACTANTS, 1);
+            f1 = ones(InitialConditions.N_REACTANTS, 1);
+            ic1(InitialConditions.SOLUTION) = solution.number;
+            ic1(InitialConditions.SURFACE)  = obj.number;
             phreeqc_rm.RM_InitialPhreeqc2Module(ic1, ic2, f1);
             phreeqc_rm.RM_RunCells();
 %             t_out_solution = phreeqc_rm.GetSelectedOutputTable(obj.number);

@@ -180,10 +180,10 @@ classdef Solution < Reactant
                 phreeqc_rm.RM_SetComponentH2O(true);
                 phreeqc_rm.RM_SetUnitsSolution(2);
                 phreeqc_rm.RM_SetSpeciesSaveOn(true);
-                ic1 = -1*ones(7, 1);
-                ic2 = -1*ones(7, 1);
-                f1 = ones(7, 1);
-                ic1(1) = obj.number;              % Solution 1
+                ic1 = -1*ones(InitialConditions.N_REACTANTS, 1);
+                ic2 = -1*ones(InitialConditions.N_REACTANTS, 1);
+                f1 = ones(InitialConditions.N_REACTANTS, 1);
+                ic1(InitialConditions.SOLUTION) = obj.number;
                 phreeqc_rm.RM_InitialPhreeqc2Module(ic1, ic2, f1);
                 phreeqc_rm.RM_RunCells();
 

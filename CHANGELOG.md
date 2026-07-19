@@ -11,6 +11,10 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 - `src/@Reactant/Reactant.m` — abstract base class unifying reactant identity (`name`/`number`)
   and serialization (`phreeqc_string`/`input_string`). `@Solution`, `@Phase`, `@Surface`, `@Gas`,
   `@Exchange`, `@Kinetics` now subclass it and can be handled polymorphically.
+- `src/Tools/InitialConditions.m` — named reactant-slot constants + `detect`/`vectors` helpers
+  for RM_InitialPhreeqc2Module, replacing the 7-slot `ic1` vector duplicated across
+  `PhreeqcSingleCell`, `InitializePhreeqcAdvection`, `InitializePhreeqcFVTool` (and the magic
+  indices in `Solution`/`Surface`).
 
 ### Changed
 - `@Solution`, `@Gas`, `@Phase`, `@Surface`, `@SelectedOutput` `phreeqc_string()` now build

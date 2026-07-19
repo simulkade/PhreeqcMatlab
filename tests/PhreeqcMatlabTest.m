@@ -87,6 +87,35 @@ classdef PhreeqcMatlabTest < matlab.unittest.TestCase
             tc.verifyEqual(ca, s, 'AbsTol', 1e-4, 'Ca and SO4 released 1:1 by gypsum');
         end
 
+        function initialConditionsHelper(tc)
+            % InitialConditions centralizes the reactant-slot mapping + input
+            % scan that PhreeqcSingleCell / InitializePhreeqc* used to duplicate.
+            C = ["SOLUTION 1"; "EQUILIBRIUM_PHASES 1"; "Calcite 0 1"; ...
+                 "SURFACE 1"; "GAS_PHASE 1"];
+            p = InitialConditions.detect(C);
+            tc.verifyTrue(p(InitialConditions.SOLUTION));
+            tc.verifyTrue(p(InitialConditions.EQUILIBRIUM_PHASES));
+            tc.verifyTrue(p(InitialConditions.SURFACE));
+            tc.verifyTrue(p(InitialConditions.GAS_PHASE));
+            tc.verifyFalse(p(InitialConditions.EXCHANGE));
+            tc.verifyFalse(p(InitialConditions.KINETICS));
+            tc.verifyFalse(p(InitialConditions.SOLID_SOLUTIONS));
+
+            % Single cell: present -> block 1, absent -> -1 (old behavior).
+            [ic1, ic2, f1] = InitialConditions.vectors(p, 1);
+            tc.verifySize(ic1, [1 7]);
+            tc.verifyEqual(ic1(InitialConditions.SOLUTION), 1);
+            tc.verifyEqual(ic1(InitialConditions.EXCHANGE), -1);
+            tc.verifyEqual(ic2, -1*ones(1,7));
+            tc.verifyEqual(f1, ones(1,7));
+
+            % Multi cell: present column -> 1:nxyz, absent -> -1 (old behavior).
+            [ic1m, ~, ~] = InitialConditions.vectors(p, 5);
+            tc.verifySize(ic1m, [5 7]);
+            tc.verifyEqual(ic1m(:, InitialConditions.SOLUTION), (1:5)');
+            tc.verifyEqual(ic1m(:, InitialConditions.EXCHANGE), -1*ones(5,1));
+        end
+
         function reactantPolymorphism(tc)
             % All definition classes share the Reactant identity/contract and
             % can be serialized uniformly through input_string().
