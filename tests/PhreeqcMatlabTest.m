@@ -87,6 +87,31 @@ classdef PhreeqcMatlabTest < matlab.unittest.TestCase
             tc.verifyEqual(ca, s, 'AbsTol', 1e-4, 'Ca and SO4 released 1:1 by gypsum');
         end
 
+        function mapValueSafeLookup(tc)
+            % map_value degrades to a fallback instead of throwing on a
+            % missing SELECTED_OUTPUT column key.
+            m = containers.Map({'a','b'}, {1, 2});
+            tc.verifyEqual(map_value(m, 'a'), 1);
+            tc.verifyTrue(isnan(map_value(m, 'missing')));
+            tc.verifyEqual(map_value(m, 'missing', 0), 0);
+        end
+
+        function solutionRunResults(tc)
+            % Solution.run() -> SolutionResult via results_from_phreeqcrm
+            % (header-keyed parsing). Verifies the PhreeqcRM object path and
+            % that fields are populated with physically sensible values.
+            sol = Solution(); sol.unit = "mol/kgw";
+            sol.components = ["Na" "Cl"]; sol.concentrations = [1 1];
+            sol.pH = 7; sol.ph_charge_balance = true;
+            SR = sol.run('phreeqc.dat');
+            tc.verifyClass(SR, 'SolutionResult');   % not the failure sentinel 0
+            tc.verifyEqual(SR.temperature, 25, 'AbsTol', 1);
+            tc.verifyGreaterThan(SR.ionic_strength, 0);
+            tc.verifyGreaterThan(SR.water_mass, 0);
+            tc.verifyLessThan(abs(SR.percent_error), 5);
+            tc.verifyTrue(ismember("Na", SR.components));
+        end
+
         function initialConditionsHelper(tc)
             % InitialConditions centralizes the reactant-slot mapping + input
             % scan that PhreeqcSingleCell / InitializePhreeqc* used to duplicate.

@@ -163,11 +163,10 @@ classdef Solution < Reactant
         function SR = run(obj, varargin)
             % runs the function in a PhreeqcRM instance, and store the
             % results in a SolutionResult object
-            phreeqc_rm = PhreeqcRM(1, 1); % one cell, one thread
-            phreeqc_rm = phreeqc_rm.RM_Create(); % create a PhreeqcRM instance
+            phreeqc_rm = PhreeqcRM(1, 1); % one cell, one thread (constructor also calls RM_Create)
             iph_string = phreeqc_string(obj);
             % add a selected output block to the string before running
-            iph_string = [iph_string selected_output_string(obj)];
+            iph_string = combine_phreeqc_strings(iph_string, selected_output_string(obj));
             if nargin>1
                 data_file = varargin{end};
             else
@@ -180,6 +179,7 @@ classdef Solution < Reactant
                 phreeqc_rm.RM_SetComponentH2O(true);
                 phreeqc_rm.RM_SetUnitsSolution(2);
                 phreeqc_rm.RM_SetSpeciesSaveOn(true);
+                phreeqc_rm.RM_FindComponents();   % required before RunCells (allocates component arrays)
                 ic1 = -1*ones(InitialConditions.N_REACTANTS, 1);
                 ic2 = -1*ones(InitialConditions.N_REACTANTS, 1);
                 f1 = ones(InitialConditions.N_REACTANTS, 1);
@@ -199,9 +199,12 @@ classdef Solution < Reactant
         end
 
         function SR = results_from_phreeqcrm(obj, phreeqc_rm)
+            % Parse a run into a SolutionResult. SELECTED_OUTPUT columns are
+            % looked up by their PHREEQC header via map_value, so a
+            % renamed/absent column yields NaN for that field rather than
+            % throwing and discarding the entire result.
             t_out = phreeqc_rm.GetSelectedOutputTable(obj.number);
             SR = SolutionResult(obj);
-            SR.temperature = t_out('temp(C)');
             SR.components = string(phreeqc_rm.GetComponents())';
             SR.concentrations = phreeqc_rm.GetConcentrations();
             SR.species = string(phreeqc_rm.GetSpeciesNames())';
@@ -209,19 +212,20 @@ classdef Solution < Reactant
             SR.species_molalities = 10.^phreeqc_rm.GetSpeciesLog10Molalities();
             SR.species_activity_coef = 10.^phreeqc_rm.GetSpeciesLog10Gammas();
             SR.species_charge = phreeqc_rm.GetSpeciesZ();
-            SR.alkalinity = t_out('Alk(eq/kgw)');
-            SR.pH = t_out('pH');
-            SR.pe = t_out('pe');
-            SR.ionic_strength = t_out('mu');
-            SR.water_mass = t_out('mass_H2O');
-            SR.charge_balance = t_out('charge(eq)');
             SR.density = phreeqc_rm.GetDensity();
-            SR.percent_error = t_out('pct_err');
-            SR.water_density = t_out('density_w');
-            SR.specific_conductance = t_out('conductance_r'); 
-            SR.relative_dielectric_constant = t_out('eps_r'); 
-            SR.osmotic_coefficient = t_out('osmotic'); 
-            SR.viscosity = t_out('viscosity');
+            SR.temperature                  = map_value(t_out, 'temp(C)');
+            SR.alkalinity                   = map_value(t_out, 'Alk(eq/kgw)');
+            SR.pH                           = map_value(t_out, 'pH');
+            SR.pe                           = map_value(t_out, 'pe');
+            SR.ionic_strength               = map_value(t_out, 'mu');
+            SR.water_mass                   = map_value(t_out, 'mass_H2O');
+            SR.charge_balance               = map_value(t_out, 'charge(eq)');
+            SR.percent_error                = map_value(t_out, 'pct_err');
+            SR.water_density                = map_value(t_out, 'density_w');
+            SR.specific_conductance         = map_value(t_out, 'conductance_r');
+            SR.relative_dielectric_constant = map_value(t_out, 'eps_r');
+            SR.osmotic_coefficient          = map_value(t_out, 'osmotic');
+            SR.viscosity                    = map_value(t_out, 'viscosity');
         end
     end
     

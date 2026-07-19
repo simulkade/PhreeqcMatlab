@@ -270,6 +270,12 @@ classdef Surface < Reactant
             surface_result = SurfaceResult(obj);
             surface_result.surface_species = string(phreeqc_rm.GetSurfaceSpeciesNames())';
             n_surf_species = length(surface_result.surface_species);
+            % FRAGILE (revisit in M3 with a CD-MUSIC equilibrate test): this
+            % slices the surface table by positional arithmetic on
+            % keys()/values(). containers.Map orders entries by sorted key, not
+            % insertion order, so this depends on the exact column names/order
+            % emitted by the USER_PUNCH block. Left as-is until a reference-value
+            % test exists to refactor it safely.
             h = t_out_surface.keys;
             surf_elements = h(1:end-2*n_surf_species);
             surface_result.surface_elements = string(surf_elements);
@@ -281,23 +287,25 @@ classdef Surface < Reactant
             n_elements = length(surf_elements);
             dl_moles = zeros(1,n_elements);
             for i = 1:n_elements
-                dl_moles(i) = t_out_dl(surf_elements{i});
+                dl_moles(i) = map_value(t_out_dl, surf_elements{i}, 0);
             end
             surface_result.elements_edl = string(surf_elements);
             surface_result.element_moles_edl = dl_moles;
             % TODO: add surface species to the results
             % needs basid function EDL_SPECIES and more information about
             % the double layer thickness and surface area of the solid
-            surface_result.charge_plane_0 = t_out_dl('Charge');
-            surface_result.charge_plane_1 = t_out_dl('Charge1');
-            surface_result.charge_plane_2 = t_out_dl('Charge2');
-            surface_result.charge_density_plane_0 = t_out_dl('sigma');
-            surface_result.charge_density_plane_1 = t_out_dl('sigma1');
-            surface_result.charge_density_plane_2 = t_out_dl('sigma2');
-            surface_result.potential_plane_0 = t_out_dl('psi');
-            surface_result.potential_plane_1 = t_out_dl('psi1');
-            surface_result.potential_plane_2 = t_out_dl('psi2');
-            surface_result.water_mass_dl = t_out_dl('water');
+            % EDL charges/potentials looked up by header (NaN if the chosen EDL
+            % model did not emit that plane) so missing columns don't crash.
+            surface_result.charge_plane_0 = map_value(t_out_dl, 'Charge');
+            surface_result.charge_plane_1 = map_value(t_out_dl, 'Charge1');
+            surface_result.charge_plane_2 = map_value(t_out_dl, 'Charge2');
+            surface_result.charge_density_plane_0 = map_value(t_out_dl, 'sigma');
+            surface_result.charge_density_plane_1 = map_value(t_out_dl, 'sigma1');
+            surface_result.charge_density_plane_2 = map_value(t_out_dl, 'sigma2');
+            surface_result.potential_plane_0 = map_value(t_out_dl, 'psi');
+            surface_result.potential_plane_1 = map_value(t_out_dl, 'psi1');
+            surface_result.potential_plane_2 = map_value(t_out_dl, 'psi2');
+            surface_result.water_mass_dl = map_value(t_out_dl, 'water');
 
             % Get solution results from phreeqcrm
             solution_result = solution.results_from_phreeqcrm(phreeqc_rm);

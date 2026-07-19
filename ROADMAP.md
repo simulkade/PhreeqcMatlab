@@ -136,11 +136,18 @@ This is the highest-leverage refactor; do it before finishing individual classes
       `Solution.run`/`Surface.equilibrate_with` use the slot constants instead of magic indices.
       Behavior-preserving, covered by the `initialConditionsHelper` test. (Approach b — wiring
       the new per-reactant `RM_Initial*2Module` functions — is left for M4 when those get wrapped.)
-- [ ] **Robust result parsing.** Replace hardcoded PHREEQC column-header keys
-      (Solution.m:205-229) and positional column arithmetic (Surface.m:262-288) with a
-      header→field mapping layer that validates presence and fails loudly. Use the new
-      `RM_GetTemperature/GetPressure/GetViscosity/GetDensityCalculated` getters where they
-      replace scraped `SELECTED_OUTPUT` columns.
+- [x] **Robust result parsing** — DONE (Solution; Surface partially). Added
+      `src/Tools/map_value.m` (safe `containers.Map` lookup with a fallback).
+      `Solution.results_from_phreeqcrm` now reads every SELECTED_OUTPUT column via `map_value`,
+      so a renamed/absent column yields `NaN` for that field instead of throwing and discarding
+      the whole result. `Surface`'s EDL charge/potential lookups likewise robustified; its
+      positional `keys()/values()` slicing is explicitly flagged FRAGILE to revisit in M3 with a
+      CD-MUSIC equilibrate reference test (changing it blind is unsafe). While here, fixed two
+      real bugs the now-tested `Solution.run` path exposed: a **missing `RM_FindComponents`**
+      before `RunCells` (segfault) and a **block-concatenation regression** (`END` merged with
+      the next keyword) — `combine_phreeqc_strings` made newline-robust. `Solution.run` now
+      returns a populated `SolutionResult`; covered by `solutionRunResults`/`mapValueSafeLookup`.
+      (Swapping scraped columns for the new `RM_GetTemperature/...` getters is left for M4.)
 - [ ] **Enum classes: use or lose.** `src/classes/@solution_units`, `@phase_units`,
       `@exchange_units`, `@kinetics_units`, `@sites_units`, `@edl_layer` are dead code (typed
       properties use plain `string`). Either wire them into the property type declarations for

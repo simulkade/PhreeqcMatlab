@@ -15,6 +15,13 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
   for RM_InitialPhreeqc2Module, replacing the 7-slot `ic1` vector duplicated across
   `PhreeqcSingleCell`, `InitializePhreeqcAdvection`, `InitializePhreeqcFVTool` (and the magic
   indices in `Solution`/`Surface`).
+- `src/Tools/map_value.m` — safe `containers.Map` lookup used to read SELECTED_OUTPUT tables by
+  header, so a missing/renamed column degrades to a fallback instead of discarding the result.
+
+### Fixed
+- `Solution.run` was non-functional (untested): added the missing `RM_FindComponents` before
+  `RunCells` (was a segfault) and fixed block concatenation so `END` no longer merges with the
+  following `SELECTED_OUTPUT` keyword. `combine_phreeqc_strings` is now newline-robust.
 
 ### Changed
 - `@Solution`, `@Gas`, `@Phase`, `@Surface`, `@SelectedOutput` `phreeqc_string()` now build
