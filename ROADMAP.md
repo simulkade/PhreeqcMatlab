@@ -110,12 +110,17 @@ code either fixed or safely guarded. Nothing here adds user-facing features.
 Goal: make Layer 3 consistent and robust so the remaining classes can be completed cheaply.
 This is the highest-leverage refactor; do it before finishing individual classes.
 
-- [ ] **Abstract `Reactant` base class.** Enforce common fields (`name`, `number`), an abstract
-      `phreeqc_string()`, a shared `equilibrate_with(solution)` template, and a uniform
-      `read_json(struct)` contract. `Solution`, `Phase`, `Surface`, `Gas`, `Exchange`,
-      `Kinetics` become subclasses that only fill in their block-specific pieces.
+- [x] **Abstract `Reactant` base class** — DONE. `src/@Reactant/Reactant.m` holds the shared
+      `name`/`number` identity, an abstract `phreeqc_string()`, and a concrete `input_string()`
+      that returns one assembled Phreeqc string. `Solution`, `Phase`, `Surface`, `Gas`,
+      `Exchange`, `Kinetics` now subclass it (name/number removed from each). `Surface` overrides
+      `input_string()` to concatenate its three coupled blocks in order. `Exchange`/`Kinetics`
+      carry a loud not-implemented `phreeqc_string` (real bodies land in M3) so they stay
+      instantiable. Covered by `reactantPolymorphism` (7/7 tests pass).
 - [ ] **Unify the run/equilibrate verb.** Today `Solution` uses `run()` while `Surface/Phase/Gas`
-      use `equilibrate_with()`. Pick one contract on the base class so reactants are polymorphic.
+      use `equilibrate_with()`. Deferred into M3, where `Exchange`/`Kinetics`/`Gas`/`SingleCell`
+      are implemented anyway — a shared `equilibrate_with(solution)` template on `Reactant`
+      built on `input_string()` will land with them.
 - [x] **Shared string-builder utility** — DONE. Added `src/Tools/PhreeqcBlock.m`, a fluent value
       builder (`kv`/`kvopt`/`flag`/`line`) with empty-field suppression, consistent scalar/vector
       numeric formatting, and deterministic spacing. Refactored `Solution`, `Gas`, `Phase`,

@@ -8,6 +8,9 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 ### Added
 - `src/Tools/PhreeqcBlock.m` — fluent builder for Phreeqc keyword blocks with empty-field
   suppression, consistent numeric formatting, and deterministic spacing.
+- `src/@Reactant/Reactant.m` — abstract base class unifying reactant identity (`name`/`number`)
+  and serialization (`phreeqc_string`/`input_string`). `@Solution`, `@Phase`, `@Surface`, `@Gas`,
+  `@Exchange`, `@Kinetics` now subclass it and can be handled polymorphically.
 
 ### Changed
 - `@Solution`, `@Gas`, `@Phase`, `@Surface`, `@SelectedOutput` `phreeqc_string()` now build

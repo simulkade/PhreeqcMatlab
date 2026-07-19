@@ -1,9 +1,8 @@
-classdef Gas
+classdef Gas < Reactant
     % GAS defines a constant volume or constant pressure gas phase
-    
+
     properties
-        name(1,1) string
-        number(1,1) double {mustBeNonnegative, mustBeInteger}
+        % name, number inherited from Reactant
         phase_names(1,:) string
         partial_pressure(1,:) double
         temperature(1,1) double

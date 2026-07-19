@@ -1,4 +1,4 @@
-classdef Solution
+classdef Solution < Reactant
     %SOLUTION Summary of this class goes here
     %    name(1,1) string
     %    number(1,1) double {mustBeNonnegative, mustBeInteger}
@@ -17,8 +17,7 @@ classdef Solution
     %    temperature {mustBeScalarOrEmpty}
     
     properties
-        name(1,1) string
-        number(1,1) double {mustBeNonnegative, mustBeInteger}
+        % name, number inherited from Reactant
         unit(1,1) string
         components(1,:) string
         concentrations(1,:) double

@@ -1,11 +1,10 @@
-classdef Surface
+classdef Surface < Reactant
     %SURFACE defines a surface species that can be equilibrated with a
     %solution object. Each surface object should contain only one surface
     %(with or without different types)
-    
+
     properties
-        name(1,1) string
-        number(1,1) double {mustBeNonnegative, mustBeInteger}
+        % name, number inherited from Reactant
         mass(1,1) double
         scm(1,1) string
         site_density(:,1) double
@@ -27,6 +26,14 @@ classdef Surface
             %SURFACE Construct an instance of this class
             obj.name = "surface";
             obj.number = 1;
+        end
+
+        function str = input_string(obj)
+            %INPUT_STRING assemble the three surface blocks into one string,
+            % ordered SURFACE_MASTER_SPECIES, SURFACE_SPECIES, then SURFACE.
+            [surface_string, surface_master_string, surface_species_string] = obj.phreeqc_string();
+            str = char(strjoin([string(surface_master_string) ...
+                string(surface_species_string) string(surface_string)], newline));
         end
         
         function [surface_string, surface_master_string, surface_species_string] = phreeqc_string(obj)

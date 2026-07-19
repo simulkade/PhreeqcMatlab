@@ -1,6 +1,6 @@
-classdef Phase
+classdef Phase < Reactant
     %{
-    PHASE 
+    PHASE
     define a new phase (e.g. a mineral) that is in equilibrium with a
     solution defined by @solution class
     for gas phases, use gas class
@@ -15,8 +15,7 @@ classdef Phase
         precipitate_only(1,:) logical
     %}
     properties
-        name(1,1) string
-        number(1,1) double {mustBeNonnegative, mustBeInteger}
+        % name, number inherited from Reactant
         phase_names(1,:) string
         alternative_formula(1,:) string
         moles(1,:) double

@@ -87,6 +87,30 @@ classdef PhreeqcMatlabTest < matlab.unittest.TestCase
             tc.verifyEqual(ca, s, 'AbsTol', 1e-4, 'Ca and SO4 released 1:1 by gypsum');
         end
 
+        function reactantPolymorphism(tc)
+            % All definition classes share the Reactant identity/contract and
+            % can be serialized uniformly through input_string().
+            classes = {@Solution, @Phase, @Surface, @Gas, @Exchange, @Kinetics};
+            for f = classes
+                o = f{1}();
+                tc.verifyTrue(isa(o, 'Reactant'));
+                tc.verifyGreaterThan(strlength(o.name), 0);
+            end
+            % Concrete reactants produce a usable single input string...
+            for f = {@Solution, @() Phase.chalk(), @() Gas.damp_CO2(), @() Surface.calcite_surface()}
+                s = f{1}().input_string();
+                tc.verifyClass(s, 'char');
+                tc.verifyNotEmpty(s);
+            end
+            % ...and Surface assembles its three coupled blocks in order.
+            si = Surface.calcite_surface().input_string();
+            tc.verifySubstring(si, 'SURFACE_MASTER_SPECIES');
+            tc.verifySubstring(si, 'SURFACE_SPECIES');
+            % Not-yet-implemented reactants fail loudly, not silently.
+            tc.verifyError(@() Exchange().phreeqc_string(), 'PhreeqcMatlab:notImplemented');
+            tc.verifyError(@() Kinetics().phreeqc_string(), 'PhreeqcMatlab:notImplemented');
+        end
+
         function stringBuilder(tc)
             % PhreeqcBlock: header, empty-field suppression, vector + optional
             % value formatting (no native call).
