@@ -386,25 +386,18 @@ classdef Surface < Reactant
             %       sol: decoded JSON string to a Matlab structure
             obj = Surface();
 
-            if isfield(surf_struct, 'Name')
-                obj.name = surf_struct.Name;
-            end
-
-            if isfield(surf_struct, 'Number')
-                obj.number = surf_struct.Number;
-            end
-
-            if isfield(surf_struct, 'Mass')
-                obj.mass = surf_struct.Mass;
-            end
-
-            if isfield(surf_struct, 'SCM')
-                obj.scm = surf_struct.SCM;
-            end
-
-            if isfield(surf_struct, 'SpecificArea')
-                obj.specific_surface_area = surf_struct.SpecificArea;
-            end
+            % Scalar 1:1 fields (SCM is set here so the Reactions block below
+            % can test it for cd_music). MasterSpecies/Reactions are expanded
+            % separately.
+            obj = assign_json_fields(obj, surf_struct, [ ...
+                "Name",         "name"; ...
+                "Number",       "number"; ...
+                "Mass",         "mass"; ...
+                "SCM",          "scm"; ...
+                "SpecificArea", "specific_surface_area"; ...
+                "SitesUnits",   "sites_units"; ...
+                "EDL",          "edl_model"; ...
+                "Capacitances", "capacitances" ]);
 
             if isfield(surf_struct, 'MasterSpecies')
                 f_names = fieldnames(surf_struct.MasterSpecies); % get the list of components
@@ -449,14 +442,6 @@ classdef Surface < Reactant
                 obj.cd_music_coeffs = cdm;
             end
 
-            if isfield(surf_struct, 'SitesUnits')
-                obj.sites_units = surf_struct.SitesUnits;
-            end
-
-            if isfield(surf_struct, 'EDL')
-                obj.edl_model = surf_struct.EDL;
-            end
-
             if isfield(surf_struct, 'EDL_thickness')
                 obj.edl_thickness = surf_struct.EDL_thickness;
             else
@@ -468,10 +453,7 @@ classdef Surface < Reactant
             else
                 obj.only_counter_ions = false;
             end
-
-            if isfield(surf_struct, 'Capacitances')
-                obj.capacitances = surf_struct.Capacitances;
-            end
+            % Capacitances, if present, are set by the assign_json_fields call above.
         end
     end
 end

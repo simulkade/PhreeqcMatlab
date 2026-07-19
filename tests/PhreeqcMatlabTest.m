@@ -87,6 +87,26 @@ classdef PhreeqcMatlabTest < matlab.unittest.TestCase
             tc.verifyEqual(ca, s, 'AbsTol', 1e-4, 'Ca and SO4 released 1:1 by gypsum');
         end
 
+        function jsonRoundTrip(tc)
+            % Solution JSON read (assign_json_fields) + write (to_struct) round-trip.
+            sol = Solution.from_json("NorthSeawater");
+            tc.verifyEqual(sol.name, "Seawater");
+            tc.verifyEqual(sol.number, 1);
+            tc.verifyEqual(sol.unit, "mol/L");
+            tc.verifyEqual(sol.pH, 8.4, 'AbsTol', 1e-9);
+            tc.verifyEqual(numel(sol.components), 6);
+            tc.verifyTrue(ismember("Na", sol.components));
+
+            tmp = [tempname '.json'];
+            sol.write_json(tmp);
+            closer = onCleanup(@() delete(tmp)); %#ok<NASGU>
+            sol2 = Solution.read_json(jsondecode(fileread(tmp)));
+            tc.verifyEqual(sol2.name, sol.name);
+            tc.verifyEqual(sol2.pH, sol.pH, 'AbsTol', 1e-9);
+            tc.verifyEqual(numel(sol2.components), numel(sol.components));
+            tc.verifyEqual(sort(sol2.components), sort(sol.components));
+        end
+
         function mapValueSafeLookup(tc)
             % map_value degrades to a fallback instead of throwing on a
             % missing SELECTED_OUTPUT column key.

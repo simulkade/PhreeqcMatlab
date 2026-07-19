@@ -32,7 +32,7 @@ The code is layered from a thin FFI binding up to convenience objects. When edit
 - Definition classes: `@Solution`, `@Phase`, `@Surface`, `@Exchange`, `@Gas`, `@Kinetics`, `@SelectedOutput`, `@SingleCell`, `@Datafile`.
 - The core pattern: each definition class has a `phreeqc_string()` method that serializes its properties into a Phreeqc keyword block, a `run_in_phreeqc()` / `run()` method that creates a (I)Phreeqc instance, executes, and returns results, and `read_json()` to build objects from the JSON templates in `database/` (`solutions.json`, `surfaces.json`).
 - Result classes (`@SolutionResult`, `@PhaseResult`, `@SurfaceResult`, `@SingleCellResult`) hold parsed output.
-- `src/classes/` holds enum-like unit/type helper classes (`@solution_units`, `@phase_units`, `@exchange_units`, `@kinetics_units`, `@sites_units`, `@edl_layer`).
+- All six definition classes subclass the abstract `@Reactant` base (`src/@Reactant/`), which holds the shared `name`/`number` identity and a uniform `input_string()`; each subclass implements `phreeqc_string()`. Blocks are assembled with the `PhreeqcBlock` builder (`src/Tools/PhreeqcBlock.m`), JSON is decoded via `assign_json_fields`, initial-condition vectors via `InitialConditions`, and SELECTED_OUTPUT columns read via `map_value` (all in `src/Tools/`).
 
 **Path helpers** in `src/Tools/`: `database_file(name)` and `DATABASE_PATH` resolve database file paths; `ReadPhreeqcFile` reads and cleans input files; `combine_phreeqc_strings` concatenates keyword blocks; `read_json_ex` loads JSON templates.
 

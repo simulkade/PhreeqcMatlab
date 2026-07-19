@@ -250,68 +250,82 @@ classdef Solution < Reactant
         end
         
         function obj = read_json(sol)
-            % read_json creates a Solution object from a decoded JSON
-            % string
-            % input:
-            %       sol: decoded JSON string to a Matlab structure
+            % read_json creates a Solution object from a decoded JSON entry
+            % (a struct from jsondecode). Scalar fields are copied via the
+            % shared assign_json_fields helper; Composition is expanded into
+            % the components/concentrations arrays.
             obj = Solution();
-
-            if isfield(sol, 'Name')
-                obj.name = sol.Name;
-            end
-
-            if isfield(sol, 'Number')
-                obj.number = sol.Number;
-            end
-
-            if isfield(sol, 'Unit')
-                obj.unit = sol.Unit;
-            end
-
+            obj = assign_json_fields(obj, sol, Solution.json_field_map());
             if isfield(sol, 'Composition')
-                obj.components = fieldnames(sol.Composition); % get the list of components
-                obj.concentrations = cellfun(@(x)getfield(sol.Composition, {1}, x), obj.components); % get the compositions
+                comp = fieldnames(sol.Composition);
+                obj.components = string(comp(:))';                                  % row string
+                obj.concentrations = cellfun(@(x)getfield(sol.Composition,{1},x), comp)'; % row
             end
+        end
 
-            if isfield(sol, 'Charge')
-                obj.ph_charge_balance = sol.Charge;
+        function obj = from_json(name, varargin)
+            % from_json builds a Solution from a named entry in a JSON file.
+            %   Solution.from_json("NorthSeawater")                 % solutions.json
+            %   Solution.from_json("NorthSeawater", "solutions.json")
+            if nargin < 2; file = 'solutions.json'; else; file = varargin{1}; end
+            data = jsondecode(fileread(database_file(file)));
+            key = char(name);
+            if ~isfield(data, key)
+                error('PhreeqcMatlab:jsonEntryNotFound', ...
+                    'No entry "%s" in %s.', key, file);
             end
+            obj = Solution.read_json(data.(key));
+        end
 
-            if isfield(sol, 'ChargeComponent')
-                obj.charge_balance_component = sol.ChargeComponent;
-            end
+        function m = json_field_map()
+            % JSON field <-> Solution property mapping (scalar fields only;
+            % Composition is handled separately). Used by read_json/to_struct.
+            m = [ "Name",                "name"; ...
+                  "Number",              "number"; ...
+                  "Unit",                "unit"; ...
+                  "Charge",              "ph_charge_balance"; ...
+                  "ChargeComponent",     "charge_balance_component"; ...
+                  "Density",             "density"; ...
+                  "DensityCalculation",  "density_calculation"; ...
+                  "Alkalinity",          "alkalinity"; ...
+                  "AlkalinityComponent", "alkalinity_component"; ...
+                  "pe",                  "pe"; ...
+                  "Pressure",            "pressure"; ...
+                  "Temperature",         "temperature"; ...
+                  "pH",                  "pH" ];
+        end
+    end
 
-            if isfield(sol, 'Density')
-                obj.density = sol.Density;
+    methods
+        function s = to_struct(obj)
+            % to_struct produces a decoded-JSON-style struct for this solution
+            % (inverse of read_json). Empty/unset scalar fields are omitted.
+            % Composition is a containers.Map so component names such as
+            % "S(6)" survive (a plain struct cannot hold them as field names).
+            s = struct();
+            m = Solution.json_field_map();
+            for i = 1:size(m,1)
+                v = obj.(char(m(i,2)));
+                if ~(isempty(v) || ((isstring(v)||ischar(v)) && strlength(string(v))==0))
+                    s.(char(m(i,1))) = v;
+                end
             end
+            if ~isempty(obj.components)
+                s.Composition = containers.Map(cellstr(obj.components), ...
+                    num2cell(double(obj.concentrations)));
+            end
+        end
 
-            if isfield(sol, 'DensityCalculation')
-                obj.density_calculation = sol.DensityCalculation;
+        function write_json(obj, filename)
+            % write_json serializes this solution to a JSON file (round-trips
+            % with read_json for simple element names).
+            txt = jsonencode(obj.to_struct(), 'PrettyPrint', true);
+            fid = fopen(filename, 'w');
+            if fid == -1
+                error('PhreeqcMatlab:cannotWrite', 'Cannot open %s for writing.', filename);
             end
-
-            if isfield(sol, 'Alkalinity')
-                obj.alkalinity = sol.Alkalinity;
-            end
-
-            if isfield(sol, 'AlkalinityComponent')
-                obj.alkalinity_component = sol.AlkalinityComponent;
-            end
-
-            if isfield(sol, 'pe')
-                obj.pe = sol.pe;
-            end
-
-            if isfield(sol, 'Pressure')
-                obj.pressure = sol.Pressure;
-            end
-
-            if isfield(sol, 'Temperature')
-                obj.temperature = sol.Temperature;
-            end
-
-            if isfield(sol, 'pH')
-                obj.pH = sol.pH;
-            end
+            cleaner = onCleanup(@() fclose(fid));
+            fwrite(fid, txt, 'char');
         end
     end
 end

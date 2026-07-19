@@ -148,14 +148,19 @@ This is the highest-leverage refactor; do it before finishing individual classes
       the next keyword) — `combine_phreeqc_strings` made newline-robust. `Solution.run` now
       returns a populated `SolutionResult`; covered by `solutionRunResults`/`mapValueSafeLookup`.
       (Swapping scraped columns for the new `RM_GetTemperature/...` getters is left for M4.)
-- [ ] **Enum classes: use or lose.** `src/classes/@solution_units`, `@phase_units`,
-      `@exchange_units`, `@kinetics_units`, `@sites_units`, `@edl_layer` are dead code (typed
-      properties use plain `string`). Either wire them into the property type declarations for
-      validation, or delete them.
-- [ ] **Unify JSON.** One reusable decode/validate helper instead of per-class `isfield` ladders;
-      fold the duplicated `Tools/read_json_ex.m` (a verbatim copy of `Solution.read_json`, with a
-      hardcoded Windows path) into it; add `write_json` for round-tripping; define a schema.
-      Fill the empty `Dan`/`HDan`/`Kraka` stubs in `database/solutions.json` or remove them.
+- [x] **Enum classes: use or lose** — DONE (deleted). `@solution_units`, `@phase_units`,
+      `@exchange_units`, `@kinetics_units`, `@sites_units`, `@edl_layer` were unused dead code and
+      wiring them would have broken the `strcmpi` string comparisons / `read_json` string
+      assignments. Removed (recoverable via git); `src/classes` and its `addpath` are gone. The
+      unit-number conventions they documented remain in inline comments at the `RM_SetUnits*` calls.
+- [x] **Unify JSON** — DONE. Added `src/Tools/assign_json_fields.m` (shared JSON-field→property
+      copier); refactored `Solution`, `Phase`, `Surface` `read_json` onto it (only the
+      Composition/MasterSpecies/Reactions expansions stay bespoke). Added `Solution.to_struct` +
+      `write_json` (round-trips; Composition via `containers.Map` so element names survive) and a
+      `Solution.from_json(name[,file])` factory. Deleted the dead `Tools/read_json_ex.m` copy and
+      the empty `Dan`/`HDan`/`Kraka` stubs in `solutions.json`. Covered by `jsonRoundTrip`.
+
+**Milestone 2 complete.** 11/11 tests pass.
 
 ---
 

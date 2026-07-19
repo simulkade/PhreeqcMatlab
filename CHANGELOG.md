@@ -17,6 +17,15 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
   indices in `Solution`/`Surface`).
 - `src/Tools/map_value.m` — safe `containers.Map` lookup used to read SELECTED_OUTPUT tables by
   header, so a missing/renamed column degrades to a fallback instead of discarding the result.
+- `src/Tools/assign_json_fields.m` — shared JSON-field→property copier, replacing the per-class
+  `isfield` ladders in `read_json`.
+- `Solution.from_json(name[,file])` factory, and `Solution.to_struct`/`write_json` for
+  serializing a solution back to JSON (round-trips).
+
+### Removed
+- Dead code: the six unused enum classes under `src/classes/` (and its `addpath`), the
+  non-runnable `Tools/read_json_ex.m` duplicate, and the empty `Dan`/`HDan`/`Kraka` entries in
+  `database/solutions.json`.
 
 ### Fixed
 - `Solution.run` was non-functional (untested): added the missing `RM_FindComponents` before

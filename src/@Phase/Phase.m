@@ -253,43 +253,23 @@ classdef Phase < Reactant
          end
          
          function obj = read_json(phase_field)
-            % creates a phase object from an input JSON
+            % creates a phase object from a decoded JSON entry. Scalar/array
+            % fields are copied via assign_json_fields; Composition is expanded
+            % into phase_names/moles.
             obj = Phase();
-             
-            if isfield(phase_field, 'Name')
-                obj.name = phase_field.Name;
-            end
-
-            if isfield(phase_field, 'Number')
-                obj.number = phase_field.Number;
-            end
-
+            map = [ "Name",               "name"; ...
+                    "Number",             "number"; ...
+                    "AlternativeFormula", "alternative_formula"; ...
+                    "SaturationIndices",  "saturation_indices"; ...
+                    "ForceEquality",      "force_equality"; ...
+                    "DissolveOnly",       "dissolve_only"; ...
+                    "PrecipitateOnly",    "precipitate_only" ];
+            obj = assign_json_fields(obj, phase_field, map);
             if isfield(phase_field, 'Composition')
                 comp_names = fieldnames(phase_field.Composition); % cell column of phase names
                 obj.phase_names = string(comp_names(:))';         % row string array
                 obj.moles = cellfun(@(x)getfield(phase_field.Composition, {1}, x), comp_names)'; % row of moles
             end
-            
-            if isfield(phase_field, 'AlternativeFormula')
-                obj.alternative_formula = phase_field.AlternativeFormula;
-            end
-            
-            if isfield(phase_field, 'SaturationIndices')
-                obj.saturation_indices = phase_field.SaturationIndices;
-            end
-            
-            if isfield(phase_field, 'ForceEquality')
-                obj.force_equality = phase_field.ForceEquality;
-            end
-            
-            if isfield(phase_field, 'DissolveOnly')
-                obj.dissolve_only = phase_field.DissolveOnly;
-            end
-            
-            if isfield(phase_field, 'PrecipitateOnly')
-                obj.precipitate_only = phase_field.PrecipitateOnly;
-            end
-            
          end
          
      end
