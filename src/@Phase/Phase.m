@@ -44,36 +44,29 @@ classdef Phase
         function phase_string = phreeqc_string(obj)
             % phase_string = phreeqc_phase(obj) 
             % converts a phase object to a phreeqc string
-            n_phase = length(obj.phase_names);
-            if n_phase==0
-                phase_string = "\n";
-            else
-                phase_string = strjoin(["EQUILIBRIUM_PHASES " num2str(obj.number) " " obj.name "\n"]);
-                for i = 1:n_phase
-                    phase_string = strjoin([phase_string obj.phase_names(i)]); % phase name
-                    phase_string = strjoin([phase_string "  " num2str(obj.saturation_indices(i))]); % saturation index
-                    if ~isempty(obj.alternative_formula)
-                        if  obj.alternative_formula(i)~=""
-                            phase_string = strjoin([phase_string "  " obj.alternative_formula(i)]);
-                        end
-                    end
-                    phase_string = strjoin([phase_string "  " num2str(obj.moles(i))]);
-                    if ~isempty(obj.precipitate_only)
-                        if obj.precipitate_only(i)
-                            phase_string = strjoin([phase_string "  precipitate_only"]);
-                        elseif ~isempty(obj.dissolve_only)
-                            if obj.dissolve_only(i)
-                                phase_string = strjoin([phase_string "  dissolve_only"]);
-                            end
-                        end
-                    end
-                    phase_string = strjoin([phase_string "\n"]);
-                    if ~isempty(obj.force_equality) && obj.force_equality(i)
-                        phase_string = strjoin([phase_string "-force_equality \n"]);
-                    end
+            if isempty(obj.phase_names)
+                phase_string = '';
+                return;
+            end
+            b = PhreeqcBlock("EQUILIBRIUM_PHASES", obj.number, obj.name);
+            for i = 1:numel(obj.phase_names)
+                % line format: phase  SI  [alt_formula]  moles  [modifier]
+                alt = "";
+                if ~isempty(obj.alternative_formula) && obj.alternative_formula(i) ~= ""
+                    alt = obj.alternative_formula(i);
+                end
+                modifier = "";
+                if ~isempty(obj.precipitate_only) && obj.precipitate_only(i)
+                    modifier = "precipitate_only";
+                elseif ~isempty(obj.dissolve_only) && obj.dissolve_only(i)
+                    modifier = "dissolve_only";
+                end
+                b = b.kv(obj.phase_names(i), obj.saturation_indices(i), alt, obj.moles(i), modifier);
+                if ~isempty(obj.force_equality) && obj.force_equality(i)
+                    b = b.line("-force_equality");
                 end
             end
-            phase_string = sprintf(char(phase_string));
+            phase_string = b.char();
         end
         
         function so_obj = selected_output_object(obj)

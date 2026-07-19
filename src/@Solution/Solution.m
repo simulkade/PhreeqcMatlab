@@ -47,45 +47,40 @@ classdef Solution
         end
                 
         function solution_string = phreeqc_string(obj)
-            % phreeqc_string returns a string of phreeqc format for the
-            % defined PhreeqcMatlab solution
-            % NOTE: at this stage, a phreeqc string can contain more
-            % details than the equivalent PhreeqcMatlab solution
-            % object
-            % Note: still not smart enough to filter out the nonspecified
-            % fields; requires some if then else.
-            n_comp = length(obj.components);
-            % solution_cell = cell(n_comp, 1);
-            % solution_cell{1} = ['SOLUTION ' obj.name];
-            solution_string = strjoin(["SOLUTION " num2str(obj.number) obj.name "\n"]);
-            solution_string = strjoin([solution_string 'units' obj.unit "\n"]);
-            solution_string = strjoin([solution_string 'pressure' num2str(obj.pressure) "\n"]);
-            solution_string = strjoin([solution_string 'temp' num2str(obj.temperature) "\n"]);
+            % phreeqc_string returns a Phreeqc SOLUTION block for this object.
+            % Unspecified fields (empty pH/pe/density/unit/alkalinity) are
+            % omitted rather than emitted as malformed lines. Built with the
+            % shared PhreeqcBlock builder (see PhreeqcBlock).
+            b = PhreeqcBlock("SOLUTION", obj.number, obj.name);
+            b = b.kv("units", obj.unit);
+            b = b.kv("pressure", obj.pressure);
+            b = b.kv("temp", obj.temperature);
             if obj.ph_charge_balance
-                solution_string = strjoin([solution_string 'pH' num2str(obj.pH) "  charge" "\n"]);
+                b = b.kv("pH", obj.pH, "charge");
             else
-                solution_string = strjoin([solution_string 'pH' num2str(obj.pH) "\n"]);
+                b = b.kv("pH", obj.pH);
             end
-            solution_string = strjoin([solution_string 'pe' num2str(obj.pe) "\n"]);
-            solution_string = strjoin([solution_string 'density' num2str(obj.density) "\n"]);
-            for i=1:n_comp
-                % pH charge balance has priority over component charge
-                % balance
+            b = b.kv("pe", obj.pe);
+            if ~isempty(obj.density) && obj.density > 0   % 0 = unset; omit
+                b = b.kv("density", obj.density);
+            end
+            for i = 1:numel(obj.components)
+                % pH charge balance has priority over component charge balance
                 if strcmpi(obj.charge_balance_component, obj.components(i)) && ~obj.ph_charge_balance
-                    solution_string = strjoin([solution_string obj.components(i) "  " num2str(obj.concentrations(i)) "  charge" "\n"]);
+                    b = b.kv(obj.components(i), obj.concentrations(i), "charge");
                 else
-                    solution_string = strjoin([solution_string obj.components(i) "  " num2str(obj.concentrations(i)) "\n"]);
+                    b = b.kv(obj.components(i), obj.concentrations(i));
                 end
             end
             if ~isempty(obj.alkalinity)
-                if obj.alkalinity_component~=""
-                    solution_string = strjoin([solution_string 'Alkalinity' num2str(obj.alkalinity) "  as  " obj.alkalinity_component "\n"]);
+                if obj.alkalinity_component ~= ""
+                    b = b.kv("Alkalinity", obj.alkalinity, "as", obj.alkalinity_component);
                 else
-                    solution_string = strjoin([solution_string 'Alkalinity' num2str(obj.alkalinity) "\n"]);
+                    b = b.kv("Alkalinity", obj.alkalinity);
                 end
             end
-            solution_string = strjoin([solution_string 'END' "\n"]);
-            solution_string = sprintf(char(solution_string));
+            b = b.flag("END");
+            solution_string = b.char();
         end
         
         function out_string = run_in_phreeqc(obj, varargin)

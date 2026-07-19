@@ -24,25 +24,21 @@ classdef Gas
         end
         
         function gas_string = phreeqc_string(obj)
-            % phreeqc_string creates a phreeqc string from the Gas object
-            gas_string = strjoin(["GAS_PHASE " num2str(obj.number) " " obj.name "\n"]);
-            n_gas = length(obj.phase_names);
+            % phreeqc_string creates a Phreeqc GAS_PHASE block from the Gas
+            % object, built with the shared PhreeqcBlock builder.
+            b = PhreeqcBlock("GAS_PHASE", obj.number, obj.name);
             if obj.fixed_pressure
-                gas_string = strjoin([gas_string "-fixed_pressure" "\n"]);
-                if ~isempty(obj.pressure)
-                    gas_string = strjoin([gas_string "-pressure" num2str(obj.pressure) "\n"]);
-                end
+                b = b.flag("-fixed_pressure");
+                b = b.kv("-pressure", obj.pressure);   % suppressed if unset
             else
-                gas_string = strjoin([gas_string "-fixed_volume" "\n"]);
+                b = b.flag("-fixed_volume");
             end
-            gas_string = strjoin([gas_string "-temperature" num2str(obj.temperature) "\n"]);
-            if ~isempty(obj.volume)
-                gas_string = strjoin([gas_string "-volume" num2str(obj.volume) "\n"]);
+            b = b.kv("-temperature", obj.temperature);
+            b = b.kv("-volume", obj.volume);
+            for i = 1:numel(obj.phase_names)
+                b = b.kv(obj.phase_names(i), obj.partial_pressure(i));
             end
-            for i=1:n_gas
-                gas_string = strjoin([gas_string obj.phase_names(i) num2str(obj.partial_pressure(i)) "\n"]);
-            end
-            gas_string = sprintf(char(gas_string));
+            gas_string = b.char();
         end
 
         function equilibrate_in_phreeqc(obj, solution, varargin)

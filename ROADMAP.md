@@ -116,11 +116,13 @@ This is the highest-leverage refactor; do it before finishing individual classes
       `Kinetics` become subclasses that only fill in their block-specific pieces.
 - [ ] **Unify the run/equilibrate verb.** Today `Solution` uses `run()` while `Surface/Phase/Gas`
       use `equilibrate_with()`. Pick one contract on the base class so reactants are polymorphic.
-- [ ] **Shared string-builder utility.** Replace the fragile nested
-      `strjoin(...)/sprintf(char(...))` pattern (used in every `phreeqc_string()`) with a helper
-      that: suppresses empty/unspecified fields (fixes Solution.m:55 "not smart enough" note and
-      the `pe  \n` / `density  \n` malformed lines), formats numbers via `num2str` consistently,
-      and controls spacing deterministically.
+- [x] **Shared string-builder utility** — DONE. Added `src/Tools/PhreeqcBlock.m`, a fluent value
+      builder (`kv`/`kvopt`/`flag`/`line`) with empty-field suppression, consistent scalar/vector
+      numeric formatting, and deterministic spacing. Refactored `Solution`, `Gas`, `Phase`,
+      `Surface` (all 3 sub-blocks), and `SelectedOutput` `phreeqc_string()` onto it; removed the
+      `pe  `/`density 0` malformed lines and the fragile `num2str(vector)` calls. Every block
+      round-trips through IPhreeqc with no parse error; covered by `stringBuilder` and
+      `surfaceStringRoundTrip` tests.
 - [ ] **Centralize the initial-condition vector.** The hardcoded 7-slot `ic1` vector is
       duplicated across `Solution.m:188`, `Surface.m:238`, `SingleCell.m:65`,
       `PhreeqcSingleCell.m:45`, `InitializePhreeqcAdvection.m:44`, `InitializePhreeqcFVTool.m:45`.

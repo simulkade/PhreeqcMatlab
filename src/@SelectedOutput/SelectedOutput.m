@@ -18,34 +18,33 @@ classdef SelectedOutput
         end
         
         function selected_output_string = phreeqc_string(obj)
-            %selected_output_string = phreeqc_string(obj)
-            % uses strjoin with \n and sprintf and char to create a
-            % selected output string callable by phreeqc
-            selected_output_string = sprintf(...
-                char(...
-                strjoin([strjoin(["\nSELECTED_OUTPUT" num2str(obj.number)]) ...
-                obj.content ...
-                strjoin(["USER_PUNCH" num2str(obj.number)])...
-                obj.punch "END\n"], '\n')...
-                )...
-                );
+            % SELECTED_OUTPUT (+ USER_PUNCH) block, terminated with END.
+            b = obj.build_block();
+            b = b.flag("END");
+            selected_output_string = b.char();
         end
 
         function selected_output_string = phreeqc_string_without_end(obj)
-            %selected_output_string = phreeqc_string(obj)
-            % uses strjoin with \n and sprintf and char to create a
-            % selected output string callable by phreeqc
-            selected_output_string = sprintf(...
-                char(...
-                strjoin([strjoin(["\nSELECTED_OUTPUT" num2str(obj.number)]) ...
-                obj.content ...
-                strjoin(["USER_PUNCH" num2str(obj.number)])...
-                obj.punch], '\n')...
-                )...
-                );
+            % SELECTED_OUTPUT (+ USER_PUNCH) block without a trailing END,
+            % for concatenation with following keyword blocks.
+            selected_output_string = obj.build_block().char();
         end
-    
-        
+    end
+
+    methods (Access = private)
+        function b = build_block(obj)
+            % Shared builder for the SELECTED_OUTPUT / USER_PUNCH block.
+            b = PhreeqcBlock("SELECTED_OUTPUT", obj.number);
+            for i = 1:numel(obj.content)
+                b = b.line(obj.content(i));
+            end
+            if ~isempty(obj.punch) && any(strlength(string(obj.punch)) > 0)
+                b = b.line("USER_PUNCH " + PhreeqcBlock.fmt(obj.number));
+                for i = 1:numel(obj.punch)
+                    b = b.line(obj.punch(i));
+                end
+            end
+        end
     end
     methods(Static)
         

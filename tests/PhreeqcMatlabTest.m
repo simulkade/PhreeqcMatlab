@@ -87,6 +87,46 @@ classdef PhreeqcMatlabTest < matlab.unittest.TestCase
             tc.verifyEqual(ca, s, 'AbsTol', 1e-4, 'Ca and SO4 released 1:1 by gypsum');
         end
 
+        function stringBuilder(tc)
+            % PhreeqcBlock: header, empty-field suppression, vector + optional
+            % value formatting (no native call).
+            b = PhreeqcBlock("SOLUTION", 1, "sw");
+            b = b.kv("units", "mol/kgw");
+            b = b.kv("pH", 8.1, "charge");
+            b = b.kv("pe", []);              % empty -> suppressed
+            b = b.kv("Na", 0.48);
+            b = b.kvopt("-diffuse_layer", []);   % flag alone when empty
+            b = b.kv("-capacitances", [1.3 4.5]);
+            s = b.char();
+            tc.verifyClass(s, 'char');
+            tc.verifySubstring(s, sprintf('SOLUTION 1 sw'));
+            tc.verifySubstring(s, sprintf('pH    8.1    charge'));
+            tc.verifyEmpty(regexp(s, '^\s*pe\b', 'once', 'lineanchors'), ...
+                'empty pe must be suppressed');
+            tc.verifySubstring(s, sprintf('-capacitances    1.3 4.5'));
+            tc.verifyTrue(any(strcmp(strsplit(s, newline), '-diffuse_layer')), ...
+                'kvopt with empty value should emit the flag alone');
+        end
+
+        function surfaceStringRoundTrip(tc)
+            % The refactored Surface.phreeqc_string must produce blocks PHREEQC
+            % parses without error (guards the fragile cd_music/capacitances
+            % vector formatting). Exercises both EDL variants.
+            for f = {@Surface.calcite_surface, @Surface.calcite_surface_cd_music}
+                surf = f{1}();
+                [ss, sms, sps] = surf.phreeqc_string();
+                iph = IPhreeqc(); iph = iph.CreateIPhreeqc();
+                closer = onCleanup(@() iph.DestroyIPhreeqc()); %#ok<NASGU>
+                sol = ['SOLUTION 1' newline ' units mol/kgw' newline ' pH 8 charge' ...
+                       newline ' Ca 0.01' newline ' C 0.01' newline ' Na 0.1' newline ' Cl 0.1'];
+                full = sprintf('%s\n%s\n%s\n%s\nEND\n', sms, sps, sol, ss);
+                out = iph.RunPhreeqcString(full, database_file(tc.DB));
+                tc.verifyFalse(contains(string(out), "ERROR:"), ...
+                    'Surface block should parse without a PHREEQC error');
+                clear closer;
+            end
+        end
+
         function solutionObjectStringWellFormed(tc)
             % Layer-3 object model: phreeqc_string() must be deterministic and
             % well-formed (no native call). Guards the string-builder fixes.

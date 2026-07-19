@@ -3,6 +3,18 @@
 All notable changes to PhreeqcMatlab are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased] — Milestone 2: object-model refactor (in progress)
+
+### Added
+- `src/Tools/PhreeqcBlock.m` — fluent builder for Phreeqc keyword blocks with empty-field
+  suppression, consistent numeric formatting, and deterministic spacing.
+
+### Changed
+- `@Solution`, `@Gas`, `@Phase`, `@Surface`, `@SelectedOutput` `phreeqc_string()` now build
+  their blocks with `PhreeqcBlock` instead of ad-hoc `strjoin`/`sprintf`. Fixes malformed
+  empty-field lines (`pe`, `density 0`) and fragile `num2str(vector)` formatting. All blocks
+  verified to round-trip through IPhreeqc without parse errors.
+
 ## [Unreleased] — Milestone 1: stabilize the foundation
 
 ### Changed

@@ -40,50 +40,55 @@ classdef Surface
             % important is a substantial amount of the surface dissolves or
             % precipitate. For, e.g. flow in a chalk reservoir, it is not
             % significant
-            surface_master_string = "SURFACE_MASTER_SPECIES \n";
-            for i = 1:length(obj.surface_master_species)
-                surface_master_string = strjoin([surface_master_string obj.surface_master_species(i) "\n"]);
+            % SURFACE_MASTER_SPECIES block
+            bm = PhreeqcBlock("SURFACE_MASTER_SPECIES");
+            for i = 1:numel(obj.surface_master_species)
+                bm = bm.line(obj.surface_master_species(i));
             end
-            surface_master_string = sprintf(char(surface_master_string));
+            surface_master_string = bm.char();
 
-            surface_species_string = "SURFACE_SPECIES \n";
-            for i = 1:length(obj.surface_species_reactions)
-                surface_species_string = strjoin([surface_species_string obj.surface_species_reactions(i) "\n log_k" num2str(obj.log_k(i)) "\n delta_h" num2str(obj.dh(i)) "\n"]);
+            % SURFACE_SPECIES block
+            bs = PhreeqcBlock("SURFACE_SPECIES");
+            for i = 1:numel(obj.surface_species_reactions)
+                bs = bs.line(obj.surface_species_reactions(i));
+                bs = bs.kv("log_k", obj.log_k(i));
+                bs = bs.kv("delta_h", obj.dh(i));
                 if strcmpi(obj.scm, 'cd_music')
-                    surface_species_string = strjoin([surface_species_string "-cd_music" num2str(obj.cd_music_coeffs(i,:)) "\n"]);
+                    bs = bs.kv("-cd_music", obj.cd_music_coeffs(i,:));
                 end
             end
-            surface_species_string = sprintf(char(surface_species_string));
+            surface_species_string = bs.char();
 
-            surface_string = ["SURFACE" num2str(obj.number) obj.name "\n"];
+            % SURFACE block
+            bf = PhreeqcBlock("SURFACE", obj.number, obj.name);
             if strcmpi(obj.scm, 'cd_music')
-                surface_string = strjoin([surface_string "-cd_music \n"]);
+                bf = bf.flag("-cd_music");
             end
             if strcmpi(obj.sites_units, 'absolute')
-                surface_string = strjoin([surface_string "-sites_units absolute \n"]);
+                bf = bf.kv("-sites_units", "absolute");
             else
-                surface_string = strjoin([surface_string "-sites_units density \n"]);
+                bf = bf.kv("-sites_units", "density");
             end
             ms = strsplit(obj.surface_master_species(1), ' ');
-            surface_string = strjoin([surface_string ms(1) num2str(obj.site_density(1)) num2str(obj.specific_surface_area) num2str(obj.mass) "\n"]);
-            for i = 2:length(obj.surface_master_species)
+            bf = bf.kv(ms(1), obj.site_density(1), obj.specific_surface_area, obj.mass);
+            for i = 2:numel(obj.surface_master_species)
                 ms = strsplit(obj.surface_master_species(i), ' ');
-                surface_string = strjoin([surface_string ms(1) num2str(obj.site_density(i)) "\n"]);
+                bf = bf.kv(ms(1), obj.site_density(i));
             end
             if strcmpi(obj.scm, 'cd_music')
-                surface_string = strjoin([surface_string "-capacitances " num2str(obj.capacitances') "\n"]);
+                bf = bf.kv("-capacitances", obj.capacitances');
             end
             if strcmpi(obj.edl_model, 'diffuse_layer')
-                surface_string = strjoin([surface_string "-diffuse_layer " num2str(obj.edl_thickness) "\n"]);
+                bf = bf.kvopt("-diffuse_layer", obj.edl_thickness);
             elseif strcmpi(obj.edl_model, 'Donnan') || strcmpi(obj.edl_model, 'Donan')
-                surface_string = strjoin([surface_string "-Donnan " num2str(obj.edl_thickness) "\n"]);
+                bf = bf.kvopt("-Donnan", obj.edl_thickness);
             elseif strcmpi(obj.edl_model, 'no_edl')
-                surface_string = strjoin([surface_string "-no_edl \n"]);
+                bf = bf.flag("-no_edl");
             end
             if obj.only_counter_ions
-                surface_string = strjoin([surface_string "-only_counter_ions true \n"]);
+                bf = bf.kv("-only_counter_ions", "true");
             end
-            surface_string = sprintf(char(surface_string));
+            surface_string = bf.char();
         end
 
         function [sol_so_obj, surf_so_obj, dl_so_obj] = selected_output_object(obj, solution, varargin)
