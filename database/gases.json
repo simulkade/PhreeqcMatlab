@@ -1,0 +1,20 @@
+{
+    "DampCO2": {
+        "Name": "Damp CO2",
+        "Number": 1,
+        "FixedPressure": false,
+        "Temperature": 25.0,
+        "Volume": 1.0,
+        "PhaseNames": ["CO2(g)", "H2O(g)"],
+        "PartialPressures": [1.0, 0.0]
+    },
+    "FlueGas": {
+        "Name": "Flue gas",
+        "Number": 1,
+        "FixedPressure": false,
+        "Temperature": 25.0,
+        "Volume": 1.0,
+        "PhaseNames": ["CO2(g)", "N2(g)", "H2O(g)"],
+        "PartialPressures": [0.15, 0.85, 0.0]
+    }
+}

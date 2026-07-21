@@ -40,6 +40,11 @@ classdef Phase < Reactant
             obj.precipitate_only = [];
         end
         
+        function slot = ic_slot(~)
+            %IC_SLOT a Phase occupies the EQUILIBRIUM_PHASES slot.
+            slot = InitialConditions.EQUILIBRIUM_PHASES;
+        end
+
         function phase_string = phreeqc_string(obj)
             % phase_string = phreeqc_phase(obj) 
             % converts a phase object to a phreeqc string
@@ -188,17 +193,49 @@ classdef Phase < Reactant
             end
         end
 
-        function equilibrate_with(obj, solution, varargin)
-            % equilibrates the phase with a solution
-            % TBD
-            if nargin>1
-                data_file = varargin{end};
+        function [PR, solution_result] = equilibrate_with(obj, solution, varargin)
+            % [phase_result, solution_result] = equilibrate_with(obj, solution, [database])
+            % equilibrates this equilibrium-phase assemblage with a solution in
+            % PhreeqcRM and returns a PhaseResult (final moles, moles
+            % transferred and saturation index per phase) plus the aqueous
+            % SolutionResult. Uses the shared Reactant.run_with_solution helper.
+            if ~isempty(varargin)
+                data_file = char(varargin{end});
             else
                 data_file = 'phreeqc.dat';
             end
-            phreeqc_rm = PhreeqcRM(1, 1); % one cell, one thread
-            phreeqc_rm = phreeqc_rm.RM_Create(); % create a PhreeqcRM instance
-            iph_string = phreeqc_string(obj);
+            % One SELECTED_OUTPUT (numbered after the solution) carrying both
+            % the aqueous properties and this assemblage's moles/SI columns, so
+            % the two blocks never collide on the same number.
+            so_obj = solution.selected_output_object();
+            so_obj.number = solution.number;
+            so_obj.content(end+1) = strjoin(["-equilibrium_phases" obj.phase_names]);
+            so_obj.content(end+1) = strjoin(["-saturation_indices" obj.phase_names]);
+            so_string = so_obj.phreeqc_string();
+
+            phreeqc_rm = obj.run_with_solution(solution, so_string, data_file);
+            try
+                t_out = phreeqc_rm.GetSelectedOutputTable(solution.number);
+                PR = PhaseResult(obj);
+                PR.phase_names = obj.phase_names;
+                n = numel(obj.phase_names);
+                PR.saturation_indices = nan(1, n);
+                PR.moles = nan(1, n);
+                PR.moles_transferred = nan(1, n);
+                for i = 1:n
+                    ph = char(obj.phase_names(i));
+                    % PHREEQC SELECTED_OUTPUT header names: <phase> (moles),
+                    % d_<phase> (moles transferred), si_<phase> (saturation index).
+                    PR.moles(i)              = map_value(t_out, ph);
+                    PR.moles_transferred(i)  = map_value(t_out, ['d_' ph]);
+                    PR.saturation_indices(i) = map_value(t_out, ['si_' ph]);
+                end
+                solution_result = solution.results_from_phreeqcrm(phreeqc_rm);
+            catch ME
+                phreeqc_rm.RM_Destroy();
+                rethrow(ME);
+            end
+            phreeqc_rm.RM_Destroy();
         end
         
         function out_string = combine_phase_solution_string(obj, solution)

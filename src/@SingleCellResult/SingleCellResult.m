@@ -1,16 +1,21 @@
 classdef SingleCellResult
     % SingleCellResult holds the parsed output of running a @SingleCell in
-    % PhreeqcRM. This is a minimal placeholder that loads and can be populated
-    % by assignment; the full parsed field set is added in the Milestone 3
-    % object-model work (see ROADMAP.md).
+    % PhreeqcRM. It always carries the post-reaction aqueous SolutionResult,
+    % and — when the cell contained them — the per-phase PhaseResult and the
+    % SurfaceResult.
     %
     % NOTE: the classdef name must match the @SingleCellResult folder, or
     % MATLAB cannot load the class.
+    %
+    % See also SingleCell/run, SolutionResult, PhaseResult, SurfaceResult.
 
     properties
         name(1,1) string
         temperature(1,1) double
         pressure(1,1) double
+        solution                % SolutionResult (aqueous phase after reaction)
+        phase                   % PhaseResult, or [] if the cell had no phases
+        surface                 % SurfaceResult, or [] if the cell had no surface
     end
 
     methods

@@ -28,6 +28,11 @@ classdef Surface < Reactant
             obj.number = 1;
         end
 
+        function slot = ic_slot(~)
+            %IC_SLOT a Surface occupies the SURFACE slot.
+            slot = InitialConditions.SURFACE;
+        end
+
         function str = input_string(obj)
             %INPUT_STRING assemble the three surface blocks into one string,
             % ordered SURFACE_MASTER_SPECIES, SURFACE_SPECIES, then SURFACE.

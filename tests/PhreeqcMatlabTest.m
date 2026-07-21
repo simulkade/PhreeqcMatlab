@@ -171,7 +171,9 @@ classdef PhreeqcMatlabTest < matlab.unittest.TestCase
                 tc.verifyGreaterThan(strlength(o.name), 0);
             end
             % Concrete reactants produce a usable single input string...
-            for f = {@Solution, @() Phase.chalk(), @() Gas.damp_CO2(), @() Surface.calcite_surface()}
+            for f = {@Solution, @() Phase.chalk(), @() Gas.damp_CO2(), ...
+                     @() Surface.calcite_surface(), @() Exchange.sodium_exchanger(), ...
+                     @() Kinetics.calcite()}
                 s = f{1}().input_string();
                 tc.verifyClass(s, 'char');
                 tc.verifyNotEmpty(s);
@@ -180,9 +182,16 @@ classdef PhreeqcMatlabTest < matlab.unittest.TestCase
             si = Surface.calcite_surface().input_string();
             tc.verifySubstring(si, 'SURFACE_MASTER_SPECIES');
             tc.verifySubstring(si, 'SURFACE_SPECIES');
-            % Not-yet-implemented reactants fail loudly, not silently.
-            tc.verifyError(@() Exchange().phreeqc_string(), 'PhreeqcMatlab:notImplemented');
-            tc.verifyError(@() Kinetics().phreeqc_string(), 'PhreeqcMatlab:notImplemented');
+            % Each reactant reports the initial-condition slot it occupies.
+            tc.verifyEqual(Solution().ic_slot(), InitialConditions.SOLUTION);
+            tc.verifyEqual(Phase().ic_slot(), InitialConditions.EQUILIBRIUM_PHASES);
+            tc.verifyEqual(Exchange().ic_slot(), InitialConditions.EXCHANGE);
+            tc.verifyEqual(Surface().ic_slot(), InitialConditions.SURFACE);
+            tc.verifyEqual(Gas().ic_slot(), InitialConditions.GAS_PHASE);
+            tc.verifyEqual(Kinetics().ic_slot(), InitialConditions.KINETICS);
+            % Empty definition classes serialize to '' (skippable in a SingleCell).
+            tc.verifyEmpty(Exchange().phreeqc_string());
+            tc.verifyEmpty(Kinetics().phreeqc_string());
         end
 
         function stringBuilder(tc)
@@ -223,6 +232,99 @@ classdef PhreeqcMatlabTest < matlab.unittest.TestCase
                     'Surface block should parse without a PHREEQC error');
                 clear closer;
             end
+        end
+
+        function phaseEquilibrateWith(tc)
+            % @Phase.equilibrate_with: pure water + gypsum/anhydrite ->
+            % PhaseResult (gypsum SI 0, anhydrite SI -0.30) + SolutionResult.
+            ph = Phase();
+            ph.name = "gyp"; ph.number = 1;
+            ph.phase_names = ["Gypsum" "Anhydrite"];
+            ph.saturation_indices = [0 0];
+            ph.moles = [1 1];
+            [PR, SR] = ph.equilibrate_with(Solution(), tc.DB);
+            tc.verifyClass(PR, 'PhaseResult');
+            tc.verifyClass(SR, 'SolutionResult');
+            gi = PR.phase_names == "Gypsum";
+            ai = PR.phase_names == "Anhydrite";
+            tc.verifyEqual(PR.saturation_indices(gi), 0.0, 'AbsTol', 0.01, 'gypsum at equilibrium');
+            tc.verifyEqual(PR.saturation_indices(ai), -0.3045, 'AbsTol', 0.02, 'anhydrite undersaturated');
+            tc.verifyLessThan(abs(SR.percent_error), 5);
+        end
+
+        function exchangeEquilibrateWith(tc)
+            % @Exchange (default phreeqc.dat "X"): equilibrating an exchanger
+            % with seawater (the standard PHREEQC exchange example) returns a
+            % valid SolutionResult.
+            ex = Exchange.sodium_exchanger(0.001);
+            SR = ex.equilibrate_with(Solution.seawater(), tc.DB);
+            tc.verifyClass(SR, 'SolutionResult');
+            tc.verifyTrue(ismember("Na", SR.components));
+            tc.verifyLessThan(abs(SR.percent_error), 5);
+            % A custom exchanger definition must serialize its three blocks.
+            s = Exchange.from_json("GaineHomogeneous").input_string();
+            tc.verifySubstring(s, 'EXCHANGE_MASTER_SPECIES');
+            tc.verifySubstring(s, 'EXCHANGE_SPECIES');
+            tc.verifySubstring(s, 'EXCHANGE');
+        end
+
+        function kineticsRunInPhreeqc(tc)
+            % @Kinetics.calcite: the RATES + KINETICS blocks integrate in
+            % IPhreeqc over -steps without a PHREEQC parse/run error.
+            k = Kinetics.calcite();
+            in = k.input_string();
+            tc.verifySubstring(in, 'RATES');
+            tc.verifySubstring(in, 'KINETICS');
+            tc.verifySubstring(in, '-steps');
+            out = k.equilibrate_in_phreeqc(Solution.seawater(), tc.DB);
+            tc.verifyClass(out, 'char');       % not the failure sentinel 0
+            tc.verifyFalse(contains(string(out), "ERROR:"), ...
+                'kinetics block should run without a PHREEQC error');
+        end
+
+        function gasEquilibrate(tc)
+            % @Gas: JSON round-trip + equilibration of damp CO2 with seawater.
+            g = Gas.damp_CO2();
+            tc.verifyEqual(numel(g.phase_names), 2);
+            tc.verifyTrue(ismember("CO2(g)", g.phase_names));
+            out = g.equilibrate_in_phreeqc(Solution.seawater(), tc.DB);
+            tc.verifyClass(out, 'char');
+            tc.verifyFalse(contains(string(out), "ERROR:"), ...
+                'gas block should run without a PHREEQC error');
+        end
+
+        function singleCellRun(tc)
+            % @SingleCell.run (capstone): solution + equilibrium phases in one
+            % PhreeqcRM cell -> SingleCellResult with aqueous + phase results.
+            ph = Phase();
+            ph.name = "gyp"; ph.number = 1;
+            ph.phase_names = ["Gypsum" "Anhydrite"];
+            ph.saturation_indices = [0 0];
+            ph.moles = [1 1];
+            sc = SingleCell(Solution(), 'equilibrium_phase', ph, 'data_base', tc.DB);
+            R = sc.run();
+            tc.verifyClass(R, 'SingleCellResult');   % not the failure sentinel 0
+            tc.verifyClass(R.solution, 'SolutionResult');
+            tc.verifyClass(R.phase, 'PhaseResult');
+            gi = R.phase.phase_names == "Gypsum";
+            tc.verifyEqual(R.phase.saturation_indices(gi), 0.0, 'AbsTol', 0.01);
+            tc.verifyGreaterThan(R.solution.water_mass, 0);
+        end
+
+        function reactantJsonFactories(tc)
+            % from_json factories build the expected objects for the new classes.
+            ex = Exchange.from_json("SodiumExchanger");
+            tc.verifyEqual(ex.exchange_species, "X");
+            tc.verifyEqual(ex.moles, 1.0, 'AbsTol', 1e-12);
+
+            k = Kinetics.from_json("CalciteKinetics");
+            tc.verifyEqual(k.reaction_names, "Calcite");
+            tc.verifyEqual(k.step_count, 10);
+            tc.verifyGreaterThan(strlength(k.rates_definition), 0);
+
+            g = Gas.from_json("FlueGas");
+            tc.verifyEqual(numel(g.phase_names), 3);
+            tc.verifyFalse(g.fixed_pressure);
         end
 
         function solutionObjectStringWellFormed(tc)

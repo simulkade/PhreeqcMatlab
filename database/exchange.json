@@ -1,0 +1,27 @@
+{
+    "SodiumExchanger": {
+        "Name": "Sodium exchanger",
+        "Number": 1,
+        "Composition": {
+            "X": 1.0
+        }
+    },
+    "GaineHomogeneous": {
+        "Name": "Gaines-Thomas exchanger",
+        "Number": 1,
+        "Composition": {
+            "X": 0.001
+        },
+        "MasterSpecies": [
+            "X X-"
+        ],
+        "Reactions": [
+            "X- = X-",
+            "Na+ + X- = NaX",
+            "K+ + X- = KX",
+            "Ca+2 + 2X- = CaX2"
+        ],
+        "LogK": [0.0, 0.0, 0.7, 0.8],
+        "DeltaH": [0.0, 0.0, -4.3, 7.2]
+    }
+}

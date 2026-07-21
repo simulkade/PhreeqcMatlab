@@ -3,6 +3,35 @@
 All notable changes to PhreeqcMatlab are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased] — Milestone 3: complete the stubbed classes
+
+### Added
+- `@Reactant.ic_slot()` and a shared `equilibrate_with(solution)` template (with the protected
+  `run_with_solution` helper), centralizing the PhreeqcRM equilibration boilerplate. Every reactant
+  now reports the RM_InitialPhreeqc2Module slot it occupies.
+- `@Exchange` — full implementation: exchange sites/moles, optional custom EXCHANGE_MASTER_SPECIES /
+  EXCHANGE_SPECIES definitions, `phreeqc_string()`, three-block `input_string()`,
+  `read_json()`/`from_json()`, and `Exchange.sodium_exchanger()`. New `database/exchange.json`.
+- `@Kinetics` — full implementation: `-m0`/`-m`/`-parms`/`-tol` per reaction, `-steps ... in N steps`,
+  an optional RATES (BASIC) block, `phreeqc_string()`/`input_string()`, `read_json()`/`from_json()`,
+  `Kinetics.calcite()`, and `equilibrate_in_phreeqc()` (IPhreeqc, integrates `-steps`). New
+  `database/kinetics.json` (the PHREEQC-manual calcite rate).
+- `@Gas` — `equilibrate_in_phreeqc()`, `read_json()`/`from_json()`; `damp_CO2()`/`flue_gas()` now load
+  from the new `database/gases.json`.
+- `@Phase.equilibrate_with()` now returns a populated `@PhaseResult` (final moles, moles transferred,
+  saturation index per phase) plus the aqueous `@SolutionResult`.
+- `@SingleCell` — name-value constructor and a working `run()` that assembles a solution with any
+  contained equilibrium phases / surface / exchanger / gas / kinetics into one PhreeqcRM cell and
+  returns a populated `@SingleCellResult` (aqueous + per-phase results).
+- Six new regression tests (phase/exchange/kinetics/gas equilibration, `SingleCell.run`, JSON
+  factories); suite is 17/17.
+
+### Fixed
+- `@Gas.selected_output_string()` was malformed (`strjoin` of literal `"\n"` tokens); rebuilt with
+  `PhreeqcBlock`. `@Gas.equilibrate_in_phreeqc`/`equilibrate_with` were empty stubs.
+- `@Exchange`/`@Kinetics` `phreeqc_string()` no longer throw `notImplemented`; empty definitions
+  serialize to `''` so they are skippable when assembling a `SingleCell`.
+
 ## [Unreleased] — Milestone 2: object-model refactor (in progress)
 
 ### Added

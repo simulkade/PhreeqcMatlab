@@ -164,22 +164,36 @@ This is the highest-leverage refactor; do it before finishing individual classes
 
 ---
 
-## Milestone 3 — Complete the stubbed classes
+## Milestone 3 — Complete the stubbed classes ✅ COMPLETE
 
 Goal: bring the half-built classes up to the `Solution`/`Surface` standard, on the M2 base class.
 
-- [ ] `@Exchange` — real properties (master species, exchange reactions, `log_k`, `dh`),
-      `phreeqc_string()`, `read_json()`, `equilibrate_with()`. Add `database/exchange.json`.
-- [ ] `@Kinetics` — add reaction/rate fields (rate name, formula, parameters, steps, `-m0`, etc.),
-      `phreeqc_string()`, `read_json()`. Add `database/kinetics.json`.
-- [ ] `@Gas` — finish `equilibrate_in_phreeqc()`/`equilibrate_with()` (currently empty), add
-      `read_json()` and move hardcoded `damp_CO2()/flue_gas()` definitions into JSON.
-- [ ] `@Phase` — finish `equilibrate_with()` (empty stub) and `combine_selected_output()` (`% TBD`).
-- [ ] `@SingleCell.run()` — implement properly: build the combined phreeqc string from all
-      contained reactants, register initial conditions, `RM_RunCells`, and return a populated
-      `SingleCellResult`. Fix the constructor to consume `varargin` (the reactant fields).
-- [ ] Result classes `@PhaseResult`, `@SingleCellResult` — real parsed-output structures matching
+- [x] **`@Reactant` equilibration template** — added `ic_slot()` (each reactant's
+      RM_InitialPhreeqc2Module slot) and a shared `equilibrate_with(solution)` /
+      protected `run_with_solution()` that centralize the PhreeqcRM boilerplate previously
+      duplicated in `Solution.run`/`Surface.equilibrate_with`.
+- [x] `@Exchange` — real properties (sites/moles + optional master species, exchange reactions,
+      `log_k`, `dh`), `phreeqc_string()`, three-block `input_string()`, `read_json()`/`from_json()`,
+      inherited `equilibrate_with()`. Added `database/exchange.json`.
+- [x] `@Kinetics` — reaction/rate fields (`-m0`, `-m`, `-parms`, `-tol`, `-steps`, RATES block),
+      `phreeqc_string()`, `input_string()`, `read_json()`/`from_json()`, and `equilibrate_in_phreeqc()`
+      (IPhreeqc, integrates `-steps`). Added `database/kinetics.json` with the manual calcite rate.
+- [x] `@Gas` — implemented `equilibrate_in_phreeqc()`, inherited `equilibrate_with()`, fixed the
+      broken `selected_output_string()`, added `read_json()`/`from_json()` and moved
+      `damp_CO2()/flue_gas()` into `database/gases.json`.
+- [x] `@Phase` — `equilibrate_with()` returns a `PhaseResult` (moles, moles transferred, SI) plus a
+      `SolutionResult`, via one combined SELECTED_OUTPUT. (`combine_selected_output()` remains a
+      `% TBD` helper — not needed by the object model.)
+- [x] `@SingleCell.run()` — name-value constructor; builds the combined phreeqc string from all
+      contained reactants, registers initial conditions per slot, `RM_RunCells`, returns a populated
+      `SingleCellResult`.
+- [x] Result classes `@PhaseResult`, `@SingleCellResult` — real parsed-output structures alongside
       `@SolutionResult`/`@SurfaceResult`.
+
+Deferred to a later milestone: the `Surface.equilibrate_with` positional `keys()/values()` parsing
+(still flagged FRAGILE) — needs a CD-MUSIC reference-value test before it can be refactored safely.
+
+Tests: 17/17 pass (6 new — phase/exchange/kinetics/gas equilibration, `SingleCell.run`, JSON factories).
 
 ---
 

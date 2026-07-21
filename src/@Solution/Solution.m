@@ -45,6 +45,11 @@ classdef Solution < Reactant
             obj.pressure = 1.0;     % atmosphere
         end
                 
+        function slot = ic_slot(~)
+            %IC_SLOT a Solution occupies the SOLUTION initial-condition slot.
+            slot = InitialConditions.SOLUTION;
+        end
+
         function solution_string = phreeqc_string(obj)
             % phreeqc_string returns a Phreeqc SOLUTION block for this object.
             % Unspecified fields (empty pH/pe/density/unit/alkalinity) are
