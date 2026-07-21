@@ -190,11 +190,16 @@ Goal: bring the half-built classes up to the `Solution`/`Surface` standard, on t
 - [x] Result classes `@PhaseResult`, `@SingleCellResult` — real parsed-output structures alongside
       `@SolutionResult`/`@SurfaceResult`.
 
-Deferred to a later milestone: the `Surface.equilibrate_with` positional `keys()/values()` parsing
-(still flagged FRAGILE). A **CD-MUSIC reference case now exists** —
-`examples/phreeqc/chalk_cd_music/` (Wolthers 2008 + Heberling 2011 calcite models) with the
-`cdMusicChalkSurface` golden-value test — so this refactor can now be tackled against known
-per-plane surface charges.
+- [x] **`Surface.equilibrate_with` refactored** (was flagged FRAGILE). Root cause found: it never
+      worked, because `combine_surface_solution_string` and `selected_output_string` joined keyword
+      blocks with `strjoin`'s default *space* delimiter (and a bare concatenation), so PHREEQC
+      misparsed the `SURFACE_SPECIES` / `USER_PUNCH` blocks — the positional `keys()/values()`
+      slicing was moot. Both now join with newlines; the result parsing reads the *ordered*
+      `GetSelectedOutputHeadings`/`GetSelectedOutput` and selects the `m_`/`la_`/element column
+      groups by header prefix instead of slicing the alphabetically-sorted `containers.Map`. A
+      CD-MUSIC calcite surface now equilibrates cleanly with seawater (10 surface species, mole
+      fractions summing to 1, EDL charges/potentials populated); pinned by `surfaceEquilibrateCdMusic`.
+      Reference models live in `examples/phreeqc/chalk_cd_music/` (Wolthers 2008 + Heberling 2011).
 
 Tests: 17/17 pass (6 new — phase/exchange/kinetics/gas equilibration, `SingleCell.run`, JSON factories).
 

@@ -3,6 +3,24 @@
 All notable changes to PhreeqcMatlab are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased] — Surface.equilibrate_with refactor
+
+### Fixed
+- `Surface.equilibrate_with` was non-functional: `combine_surface_solution_string` and
+  `selected_output_string` joined keyword blocks with `strjoin`'s default *space* delimiter (and a
+  bare concatenation), so PHREEQC misparsed the `SURFACE_SPECIES` and `USER_PUNCH` blocks
+  ("Unknown input in SURFACE_MASTER_SPECIES / USER_PUNCH keyword"). Both now join with newlines.
+
+### Changed
+- The surface result parsing no longer slices the alphabetically-sorted `containers.Map` from
+  `GetSelectedOutputTable` by position (the FRAGILE code). It reads the *ordered*
+  `GetSelectedOutputHeadings`/`GetSelectedOutput` and selects the molality (`m_`), activity (`la_`)
+  and surface-element column groups by header prefix — robust to `containers.Map` key ordering and
+  to header-width truncation. Also populates the previously-unset `surface_elements_moles`.
+- New `surfaceEquilibrateCdMusic` test: a CD-MUSIC calcite surface equilibrated with seawater
+  yields 10 surface species, mole fractions summing to 1, and populated EDL charges/potentials.
+  Suite: 23 pass + 1 conditionally-skipped guard.
+
 ## [Unreleased] — CD-MUSIC calcite examples
 
 ### Added

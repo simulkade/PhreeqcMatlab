@@ -320,6 +320,36 @@ classdef PhreeqcMatlabTest < matlab.unittest.TestCase
             tc.verifyEqual(total,   1.657e-6, 'RelTol', 0.02, 'summed surface charge');
         end
 
+        function surfaceEquilibrateCdMusic(tc)
+            % Surface.equilibrate_with with the refactored (name-based, ordered)
+            % selected-output parsing: a CD-MUSIC calcite surface equilibrated
+            % with seawater returns a populated SurfaceResult + SolutionResult
+            % with self-consistent surface speciation.
+            surf = Surface.calcite_surface_cd_music();
+            [sr, solr] = surf.equilibrate_with(Solution.seawater(), tc.DB);
+            tc.verifyClass(sr, 'SurfaceResult');
+            tc.verifyClass(solr, 'SolutionResult');
+
+            nsp = numel(sr.surface_species);
+            tc.verifyEqual(nsp, 10, 'CD-MUSIC chalk model has 10 surface species');
+            tc.verifyNumElements(sr.surface_species_molalities, nsp);
+            tc.verifyNumElements(sr.surface_species_log_activity, nsp);
+            tc.verifyTrue(all(isfinite(sr.surface_species_molalities)) && ...
+                all(sr.surface_species_molalities >= 0), 'molalities finite & non-negative');
+            tc.verifyEqual(sum(sr.surface_species_mole_fraction), 1.0, 'AbsTol', 1e-6, ...
+                'surface-species mole fractions sum to 1');
+
+            tc.verifyTrue(all(isfinite([sr.charge_plane_0 sr.charge_plane_1])), 'plane charges parsed');
+            tc.verifyEqual(sr.charge_plane_2, 0, 'AbsTol', 1e-12, 'no third plane for a 2-capacitance model');
+
+            % surface-bound element amounts align 1:1 with the element columns
+            tc.verifyNumElements(sr.surface_elements_moles, numel(sr.surface_elements));
+            tc.verifyTrue(ismember("Ca", sr.surface_elements), 'Ca is a surface element');
+
+            tc.verifyEqual(solr.pH, 8.22, 'AbsTol', 0.3, 'seawater pH roughly preserved');
+            tc.verifyLessThan(abs(solr.percent_error), 2);
+        end
+
         function surfaceStringRoundTrip(tc)
             % The refactored Surface.phreeqc_string must produce blocks PHREEQC
             % parses without error (guards the fragile cd_music/capacitances

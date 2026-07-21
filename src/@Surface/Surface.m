@@ -195,9 +195,15 @@ classdef Surface < Reactant
             surf_string = surf_so_obj.phreeqc_string();
             dl_string = dl_so_obj.phreeqc_string();
 
-            all_string = sprintf([sol_so_obj.phreeqc_string_without_end ...
-                surf_so_obj.phreeqc_string_without_end ...
-                dl_so_obj.phreeqc_string_without_end '\nEND\n']);
+            % Join the three SELECTED_OUTPUT/USER_PUNCH blocks with newlines and
+            % one terminating END. A bare concatenation would glue one block's
+            % last USER_PUNCH line onto the next block's SELECTED_OUTPUT header,
+            % and PHREEQC would read the following block's content as USER_PUNCH.
+            all_string = char(strjoin([ ...
+                string(sol_so_obj.phreeqc_string_without_end); ...
+                string(surf_so_obj.phreeqc_string_without_end); ...
+                string(dl_so_obj.phreeqc_string_without_end); ...
+                "END"], newline));
         end
     
         function out_string = equilibrate_in_phreeqc(obj, solution, varargin)
@@ -260,41 +266,50 @@ classdef Surface < Reactant
             ic1(InitialConditions.SURFACE)  = obj.number;
             phreeqc_rm.RM_InitialPhreeqc2Module(ic1, ic2, f1);
             phreeqc_rm.RM_RunCells();
-%             t_out_solution = phreeqc_rm.GetSelectedOutputTable(obj.number);
-            t_out_surface = phreeqc_rm.GetSelectedOutputTable(obj.number+1);
+            % Read the surface selected output as an ORDERED headings+values
+            % pair rather than the containers.Map from GetSelectedOutputTable:
+            % that Map sorts its keys alphabetically, which is what made the old
+            % positional slicing fragile. In punch order the columns are
+            % -molalities (m_<species>), then -activities (la_<species>), both in
+            % surface-species order, then the USER_PUNCH surface-element columns.
+            % The m_/la_ headers can be width-truncated, so groups are selected
+            % by their "m_"/"la_" prefix, not by matching each species header.
+            surf_headings = string(phreeqc_rm.GetSelectedOutputHeadings(obj.number+1));
+            surf_headings = surf_headings(:)';
+            surf_values = phreeqc_rm.GetSelectedOutput(obj.number+1);
+            surf_values = surf_values(:)';
             t_out_dl = phreeqc_rm.GetSelectedOutputTable(obj.number+2);
-%             v_out= phreeqc_rm.GetSelectedOutput(obj.number);
-%             h_out = phreeqc_rm.GetSelectedOutputHeadings(obj.number);
-%             v_out= phreeqc_rm.GetSelectedOutput(obj.number);
-%             h_out = phreeqc_rm.GetSelectedOutputHeadings(obj.number);
-%             v_out_dl = phreeqc_rm.GetSelectedOutput(obj.number+2);
-%             h_out_dl = phreeqc_rm.GetSelectedOutputHeadings(obj.number+2);
-            
-            % prepare the output for the surface (as a SurfaceResults
-            % class)
+
+            % prepare the output for the surface (as a SurfaceResult class)
             surface_result = SurfaceResult(obj);
             surface_result.surface_species = string(phreeqc_rm.GetSurfaceSpeciesNames())';
-            n_surf_species = length(surface_result.surface_species);
-            % FRAGILE (revisit in M3 with a CD-MUSIC equilibrate test): this
-            % slices the surface table by positional arithmetic on
-            % keys()/values(). containers.Map orders entries by sorted key, not
-            % insertion order, so this depends on the exact column names/order
-            % emitted by the USER_PUNCH block. Left as-is until a reference-value
-            % test exists to refactor it safely.
-            h = t_out_surface.keys;
-            surf_elements = h(1:end-2*n_surf_species);
-            surface_result.surface_elements = string(surf_elements);
-            surf_composition = cell2mat(t_out_surface.values); % surface species composition
-            surface_result.surface_species_molalities = surf_composition(end-n_surf_species+1:end);
-            surface_result.surface_species_mole_fraction = surface_result.surface_species_molalities/sum(surface_result.surface_species_molalities);
-            surface_result.surface_species_log_activity = surf_composition(end-2*n_surf_species+1:end-n_surf_species);
 
-            n_elements = length(surf_elements);
-            dl_moles = zeros(1,n_elements);
-            for i = 1:n_elements
-                dl_moles(i) = map_value(t_out_dl, surf_elements{i}, 0);
+            is_mol  = startsWith(surf_headings, "m_");
+            is_act  = startsWith(surf_headings, "la_");
+            is_elem = ~(is_mol | is_act);
+            molalities = surf_values(is_mol);   % one per surface species, in species order
+            activities = surf_values(is_act);
+            surface_result.surface_species_molalities   = molalities;
+            surface_result.surface_species_log_activity = activities(:);
+            total_mol = sum(molalities);
+            if total_mol > 0
+                surface_result.surface_species_mole_fraction = molalities / total_mol;
+            else
+                surface_result.surface_species_mole_fraction = zeros(size(molalities));
             end
-            surface_result.elements_edl = string(surf_elements);
+
+            % Surface-bound element amounts (the SURF() USER_PUNCH columns).
+            surf_elements = surf_headings(is_elem);
+            surface_result.surface_elements = surf_elements;
+            surface_result.surface_elements_moles = surf_values(is_elem);
+
+            % Double-layer element amounts, looked up by element name (robust to
+            % the containers.Map key ordering).
+            dl_moles = zeros(1, numel(surf_elements));
+            for i = 1:numel(surf_elements)
+                dl_moles(i) = map_value(t_out_dl, char(surf_elements(i)), 0);
+            end
+            surface_result.elements_edl = surf_elements;
             surface_result.element_moles_edl = dl_moles;
             % TODO: add surface species to the results
             % needs basid function EDL_SPECIES and more information about
@@ -318,11 +333,22 @@ classdef Surface < Reactant
         end
 
         function out_string = combine_surface_solution_string(obj, solution)
-            % combines the phreeqc string of a solution and a surface to be equilibrated with each other
+            % Combine the solution and surface into one Phreeqc input, ordered
+            % SURFACE_MASTER_SPECIES, SURFACE_SPECIES, SOLUTION, SURFACE. The
+            % SURFACE block is equilibrated with the solution (-equilibrate N)
+            % so its initial composition is defined. Blocks are joined with
+            % newlines (a bare strjoin would glue keywords onto one line and
+            % PHREEQC would misparse the SURFACE_SPECIES block).
             sol_string = solution.phreeqc_string();
             [surf_string, surf_master_string, surf_sp_string] = obj.phreeqc_string();
-            out_string = strjoin([surf_master_string, surf_sp_string, sol_string, surf_string, "-equilibrate ", num2str(solution.number), "\nEND\n"]);
-            out_string = sprintf(char(out_string));
+            surf_block = string(surf_string) + newline + ...
+                "    -equilibrate " + PhreeqcBlock.fmt(solution.number);
+            parts = [ string(surf_master_string); ...
+                      string(surf_sp_string); ...
+                      string(sol_string); ...
+                      surf_block; ...
+                      "END" ];
+            out_string = char(strjoin(parts, newline));
         end
     end
 
