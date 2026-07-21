@@ -3,6 +3,31 @@
 All notable changes to PhreeqcMatlab are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased] — Milestone 4: continue & extend
+
+### Added
+- **PhreeqcRM 3.8.6 C header** shipped in `libs/` (was still 3.7.x), plus `libs/irm_dll_export.h`
+  in a loadlibrary-friendly form. `loadlibrary` now binds 193 functions (was ~119).
+- New `@PhreeqcRM` wrappers for the 3.8.6 non-BMI API: `GetTemperature`, `GetPressure`,
+  `GetPorosity`, `GetViscosity`, `GetDensityCalculated`, `GetSaturationCalculated`,
+  `RM_GetCurrentSelectedOutputUserNumber`, `RM_SetNthSelectedOutput`,
+  `RM_Get`/`SetIthConcentration`, `RM_Get`/`SetIthSpeciesConcentration`, `RM_SetDensityUser`,
+  `RM_SetSaturationUser`, and the seven per-reactant `RM_Initial*2Module` initializers.
+- `src/Tools/ParsePqmConfig.m` — parser for the `.pqm` control-file format (1D `cells`/`shifts`
+  and multi-D `Nx`/`Ny`/`Lx`/`Ly`), and `src/Tools/ApplyRmSettings.m` — applies the parsed
+  PhreeqcRM settings to an instance.
+- `src/Tools/fvtool_available.m` and `src/FVTool/PhreeqcFVToolTransport.m` — an FVTool-coupled
+  multi-dimensional reactive-transport driver (operator splitting) that guards the optional FVTool
+  dependency. 2D example in `examples/transport/reactive_transport_2d.{m,pqm,pqc}`.
+- Three new tests: `.pqm` parser (1D + 2D) and the FVTool-missing guard; plus `newApi386Getters`
+  pinning water-at-25C golden values. Suite is 21/21.
+
+### Changed
+- `ReadAdvectionFile` now delegates to `ParsePqmConfig`/`ApplyRmSettings` (removing its duplicated
+  `sscanf` ladder) and no longer calls `RM_Create` twice.
+- `InitializePhreeqcFVTool` cleaned up: removed the stale "NOT DONE YET" banner, a stray trailing
+  `end` (a latent parse error), and the redundant post-construction `RM_Create`.
+
 ## [Unreleased] — Milestone 3: complete the stubbed classes
 
 ### Added

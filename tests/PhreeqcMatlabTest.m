@@ -87,6 +87,43 @@ classdef PhreeqcMatlabTest < matlab.unittest.TestCase
             tc.verifyEqual(ca, s, 'AbsTol', 1e-4, 'Ca and SO4 released 1:1 by gypsum');
         end
 
+        function pqmParser1D(tc)
+            % ParsePqmConfig reads a 1D advection .pqm (cells/shifts form).
+            cfg = ParsePqmConfig('../examples/transport/ex11_simple_phreeqc_matlab.pqm');
+            tc.verifyEqual(cfg.transport.cells, 40);
+            tc.verifyEqual(cfg.transport.shifts, 10);
+            tc.verifyEqual(cfg.transport.ncells, 40);
+            tc.verifyEqual(cfg.transport.time_step, 1.0, 'AbsTol', 1e-12);
+            tc.verifyEqual(cfg.rm.threads, 2);
+            tc.verifyEqual(cfg.rm.units_solution, 2);
+            tc.verifyEqual(string(cfg.rm.data_base), "phreeqc.dat");
+        end
+
+        function pqmParser2D(tc)
+            % ParsePqmConfig reads a multi-D grid .pqm (Nx/Ny/Lx/Ly form) and
+            % derives the total cell count.
+            cfg = ParsePqmConfig('../src/FVTool/sample_initialize_fvtool.pqm');
+            tc.verifyEqual(cfg.transport.dimension, 2);
+            tc.verifyEqual(cfg.transport.nx, 20);
+            tc.verifyEqual(cfg.transport.ny, 15);
+            tc.verifyEqual(cfg.transport.lx, 1.0, 'AbsTol', 1e-12);
+            tc.verifyEqual(cfg.transport.ly, 2.0, 'AbsTol', 1e-12);
+            tc.verifyEqual(cfg.transport.ncells, 300);   % 20 * 15
+            tc.verifyEqual(cfg.transport.initial_porosity, 0.4, 'AbsTol', 1e-12);
+            tc.verifyEqual(cfg.rm.threads, 4);
+            tc.verifyEqual(string(cfg.rm.data_base), "phreeqc.dat");
+        end
+
+        function fvtoolGuard(tc)
+            % The multi-D driver fails with a clear, actionable error when the
+            % optional FVTool package is not installed.
+            if fvtool_available()
+                tc.assumeFail('FVTool is installed; guard path not exercised.');
+            end
+            tc.verifyError(@() PhreeqcFVToolTransport('x.pqc', 'y.pqm'), ...
+                'PhreeqcMatlab:fvtoolMissing');
+        end
+
         function newApi386Getters(tc)
             % The PhreeqcRM 3.8.6 non-BMI getters (unlocked by shipping the
             % 3.8.6 header) return physically-correct values for water at 25 C.

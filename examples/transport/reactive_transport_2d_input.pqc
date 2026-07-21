@@ -1,0 +1,27 @@
+TITLE 2D transport and cation exchange (PhreeqcMatlab + FVTool example).
+# A 5 x 4 = 20-cell grid. SOLUTION 0 is the inflow (CaCl2) imposed on the
+# x = 0 face; SOLUTION 1-20 / EXCHANGE 1-20 are the initial per-cell state.
+SOLUTION 0  CaCl2 inflow
+        units            mmol/kgw
+        temp             25.0
+        pH               7.0     charge
+        Ca               0.6
+        Cl               1.2
+        density          1.0   calculate
+SOLUTION 1-20  Initial solution for the domain
+        units            mmol/kgw
+        temp             25.0
+        pH               7.0     charge
+        Na               1.0
+        K                0.4
+        Cl               1.4
+        density          1.0   calculate
+END
+EXCHANGE 1-20
+        -equilibrate 1
+        X                0.001
+END
+SELECTED_OUTPUT
+        -reset           false
+        -totals          Na Cl K Ca
+END

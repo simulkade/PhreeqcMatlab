@@ -26,7 +26,7 @@ The code is layered from a thin FFI binding up to convenience objects. When edit
 **Layer 2 — orchestration helpers.** Free functions and pipeline scripts that stitch multiple `RM_` calls into a workflow:
 - `src/Bulk/PhreeqcSingleCell.m` — builds a 1-cell/1-thread `PhreeqcRM` from a Phreeqc input file, sets units, loads the database, runs, and auto-detects which reactant blocks (`SOLUTION`, `EQUILIBRIUM_PHASES`, `EXCHANGE`, `SURFACE`, `GAS_PHASE`, `SOLID_SOLUTION`, `KINETICS`) are present by text-scanning the input to set the `ic1` initial-conditions vector. This is the entry point for batch/sensitivity calculations.
 - `src/Advection1D/` and `src/Transport1D/` — 1D reactive-transport drivers. `PhreeqcAdvection.m` reads a Phreeqc advection input + an advection control file, then loops: transport step (`SimpleAdvection1D`) → push concentrations into PhreeqcRM (`RM_SetConcentrations`) → `RM_RunCells` → read back (`GetConcentrations`). `ReadAdvectionFile`/`InitializePhreeqcAdvection` do the setup.
-- `src/FVTool/` — couples reactive transport to the external [FVTool](https://github.com/simulkade/FVTool) finite-volume package for multi-D transport.
+- `src/FVTool/` — couples reactive transport to the external [FVTool](https://github.com/simulkade/FVTool) finite-volume package for multi-D transport. `PhreeqcFVToolTransport` is the 2D driver (operator splitting); `InitializePhreeqcFVTool` sets initial/boundary conditions. FVTool is an *optional* dependency — `fvtool_available` guards it and the driver errors helpfully when it is absent.
 
 **Layer 3 — high-level object model (in progress).** Domain classes that represent Phreeqc concepts as MATLAB objects and generate Phreeqc input strings from their properties, rather than requiring hand-written input files:
 - Definition classes: `@Solution`, `@Phase`, `@Surface`, `@Exchange`, `@Gas`, `@Kinetics`, `@SelectedOutput`, `@SingleCell`, `@Datafile`.
@@ -34,7 +34,9 @@ The code is layered from a thin FFI binding up to convenience objects. When edit
 - Result classes (`@SolutionResult`, `@PhaseResult`, `@SurfaceResult`, `@SingleCellResult`) hold parsed output.
 - All six definition classes subclass the abstract `@Reactant` base (`src/@Reactant/`), which holds the shared `name`/`number` identity and a uniform `input_string()`; each subclass implements `phreeqc_string()`. Blocks are assembled with the `PhreeqcBlock` builder (`src/Tools/PhreeqcBlock.m`), JSON is decoded via `assign_json_fields`, initial-condition vectors via `InitialConditions`, and SELECTED_OUTPUT columns read via `map_value` (all in `src/Tools/`).
 
-**Path helpers** in `src/Tools/`: `database_file(name)` and `DATABASE_PATH` resolve database file paths; `ReadPhreeqcFile` reads and cleans input files; `combine_phreeqc_strings` concatenates keyword blocks; `read_json_ex` loads JSON templates.
+**Path helpers** in `src/Tools/`: `database_file(name)` and `DATABASE_PATH` resolve database file paths; `ReadPhreeqcFile` reads and cleans input files; `combine_phreeqc_strings` concatenates keyword blocks. `ParsePqmConfig` parses the `.pqm` control-file format (1D `cells`/`shifts` and multi-D `Nx`/`Ny`/`Lx`/`Ly`) into a config struct and `ApplyRmSettings` pushes those settings onto a PhreeqcRM instance (both used by `ReadAdvectionFile` and the FVTool driver).
+
+The `libs/` C headers are the **3.8.6** interface (`RM_interface_C.h` + `irm_dll_export.h`); `loadlibrary` parses them, so a new native function is only callable once its prototype is present there.
 
 ## Conventions
 
