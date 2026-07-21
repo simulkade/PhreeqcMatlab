@@ -229,15 +229,24 @@ Tests: 21/21 pass (3 new — `.pqm` parser 1D/2D, FVTool guard; plus `newApi386G
 
 ---
 
-## Milestone 5 — Documentation
+## Milestone 5 — Documentation ✅ COMPLETE
 
 Woven throughout, consolidated here:
 
-- [ ] Loudly document the value-class reassign-or-lose idiom and the explicit-destroy requirement
-      (top-level README + class headers).
-- [ ] API reference (from doc-comments), expanded examples, and a contributor guide.
-- [ ] Keep `CLAUDE.md` current as the architecture evolves (base class, JSON path, lib version).
-- [ ] Migrate/expand the GitHub wiki content that the README points at.
+- [x] Loudly document the value-class reassign-or-lose idiom and the explicit-destroy requirement
+      — a prominent "two things that bite everyone" callout in the README, plus the class-header
+      docs added across M2–M4 and a dedicated section in `docs/architecture.md`.
+- [x] API reference + contributor guide: `docs/object-model.md` (the Layer-3 `Reactant` contract,
+      every definition class, the result classes and JSON templates), `docs/architecture.md` (the
+      three-layer map and the `RM_` naming rule), and `CONTRIBUTING.md` (setup, conventions, and
+      how to add a wrapper / definition class / test).
+- [x] `README.md` refreshed: accurate 3.8.6 install/launch (incl. `run_matlab.sh`), a high-level
+      object-model quickstart, a "running the tests" section, and an up-to-date roadmap pointer
+      (the stale to-do list is gone).
+- [x] `CLAUDE.md` kept current (base class, JSON path, 3.8.6 header, `.pqm`/FVTool helpers).
+
+Remaining (owner task, not code): migrate/expand the GitHub wiki that the README links to — the
+repo docs above are the source material for it.
 
 ---
 

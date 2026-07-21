@@ -3,6 +3,23 @@
 All notable changes to PhreeqcMatlab are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased] — Milestone 5: documentation
+
+### Added
+- `docs/architecture.md` — the three-layer architecture, the `RM_` naming rule, and the value-class
+  idiom, as user/contributor-facing documentation.
+- `docs/object-model.md` — full Layer-3 reference: the `Reactant` contract, every definition class
+  (`Solution`/`Phase`/`Surface`/`Gas`/`Exchange`/`Kinetics`), `SingleCell`, the result classes and
+  the JSON templates.
+- `CONTRIBUTING.md` — setup, conventions (value-class reassign-or-lose, explicit destroy, `RM_`
+  naming), and how to add a wrapper / definition class / test.
+
+### Changed
+- `README.md` refreshed: a prominent value-class + explicit-destroy callout, accurate 3.8.6
+  install/launch instructions (`run_matlab.sh`, `GLIBCXX`, local-install fallback), a high-level
+  object-model quickstart, a "running the tests" section, and a roadmap pointer replacing the stale
+  to-do list.
+
 ## [Unreleased] — Milestone 4: continue & extend
 
 ### Added
