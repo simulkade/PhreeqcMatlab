@@ -87,6 +87,25 @@ classdef PhreeqcMatlabTest < matlab.unittest.TestCase
             tc.verifyEqual(ca, s, 'AbsTol', 1e-4, 'Ca and SO4 released 1:1 by gypsum');
         end
 
+        function newApi386Getters(tc)
+            % The PhreeqcRM 3.8.6 non-BMI getters (unlocked by shipping the
+            % 3.8.6 header) return physically-correct values for water at 25 C.
+            phrm = PhreeqcSingleCell(tc.FIXTURE, tc.DB);
+            closer = onCleanup(@() phrm.RM_Destroy()); %#ok<NASGU>
+            T   = phrm.GetTemperature();
+            por = phrm.GetPorosity();
+            rho = phrm.GetDensityCalculated();
+            p   = phrm.GetPressure();
+            mu  = phrm.GetViscosity();
+            tc.verifySize(T, [1 1]);                         % nxyz = 1
+            tc.verifyEqual(T(1),   25.0,   'AbsTol', 1.0,  'temperature ~25 C');
+            tc.verifyEqual(p(1),   1.0,    'AbsTol', 0.1,  'pressure ~1 atm');
+            tc.verifyGreaterThan(por(1), 0,               'porosity must be positive');
+            tc.verifyEqual(rho(1), 0.9970, 'AbsTol', 0.01, 'water density ~0.997 kg/L');
+            tc.verifyEqual(mu(1),  0.8999, 'AbsTol', 0.02, 'water viscosity ~0.90 mPa s');
+            tc.verifyEqual(phrm.RM_GetCurrentSelectedOutputUserNumber(), 1);
+        end
+
         function jsonRoundTrip(tc)
             % Solution JSON read (assign_json_fields) + write (to_struct) round-trip.
             sol = Solution.from_json("NorthSeawater");

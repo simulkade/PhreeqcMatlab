@@ -2088,10 +2088,170 @@ classdef PhreeqcRM
             %}
             status = calllib(obj.libName,'RM_StateApply', obj.id, istate);
         end
-        
+
+        % ================================================================
+        % PhreeqcRM 3.8.6 additions
+        %
+        % New non-BMI functions exposed by the 3.8.6 C interface: scalar-field
+        % getters/setters and per-reactant initializers. The RM_-prefixed
+        % methods are near-direct calllib calls (as elsewhere); the unprefixed
+        % companions are PhreeqcMatlab conveniences that allocate the output
+        % array and return it directly.
+        %
+        % Note: RM_GetDensityCalculated / RM_GetSaturationCalculated /
+        % RM_SetDensityUser / RM_SetSaturationUser are the 3.8.6 successors of
+        % RM_GetDensity / RM_GetSaturation / RM_SetDensity / RM_SetSaturation.
+        % The old names still resolve in the 3.8.6 library and remain wrapped.
+        % ================================================================
+
+        function [status, density_out] = RM_GetDensityCalculated(obj, density)
+            % density: array (nxyz) to receive the calculated solution densities.
+            [status, density_out] = calllib(obj.libName,'RM_GetDensityCalculated', obj.id, density);
+        end
+
+        function density = GetDensityCalculated(obj)
+            % Calculated solution density (kg/L) for every cell (nxyz-by-1).
+            density = zeros(obj.ncells, 1);
+            [~, density] = obj.RM_GetDensityCalculated(density);
+        end
+
+        function [status, sat_out] = RM_GetSaturationCalculated(obj, sat_calc)
+            % sat_calc: array (nxyz) to receive the calculated saturations.
+            [status, sat_out] = calllib(obj.libName,'RM_GetSaturationCalculated', obj.id, sat_calc);
+        end
+
+        function sat = GetSaturationCalculated(obj)
+            % Calculated saturation (fraction of pore space filled) per cell.
+            sat = zeros(obj.ncells, 1);
+            [~, sat] = obj.RM_GetSaturationCalculated(sat);
+        end
+
+        function [status, por_out] = RM_GetPorosity(obj, porosity)
+            % porosity: array (nxyz) to receive the porosity of each cell.
+            [status, por_out] = calllib(obj.libName,'RM_GetPorosity', obj.id, porosity);
+        end
+
+        function porosity = GetPorosity(obj)
+            % Porosity of every cell (nxyz-by-1).
+            porosity = zeros(obj.ncells, 1);
+            [~, porosity] = obj.RM_GetPorosity(porosity);
+        end
+
+        function [status, p_out] = RM_GetPressure(obj, pressure)
+            % pressure: array (nxyz) to receive the pressure (atm) of each cell.
+            [status, p_out] = calllib(obj.libName,'RM_GetPressure', obj.id, pressure);
+        end
+
+        function pressure = GetPressure(obj)
+            % Pressure (atm) of every cell (nxyz-by-1).
+            pressure = zeros(obj.ncells, 1);
+            [~, pressure] = obj.RM_GetPressure(pressure);
+        end
+
+        function [status, t_out] = RM_GetTemperature(obj, temperature)
+            % temperature: array (nxyz) to receive the temperature (C) of each cell.
+            [status, t_out] = calllib(obj.libName,'RM_GetTemperature', obj.id, temperature);
+        end
+
+        function temperature = GetTemperature(obj)
+            % Temperature (degrees C) of every cell (nxyz-by-1).
+            temperature = zeros(obj.ncells, 1);
+            [~, temperature] = obj.RM_GetTemperature(temperature);
+        end
+
+        function [status, visc_out] = RM_GetViscosity(obj, viscosity)
+            % viscosity: array (nxyz) to receive the solution viscosity (mPa s).
+            [status, visc_out] = calllib(obj.libName,'RM_GetViscosity', obj.id, viscosity);
+        end
+
+        function viscosity = GetViscosity(obj)
+            % Solution viscosity (mPa s) of every cell (nxyz-by-1).
+            viscosity = zeros(obj.ncells, 1);
+            [~, viscosity] = obj.RM_GetViscosity(viscosity);
+        end
+
+        function n = RM_GetCurrentSelectedOutputUserNumber(obj)
+            % Returns the user number of the currently selected SELECTED_OUTPUT
+            % definition (see RM_SetCurrentSelectedOutputUserNumber), or a
+            % negative value on error.
+            n = calllib(obj.libName,'RM_GetCurrentSelectedOutputUserNumber', obj.id);
+        end
+
+        function status = RM_SetNthSelectedOutput(obj, n)
+            % Select the nth (0-based) SELECTED_OUTPUT definition as current, so
+            % subsequent GetSelectedOutput* calls act on it.
+            status = calllib(obj.libName,'RM_SetNthSelectedOutput', obj.id, n);
+        end
+
+        function [status, c_out] = RM_GetIthConcentration(obj, i, c)
+            % Concentrations of the ith component (0-based) across all cells.
+            % c is an array of length nxyz to receive them.
+            [status, c_out] = calllib(obj.libName,'RM_GetIthConcentration', obj.id, i, c);
+        end
+
+        function status = RM_SetIthConcentration(obj, i, c)
+            % Set the concentrations of the ith component (0-based) for all cells.
+            status = calllib(obj.libName,'RM_SetIthConcentration', obj.id, i, c);
+        end
+
+        function [status, c_out] = RM_GetIthSpeciesConcentration(obj, i, c)
+            % Concentrations of the ith aqueous species (0-based) across all
+            % cells (requires RM_SetSpeciesSaveOn(true)). c has length nxyz.
+            [status, c_out] = calllib(obj.libName,'RM_GetIthSpeciesConcentration', obj.id, i, c);
+        end
+
+        function status = RM_SetIthSpeciesConcentration(obj, i, c)
+            % Set the concentrations of the ith aqueous species (0-based).
+            status = calllib(obj.libName,'RM_SetIthSpeciesConcentration', obj.id, i, c);
+        end
+
+        function status = RM_SetDensityUser(obj, density)
+            % Set a user density (kg/L) per cell; array length nxyz.
+            status = calllib(obj.libName,'RM_SetDensityUser', obj.id, density);
+        end
+
+        function status = RM_SetSaturationUser(obj, sat)
+            % Set a user saturation (fraction) per cell; array length nxyz.
+            status = calllib(obj.libName,'RM_SetSaturationUser', obj.id, sat);
+        end
+
+        % ---- per-reactant initializers -------------------------------------
+        % Each takes an nxyz array of user numbers (negative = none) that maps
+        % one reactant type from the InitialPhreeqc instance onto the module
+        % cells, without the 7-column packing that RM_InitialPhreeqc2Module
+        % requires. See InitialConditions for the slot ordering.
+
+        function status = RM_InitialSolutions2Module(obj, solutions)
+            status = calllib(obj.libName,'RM_InitialSolutions2Module', obj.id, solutions);
+        end
+
+        function status = RM_InitialEquilibriumPhases2Module(obj, equilibrium_phases)
+            status = calllib(obj.libName,'RM_InitialEquilibriumPhases2Module', obj.id, equilibrium_phases);
+        end
+
+        function status = RM_InitialExchanges2Module(obj, exchanges)
+            status = calllib(obj.libName,'RM_InitialExchanges2Module', obj.id, exchanges);
+        end
+
+        function status = RM_InitialSurfaces2Module(obj, surfaces)
+            status = calllib(obj.libName,'RM_InitialSurfaces2Module', obj.id, surfaces);
+        end
+
+        function status = RM_InitialGasPhases2Module(obj, gas_phases)
+            status = calllib(obj.libName,'RM_InitialGasPhases2Module', obj.id, gas_phases);
+        end
+
+        function status = RM_InitialSolidSolutions2Module(obj, solid_solutions)
+            status = calllib(obj.libName,'RM_InitialSolidSolutions2Module', obj.id, solid_solutions);
+        end
+
+        function status = RM_InitialKinetics2Module(obj, kinetics)
+            status = calllib(obj.libName,'RM_InitialKinetics2Module', obj.id, kinetics);
+        end
+
         % Helper functions: all functions that start without RM_
         % more will be added
-        
+
     end
 	
 end
