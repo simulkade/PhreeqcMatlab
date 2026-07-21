@@ -124,6 +124,32 @@ classdef PhreeqcMatlabTest < matlab.unittest.TestCase
                 'PhreeqcMatlab:fvtoolMissing');
         end
 
+        function reactiveTransport2D(tc)
+            % End-to-end 2D reactive transport (FVTool + PhreeqcRM), a 2D
+            % version of PHREEQC example 11: a CaCl2 solution flushes a column
+            % initially in Na/K exchange equilibrium. Runs only when FVTool is
+            % available (startup provisions it into external/FVTool).
+            if ~fvtool_available()
+                tc.assumeFail('FVTool not available; skipping 2D transport test.');
+            end
+            pqc = '../examples/transport/reactive_transport_2d_input.pqc';
+            pqm = '../examples/transport/reactive_transport_2d.pqm';
+            [rm, c_hist] = PhreeqcFVToolTransport(pqc, pqm);
+            closer = onCleanup(@() rm.RM_Destroy()); %#ok<NASGU>
+            comps = string(rm.GetComponents());
+            tc.verifySize(c_hist, [20 numel(comps) 13]);   % 20 cells, shifts+1
+            tc.verifyTrue(all(isfinite(c_hist(:))), 'concentrations must be finite');
+            na = find(comps == "Na", 1);
+            ca = find(comps == "Ca", 1);
+            cl = find(comps == "Cl", 1);
+            % CaCl2 inflow displaces Na from the exchanger and brings in Ca.
+            tc.verifyLessThan(mean(c_hist(:, na, end)), mean(c_hist(:, na, 1)), ...
+                'Na should be flushed/displaced out of solution');
+            tc.verifyGreaterThan(mean(c_hist(:, ca, end)), mean(c_hist(:, ca, 1)), ...
+                'Ca should break through from the CaCl2 inflow');
+            tc.verifyGreaterThan(mean(c_hist(:, cl, end)), 0, 'Cl present after flushing');
+        end
+
         function newApi386Getters(tc)
             % The PhreeqcRM 3.8.6 non-BMI getters (unlocked by shipping the
             % 3.8.6 header) return physically-correct values for water at 25 C.

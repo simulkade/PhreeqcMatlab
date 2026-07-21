@@ -139,7 +139,7 @@ or, from inside MATLAB, `runtests('tests')`. The demo scripts (`tests/main.m`) r
 Look at the [example folder](https://github.com/simulkade/PhreeqcMatlab/tree/master/examples) for many more examples of batch and transport geochemical calculations.  
 
 # Reactive transport
-1D advection is built in (`PhreeqcAdvection`, no external dependency). Multi-dimensional reactive transport couples PhreeqcRM to the finite-volume package [FVTool](https://github.com/simulkade/FVTool) via `PhreeqcFVToolTransport` (operator splitting); FVTool is an optional dependency and the driver reports clearly when it is not installed. Transport runs are configured with a small `.pqm` control file (see `examples/transport/`). You can help by contributing reactive-transport cases with analytical solutions.
+1D advection is built in (`PhreeqcAdvection`, no external dependency). Multi-dimensional reactive transport couples PhreeqcRM to the finite-volume package [FVTool](https://github.com/FiniteVolumeTransportPhenomena/FVTool) via `PhreeqcFVToolTransport` (operator splitting). FVTool is provisioned automatically: `startup.m` clones it into `external/FVTool` on first run (when git and network are available) and adds it to the path. Transport runs are configured with a small `.pqm` control file; a worked 2D example (a CaCl₂ flush of a Na/K exchanger) is in [`examples/transport/reactive_transport_2d.m`](examples/transport/reactive_transport_2d.m). You can help by contributing reactive-transport cases with analytical solutions.
 
 # Other packages you might like
 There are at least two more packages that have some of the functionalities of `PhreeqcMatlab`, and inspired me to write this package.

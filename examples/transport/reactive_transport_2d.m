@@ -4,19 +4,20 @@
 % initially in Na/K exchange equilibrium. FVTool advects the components across
 % a 5 x 4 grid while PhreeqcRM re-equilibrates the exchanger each step.
 %
-% This example requires the external FVTool package (not bundled):
-%     https://github.com/simulkade/FVTool
-% Add it to the path (addpath(genpath('.../FVTool'))) before running.
+% This example uses the external FVTool package. startup.m provisions it
+% automatically into external/FVTool (cloning it from GitHub on first run) when
+% git and network are available; if not, clone it yourself from
+%     https://github.com/FiniteVolumeTransportPhenomena/FVTool
+% and run FVToolStartUp before this example.
 %
 % Run after startup:  run('examples/transport/reactive_transport_2d.m')
 
 startup;
 
 if ~fvtool_available()
-    fprintf(['\nFVTool is not on the MATLAB path.\n' ...
-        'Install it from https://github.com/simulkade/FVTool and add it with\n' ...
-        '    addpath(genpath(''/path/to/FVTool''))\n' ...
-        'then re-run this example.\n\n']);
+    fprintf(['\nFVTool is not on the MATLAB path (auto-provisioning may have ' ...
+        'failed).\nClone https://github.com/FiniteVolumeTransportPhenomena/FVTool\n' ...
+        'into external/FVTool (or anywhere on the path) and re-run.\n\n']);
     return;
 end
 

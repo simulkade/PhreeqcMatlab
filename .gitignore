@@ -9,6 +9,9 @@ examples/notebooks/.ipynb_checkpoints/development-ideas-checkpoint.ipynb
 libs/.phreeqc_version
 matlab_crash_dump.*
 
+# auto-provisioned optional dependency (FVTool for multi-D transport)
+external/
+
 # PhreeqcRM/IPhreeqc run artifacts
 *.chem.txt
 *.log.txt

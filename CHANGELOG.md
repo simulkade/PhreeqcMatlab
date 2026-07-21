@@ -3,6 +3,22 @@
 All notable changes to PhreeqcMatlab are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased] — FVTool auto-provisioning + verified 2D transport
+
+### Added
+- `startup.m` now auto-provisions the optional **FVTool** dependency: if it is not on the path it
+  is cloned into `external/FVTool` (gitignored) and initialized via `FVToolStartUp`, with the
+  caller's current directory saved and restored (FVToolStartUp `cd`s internally). Multi-D reactive
+  transport works out of the box when git + network are available.
+- `reactiveTransport2D` regression test — runs the 2D CaCl2-flush / cation-exchange example
+  end-to-end through FVTool + PhreeqcRM (skipped, via assumption, when FVTool is unavailable) and
+  asserts the expected chemistry (Na displaced out, Ca breaks through). Suite: 21 pass + 1
+  conditionally-skipped guard test.
+
+### Changed
+- README / CLAUDE.md / example / driver error message updated to reflect auto-provisioning and the
+  new upstream (`FiniteVolumeTransportPhenomena/FVTool`).
+
 ## [Unreleased] — Milestone 5: documentation
 
 ### Added

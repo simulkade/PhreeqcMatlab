@@ -82,6 +82,47 @@ end
 
 warn_if_libstdcpp_too_old();
 
+% Optional: the FVTool finite-volume package for multi-dimensional transport.
+ensure_fvtool(current_path);
+
+end
+
+% =========================================================================
+function ensure_fvtool(root_path)
+%ENSURE_FVTOOL make the optional FVTool package available on the path.
+% Used only for multi-dimensional reactive transport (see PhreeqcFVToolTransport).
+% If FVTool is not already on the path, a local copy under external/FVTool is
+% added and initialized (FVToolStartUp), cloning it from GitHub on first use.
+% FVTool is optional, so any failure here is non-fatal (a warning only).
+if ~isempty(which('FVToolStartUp')) || ~isempty(which('createMesh2D'))
+    return; % already available
+end
+fvtool_dir   = fullfile(root_path, 'external', 'FVTool');
+startup_file = fullfile(fvtool_dir, 'FVToolStartUp.m');
+url          = 'https://github.com/FiniteVolumeTransportPhenomena/FVTool';
+if ~isfile(startup_file)
+    ext_dir = fullfile(root_path, 'external');
+    if ~isfolder(ext_dir); mkdir(ext_dir); end
+    fprintf('FVTool not found; fetching it into external/FVTool ...\n');
+    [st, out] = system(sprintf('git clone --depth 1 %s "%s"', url, fvtool_dir));
+    if st ~= 0 || ~isfile(startup_file)
+        warning(['PhreeqcMatlab: could not fetch FVTool automatically (needed only ' ...
+            'for multi-dimensional reactive transport). Clone %s into external/FVTool ' ...
+            'manually. Details: %s'], url, strtrim(out));
+        return;
+    end
+end
+addpath(fvtool_dir);
+% FVToolStartUp cd's into its own folders and leaves the cwd there, so save
+% and restore the caller's current directory around it.
+original_dir = pwd;
+restore_dir = onCleanup(@() cd(original_dir));
+try
+    FVToolStartUp();
+    fprintf('FVTool is available (external/FVTool).\n');
+catch ME
+    warning('PhreeqcMatlab: FVTool found but FVToolStartUp failed: %s', ME.message);
+end
 end
 
 % =========================================================================

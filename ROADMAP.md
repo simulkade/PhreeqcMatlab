@@ -215,12 +215,12 @@ Tests: 17/17 pass (6 new — phase/exchange/kinetics/gas equilibration, `SingleC
       `sscanf` ladder and a redundant `RM_Create`).
 - [x] **Multi-D reactive transport.** `InitializePhreeqcFVTool` cleaned up (removed the stale
       "NOT DONE YET" banner and a stray `end`); new `PhreeqcFVToolTransport` couples FVTool
-      advection/diffusion to `RM_RunCells` by operator splitting. `fvtool_available` guards the
-      optional dependency and the driver errors with an actionable message when FVTool is absent.
-      2D example: `examples/transport/reactive_transport_2d.{m,pqm,pqc}`.
-      *Note:* FVTool is not installed in the dev/CI environment, so the FVTool coupling itself is
-      verified only up to the availability guard + setup; the transport numerics run when FVTool
-      is on the path. The parser, header swap and new wrappers are covered by assertion tests.
+      advection/diffusion to `RM_RunCells` by operator splitting. **FVTool is auto-provisioned by
+      `startup.m`** (cloned into `external/FVTool`, gitignored) so it works out of the box;
+      `fvtool_available` still guards it and the driver errors helpfully if provisioning failed.
+      2D example: `examples/transport/reactive_transport_2d.{m,pqm,pqc}`. **Verified end-to-end**
+      with FVTool: the 2D CaCl₂-flush / cation-exchange run reproduces the expected behaviour
+      (Na displaced out, Ca breaks through, Cl → inflow) — regression test `reactiveTransport2D`.
 - [ ] **(Deferred) BMI binding path.** The 3.8.6 header exposes 64 `RM_Bmi*` functions; evaluate
       wrapping `BMIPhreeqcRM` as a modern alternative to the `RM_` C interface. Left for later —
       the `RM_` interface fully covers current needs.
