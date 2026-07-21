@@ -19,3 +19,4 @@ phreeqc.log
 sel.out
 error.inp
 dump.out
+examples/phreeqc/chalk_cd_music/*_output.txt

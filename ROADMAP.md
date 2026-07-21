@@ -191,7 +191,10 @@ Goal: bring the half-built classes up to the `Solution`/`Surface` standard, on t
       `@SolutionResult`/`@SurfaceResult`.
 
 Deferred to a later milestone: the `Surface.equilibrate_with` positional `keys()/values()` parsing
-(still flagged FRAGILE) — needs a CD-MUSIC reference-value test before it can be refactored safely.
+(still flagged FRAGILE). A **CD-MUSIC reference case now exists** —
+`examples/phreeqc/chalk_cd_music/` (Wolthers 2008 + Heberling 2011 calcite models) with the
+`cdMusicChalkSurface` golden-value test — so this refactor can now be tackled against known
+per-plane surface charges.
 
 Tests: 17/17 pass (6 new — phase/exchange/kinetics/gas equilibration, `SingleCell.run`, JSON factories).
 

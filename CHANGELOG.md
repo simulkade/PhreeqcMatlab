@@ -3,6 +3,17 @@
 All notable changes to PhreeqcMatlab are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased] — CD-MUSIC calcite examples
+
+### Added
+- `examples/phreeqc/chalk_cd_music/` — two published charge-distribution multi-site complexation
+  (CD-MUSIC) models of the calcite (chalk) surface as PHREEQC input files (Wolthers 2008, 5-plane;
+  Heberling 2011, 3-plane), a MATLAB driver (`chalk_cd_music.m`) that runs them through IPhreeqc and
+  reports the per-plane surface charge, and a README with references.
+- `cdMusicChalkSurface` regression test pinning the Wolthers model's per-plane surface charges — a
+  CD-MUSIC reference case (the missing prerequisite for refactoring the FRAGILE
+  `Surface.equilibrate_with` parsing). Suite: 22 pass + 1 conditionally-skipped guard.
+
 ## [Unreleased] — FVTool auto-provisioning + verified 2D transport
 
 ### Added

@@ -297,6 +297,29 @@ classdef PhreeqcMatlabTest < matlab.unittest.TestCase
                 'kvopt with empty value should emit the flag alone');
         end
 
+        function cdMusicChalkSurface(tc)
+            % CD-MUSIC reference case: the Wolthers (2008) 5-plane calcite
+            % surface model runs in IPhreeqc and reproduces the published
+            % per-plane surface charges. Guards the CD-MUSIC -cd_music handling
+            % (charge distribution over electrostatic planes + capacitances).
+            infile = '../examples/phreeqc/chalk_cd_music/wolthers_cd_music.phr';
+            iph = IPhreeqc(); iph = iph.CreateIPhreeqc();
+            closer = onCleanup(@() iph.DestroyIPhreeqc()); %#ok<NASGU>
+            out = iph.RunPhreeqcString(fileread(infile), database_file(tc.DB));
+            tc.verifyClass(out, 'char');
+            lines = splitlines(string(out));
+            tc.verifyFalse(any(contains(lines, "ERROR:")), 'CD-MUSIC model should run cleanly');
+
+            plane0 = surface_charge_value(lines, "plane 0");
+            plane1 = surface_charge_value(lines, "plane 1");
+            plane2 = surface_charge_value(lines, "plane 2");
+            total  = surface_charge_value(lines, "all planes");
+            tc.verifyEqual(plane0, -1.232e-6, 'RelTol', 0.02, 'plane-0 surface charge');
+            tc.verifyEqual(plane1,  2.890e-6, 'RelTol', 0.02, 'plane-1 surface charge');
+            tc.verifyEqual(plane2,  0.0,      'AbsTol', 1e-12, 'plane-2 surface charge');
+            tc.verifyEqual(total,   1.657e-6, 'RelTol', 0.02, 'summed surface charge');
+        end
+
         function surfaceStringRoundTrip(tc)
             % The refactored Surface.phreeqc_string must produce blocks PHREEQC
             % parses without error (guards the fragile cd_music/capacitances
@@ -426,4 +449,14 @@ classdef PhreeqcMatlabTest < matlab.unittest.TestCase
         end
 
     end
+end
+
+% -------------------------------------------------------------------------
+function v = surface_charge_value(lines, tag)
+%SURFACE_CHARGE_VALUE first "<value>  ...charge, <tag>, eq" from PHREEQC output.
+% Case-insensitive on "charge" so it matches both "Surface charge, plane N" and
+% "Sum of surface charge, all planes".
+row = lines(contains(lines, "charge", 'IgnoreCase', true) & contains(lines, tag));
+tok = sscanf(strtrim(row(1)), '%g');
+v = tok(1);
 end
