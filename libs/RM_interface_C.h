@@ -1,5 +1,7 @@
 /*! @file RM_interface_C.h
-	@brief C Documentation of the geochemical reaction module PhreeqcRM.
+	@brief C header file for module BMIPhreeqcRM. RM_BmiCreate creates a module with 
+    access to all BMI methods. For backward compatibility, the deprecated method RM_Create
+    creates an old-style PhreeqcRM instance, which does not have access to BMI methods.
 */
 #ifdef USE_MPI
 #include "mpi.h"
@@ -8,15 +10,1227 @@
 #ifndef RM_INTERFACE_C_H
 #define RM_INTERFACE_C_H
 
-#if defined(_WINDLL)
-#define IRM_DLL_EXPORT __declspec(dllexport)
-#else
-#define IRM_DLL_EXPORT
-#endif
+#include "irm_dll_export.h"
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
+    /**
+    @a RM_BmiCreate Creates a BMI reaction module, which allows use of all of
+    the RM_Bmi methods. 
+    If the code is compiled with
+    the preprocessor directive USE_OPENMP, the reaction module is multithreaded.
+    If the code is compiled with the preprocessor directive USE_MPI, the reaction
+    module will use MPI and multiple processes. If neither preprocessor directive is used,
+    the reaction module will be serial (unparallelized).
+    @param nxyz                         The number of grid cells in the user's model.
+    @param nthreads (or @a comm, MPI)   When using OPENMP, the argument (@a nthreads)
+    is the number of worker threads to be used.
+    If @a nthreads <= 0, the number of threads is set equal to the number of
+    processors of the computer.
+    When using MPI, the argument (@a comm) is the MPI communicator to use within
+    the reaction module.
+    @retval Id of the BMIPhreeqcRM instance, negative is failure.
+    @see
+    @ref RM_BmiFinalize.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    nxyz = 40;
+    nthreads = 3;
+    id = RM_BmiCreate(nxyz, nthreads);
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root and workers.
+    */
+    IRM_DLL_EXPORT int        RM_BmiCreate(int nxyz, int nthreads);
+    /**
+    @a RM_BmiDestroy Destroys a BMI reaction module; same as @ref RM_BmiFinalize.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @retval    0 is success, 0 is failure.
+    @see
+    @ref RM_BmiCreate.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    status = RM_BmiDestroy(id);
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root and workers.
+    */
+    IRM_DLL_EXPORT IRM_RESULT RM_BmiDestroy(int id);
+    /**
+    @a RM_BmiAddOutputVars allows selection of sets of variables that can be retieved
+    by the @a RM_BmiGetValue methods. Sets of variables can be included or excluded with
+    multiple calls to this method. All calls must precede the final call to
+    the PhreeqcRM method FindComponents. FindComponents generates SELECTED_OUTPUT 333 and
+    USER_PUNCH 333 data blocks that make the variables accessible. Variables will
+    only be accessible if the system includes the given reactant; for example, no
+    gas variables will be Created if there are no GAS_PHASEs in the model.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @param option A string value, among those listed below, that includes or
+    excludes variables from @ref RM_BmiGetOutputVarName, @a RM_BmiGetValue methods,
+    and other BMI methods.
+    @param def A string value that can be "false", "true", or a list of items to be included as
+    accessible variables. A value of "false", excludes all variables of the given type; a
+    value of "true" includes all variables of the given type for the current system; a list
+    specifies a subset of items of the given type.
+    @retval    0 is success, 0 is failure.
+    <p>
+    Values for the the parameter @a option:
+    </p>
+    @n@a AddOutputVars: False excludes all variables; True causes the settings for each variable group
+    to determine the variables that will be defined. Default True;
+    @n@a SolutionProperties: False excludes all solution property variables; True includes variables pH, pe,
+    alkalinity, ionic strength, water mass, charge balance, percent error, and specific conductance.
+    Default True.
+    @n@a SolutionTotalMolalities: False excludes all total element and element redox state variables;
+    True includes all elements and element redox state variables for the system defined for the
+    calculation; list restricts variables to the specified elements and redox states.
+    Default True.
+    @n@a ExchangeMolalities: False excludes all variables related to exchange; True includes all
+    variables related to exchange; list includes variables for the specified exchange species.
+    Default True.
+    @n@a SurfaceMolalities: False excludes all variables related to surfaces; True includes all
+    variables related to surfaces; list includes variables for the specified surface species.
+    Default True.
+    @n@a EquilibriumPhases: False excludes all variables related to equilibrium phases; True includes all
+    variables related to equilibrium phases; list includes variables for the specified
+    equilibiurm phases. Default True.
+    @n@a Gases: False excludes all variables related to gases; True includes all
+    variables related to gases; list includes variables for the specified gas components. Default True.
+    @n@a KineticReactants: False excludes all variables related to kinetic reactants; True includes all
+    variables related to kinetic reactants; list includes variables for the specified kinetic
+    reactants. Default True.
+    @n@a SolidSolutions: False excludes all variables related to solid solutions; True includes all
+    variables related to solid solutions; list includes variables for the specified solid solutions
+    components. Default True.
+    @n@a CalculateValues: False excludes all calculate values; True includes all
+    calculate values; list includes the specified calculate values. CALCLUATE_VALUES can be
+    used to calculate geochemical quantities not available in the other sets of variables.
+    Default True.
+    @n@a SolutionActivities: False excludes all aqueous species; True includes all
+    aqueous species; list includes only the specified aqueous species. Default False.
+    @n@a SolutionMolalities: False excludes all aqueous species; True includes all
+    aqueous species; list includes only the specified aqueous species. Default False.
+    @n@a SaturationIndices: False excludes all saturation indices; True includes all
+    saturation indices; list includes only the specified saturation indices. Default False.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    status = RM_BmiAddOutputVars(id, "SolutionMolalities", "True");
+    status = RM_BmiAddOutputVars(id, "SaturationIndices", "Calcite Dolomite");
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    */
+    IRM_DLL_EXPORT IRM_RESULT RM_BmiAddOutputVars(int id, char* option, char* def);
+    /**
+    @a RM_BmiFinalize Destroys a reaction module.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @retval    0 is success, 0 is failure.
+    @see
+    @ref RM_BmiCreate.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    status = RM_BmiFinalize(id);
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root and workers.
+    */
+    IRM_DLL_EXPORT IRM_RESULT RM_BmiFinalize(int id);
+    /**
+    @a RM_BmiGetComponentName returns the component name--"BMIPhreeqcRM".
+    @param id Id number returned by @ref RM_BmiCreate.
+    @param component_name Returns "BMIPhreeqcRM", the name of the component.
+    @param l Length of string buffer @a component_name.
+    @retval               0 is success, 1 is failure; negative indicates buffer is too small.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    status = RM_BmiGetComponentName(id, component_name);
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root.
+    */
+    IRM_DLL_EXPORT IRM_RESULT RM_BmiGetComponentName(int id, char* component_name, int l);
+    /**
+    @a RM_BmiGetCurrentTime returns the current simulation time, in seconds.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @retval        The current simulation time, in seconds.
+    @see
+    @ref RM_BmiGetEndTime,
+    @ref RM_BmiGetTimeStep,
+    @ref RM_BmiGetTime.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    now = RM_BmiGetCurrentTime(id);
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root.
+    */
+    IRM_DLL_EXPORT double     RM_BmiGetCurrentTime(int id);
+    /**
+    @a RM_BmiGetEndTime returns @ref RM_BmiGetCurrentTime plus
+    @ref RM_BmiGetTimeStep, in seconds.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @retval          The end of the time step, in seconds.
+    @see
+    @ref RM_BmiGetCurrentTime,
+    @ref RM_BmiGetTimeStep.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    status = RM_BmiGetEndTime(id);
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root.
+    */
+    IRM_DLL_EXPORT double     RM_BmiGetEndTime(int id);
+    /**
+    @a RM_BmiGetGridRank returns a rank of 1 for grid 0.
+    BMIPhreeqcRM has a 1D series of
+    cells; any grid or spatial information must
+    be found in the user's model.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @param grid   Grid number, only grid 0 is considered.
+    @retval       Rank of 1 is returned for grid 0; 0 for
+    all other values of @a grid.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    rank = RM_BmiGetGridRank(id, grid)
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root.
+    */
+    IRM_DLL_EXPORT int        RM_BmiGetGridRank(int id, int grid);
+    /**
+    @ref RM_BmiGetGridSize returns the number of cells specified
+    at creation of the BMIPhreeqcRM instance.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @param grid  Grid number, only grid 0 is considered.
+    @retval    Number of cells. Same value as @ref RM_BmiGetValueInt(id, "GridCellCount")
+    is returned for grid 0;
+    0 for all other values of @a grid.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    nxyz = RM_BmiGetGridSize(id, grid);
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root.
+    */
+    IRM_DLL_EXPORT int        RM_BmiGetGridSize(int id, int grid);
+    /**
+    @a RM_BmiGetGridType defines the grid to be points. No grid
+    information is available in BMIPhreeqcRM; all grid
+    information must be found in the user's model.
+    @param id    Id number returned by @ref RM_BmiCreate.
+    @param grid  Grid number, only grid 0 is considered.
+    @param str   "Points" is returned for grid 0;
+    "Undefined grid identifier" is returned for all other
+    values of @a grid.
+    @param l Length of string buffer @a str.
+    @retval      0 is success, 1 is failure, negative indicates the buffer is too small.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    status = RM_BmiGetGridType(id, grid, str, l)
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root.
+    */
+    IRM_DLL_EXPORT IRM_RESULT RM_BmiGetGridType(int id, int grid, char* str, int l);
+    /**
+    @a RM_BmiGetInputItemCount returns count of variables that
+    can be set with @a RM_BmiSetValue methods.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @retval   Number of input variables that can be set with @a RM_BmiSetValue methods.
+    @see
+    @ref RM_BmiGetInputVarName,
+    @ref RM_BmiGetVarItemsize,
+    @ref RM_BmiGetVarNbytes,
+    @ref RM_BmiGetVarType,
+    @ref RM_BmiGetVarUnits.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    count = RM_BmiGetInputItemCount(id);
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root.
+    */
+    IRM_DLL_EXPORT int        RM_BmiGetInputItemCount(int id);
+    //IRM_DLL_EXPORT int        RM_BmiGetInputVarNamesSize(int id);
+    /**
+    @a RM_BmiGetInputVarName returns the ith variable name that can be set
+    with @a RM_BmiSetValue methods.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @param i 0-based index of variable name to retrieve.
+    @param name   Retrieved variable name.
+    @param l Length of buffer for @a name.
+    @retval            0 is success, 1 is failure; negative indicates buffer is too small.
+    @see
+    @ref RM_BmiGetInputItemCount,
+    @ref RM_BmiGetVarItemsize,
+    @ref RM_BmiGetVarNbytes,
+    @ref RM_BmiGetVarType,
+    @ref RM_BmiGetVarUnits.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    char name[256];
+    status = RM_BmiGetInputVarName(id, 0, name, 256);
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root.
+    */
+    IRM_DLL_EXPORT IRM_RESULT RM_BmiGetInputVarName(int id, int i, char* name, int l);
+    //IRM_DLL_EXPORT int        RM_BmiGetNames(int id, const char* type, char* dest);
+    //IRM_DLL_EXPORT int        RM_BmiGetNamesSize(int id, const char* type, int* dest);
+    /**
+    @a RM_BmiGetOutputItemCount returns count of output variables that can be
+    retrieved with @a RM_BmiGetValue methods.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @retval   Number of output variables that can be retrieved with @a RM_BmiGetValue methods.
+    @see
+    @ref RM_BmiGetOutputVarName,
+    @ref RM_BmiGetVarItemsize,
+    @ref RM_BmiGetVarNbytes,
+    @ref RM_BmiGetVarType,
+    @ref RM_BmiGetVarUnits.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    count = RM_BmiGetOutputItemCount(id);
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root.
+    */
+    IRM_DLL_EXPORT int        RM_BmiGetOutputItemCount(int id);
+    //IRM_DLL_EXPORT int        RM_BmiGetOutputVarNamesSize(int id);
+    /**
+    @a RM_BmiGetOutputVarName returns ith variable name for which a pointer can be
+    retrieved with @a RM_BmiGetValue methods.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @param i 0-based index of variable name to retrieve.
+    @param name    Retrieved variable name.
+    @param l Length of buffer for @a name.
+    @retval            0 is success, 1 is failure; negative indicates buffer is too small.
+    @see
+    @ref RM_BmiGetOutputItemCount,
+    @ref RM_BmiGetVarItemsize,
+    @ref RM_BmiGetVarNbytes,
+    @ref RM_BmiGetVarType,
+    @ref RM_BmiGetVarUnits.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    char name[256]
+    status = RM_BmiGetOutputVarName(id, 0, name, 256);
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root.
+    */
+    IRM_DLL_EXPORT IRM_RESULT RM_BmiGetOutputVarName(int id, int i, char* name, int l);
+    /**
+    @a RM_BmiGetPointableItemCount returns count of pointable variables that can be
+    retrieved with @ref RM_BmiGetValuePtr.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @retval   Number of output variables that can be retrieved with @ref RM_BmiGetValuePtr.
+    @see
+    @ref RM_BmiGetPointableVarName,
+    @ref RM_BmiGetValuePtr,
+    @ref RM_BmiGetVarItemsize,
+    @ref RM_BmiGetVarNbytes,
+    @ref RM_BmiGetVarType,
+    @ref RM_BmiGetVarUnits.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    count = RM_BmiGetPointableItemCount(id);
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root.
+    */
+    IRM_DLL_EXPORT int		  RM_BmiGetPointableItemCount(int id);
+    //IRM_DLL_EXPORT int        RM_BmiGetPointableVarNamesSize(int id);
+    /**
+    @a RM_BmiGetPointableVarName returns ith variable name for which a pointer can be
+    retrieved with @ref RM_BmiGetValuePtr.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @param i 0-based index of variable name to retrieve.
+    @param name    Retrieved variable name.
+    @param l Length of buffer for @a name.
+    @retval            0 is success, 1 is failure; negative indicates buffer is too small.
+    @see
+    @ref RM_BmiGetPointableItemCount,
+    @ref RM_BmiGetValuePtr,
+    @ref RM_BmiGetVarItemsize,
+    @ref RM_BmiGetVarNbytes,
+    @ref RM_BmiGetVarType,
+    @ref RM_BmiGetVarUnits.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    char name[256];
+    status = RM_BmiGetPointableVarName(id, 0, name, 256);
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root.
+    */
+    IRM_DLL_EXPORT IRM_RESULT RM_BmiGetPointableVarName(int id, int i, char* name, int l);
+    /**
+    @a RM_BmiGetStartTime returns the current simulation time, in seconds.
+    (Same as @ref RM_BmiGetCurrentTime.)
+    @param id Id number returned by @ref RM_BmiCreate.
+    @retval       The current simulation time, in seconds.
+    */
+    IRM_DLL_EXPORT double     RM_BmiGetStartTime(int id);
+    /**
+    @a RM_BmiGetTime returns the current simulation time, in seconds.
+    (Same as @ref RM_BmiGetCurrentTime.)
+    @param id Id number returned by @ref RM_BmiCreate.
+    @retval       The current simulation time, in seconds.
+    */
+    IRM_DLL_EXPORT double     RM_BmiGetTime(int id);
+    /**
+    @a RM_BmiGetTimeStep returns the current simulation time step,
+    in seconds.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @retval              The current simulation time step, in seconds.
+    @see
+    @ref RM_BmiGetCurrentTime,
+    @ref RM_BmiGetEndTime.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    time_step = RM_BmiGetTimeStep(id)
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root.
+    */
+    IRM_DLL_EXPORT double     RM_BmiGetTimeStep(int id);
+    /**
+    @a RM_BmiGetTimeUnits returns the time units of PhreeqcRM.
+    All time units are seconds for PhreeqcRM.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @param units    Returns the string "seconds".
+    @param l    Length of the string buffer @a units.
+    @retval              0 is success, 1 failure; negative indicates buffer is too small.
+    @see
+    @ref RM_BmiGetCurrentTime,
+    @ref RM_BmiGetEndTime,
+    @ref RM_BmiGetTimeStep.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    char time_units[256]
+    status = RM_BmiGetTimeUnits(id, time_units, 256)
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root.
+    */
+    IRM_DLL_EXPORT IRM_RESULT RM_BmiGetTimeUnits(int id, char* units, int l);
+    // GetValue
+    /**
+    @a RM_BmiGetValueInt retrieves int model variables. Only variables in the list
+    provided by @ref RM_BmiGetOutputVarName can be retrieved.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @param var    Name of the variable to retrieve.
+    @param dest   Variable in which to place results.
+    @retval       0 is success, 1 is failure.
+    <p>
+    Variable names for the second argument (@a var).
+    </p>
+    @n "ComponentCount"
+    @n "CurrentSelectedOutputUserNumber"
+    @n "GridCellCount"
+    @n "SelectedOutputColumnCount"
+    @n "SelectedOutputCount"
+    @n "SelectedOutputOn"
+    @n "SelectedOutputRowCount".
+    @see
+    @ref RM_BmiGetOutputVarName,
+    @ref RM_BmiGetOutputItemCount,
+    @ref RM_BmiGetVarItemsize,
+    @ref RM_BmiGetVarNbytes,
+    @ref RM_BmiGetVarType,
+    @ref RM_BmiGetVarUnits.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    status = RM_BmiGetValueInt(id, "ComponentCount", &count);
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root, workers must be in the loop of @a RM_MpiWorker.
+    */
+    IRM_DLL_EXPORT IRM_RESULT RM_BmiGetValueInt(int id, char* var, int* dest);
+    /**
+    @a RM_BmiGetValueDouble retrieves model variables. Only variables in the list
+    provided by @ref RM_BmiGetOutputVarName can be retrieved.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @param var    Name of the variable to retrieve.
+    @param dest   Variable in which to place results.
+    @retval       0 is success, 1 is failure.
+    <p>
+    Variables in addition to the ones listed below may be retrieved by this method,
+    depending on variables selected by @ref RM_BmiAddOutputVars. All variables added
+    by @ref RM_BmiAddOutputVars will be double arrays of size equal to the number of
+    model cells [@ref RM_BmiGetValueInt(id, "GridCellCount")].
+    </p>
+    <p>
+    Variable names for the second argument (@a var).
+    </p>
+    @n "Concentrations"
+    @n "DensityCalculated"
+    @n "Gfw"
+    @n "Porosity"
+    @n "Pressure"
+    @n "SaturationCalculated"
+    @n "SelectedOutput"
+    @n "SolutionVolume"
+    @n "Temperature"
+    @n "Time"
+    @n "TimeStep"
+    @n "Viscosity".
+    @see
+    @ref RM_BmiGetOutputVarName,
+    @ref RM_BmiGetOutputItemCount,
+    @ref RM_BmiGetVarItemsize,
+    @ref RM_BmiGetVarNbytes,
+    @ref RM_BmiGetVarType,
+    @ref RM_BmiGetVarUnits.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    density = (double *)malloc(nxyz*sizeof(double));
+    status = RM_BmiGetValueDouble(id, "DensityCalculated", density);
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root, workers must be in the loop of @a RM_MpiWorker.
+    */
+    IRM_DLL_EXPORT IRM_RESULT RM_BmiGetValueDouble(int id, char* var, double* dest);
+    /**
+    @a RM_BmiGetValueChar retrieves char model variables. Only variables in the list
+    provided by @ref RM_BmiGetOutputVarName can be retrieved.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @param var    Name of the variable to retrieve.
+    @param dest   Variable in which to place results.
+    @param l      Length of the string buffer @a dest.
+    @retval       0 is success, 1 is failure; negative indicates buffer is too small.
+    <p>
+    The buffer length must be at least one character greater than the value
+    returned by @ref RM_BmiGetVarNbytes to allow for null termination.
+    "ErrorString" and "FilePrefix" return single strings.
+    "Components" and "SelectedOutputHeadings" retrieve a string that is a
+    concatenated list of components or selected-output headings.
+    The length of each item in a list is given by @ref RM_BmiGetVarItemsize.
+    The concatenated list must be processed to extract each component or heading
+    and a null termination must be appended.
+    Alternatively, the components can be retrieved one at a time with
+    @a RM_GetComponent or @a RM_GetSelectedOutputHeading.
+    </p>
+    <p>
+    Variable names for the second argument (@a var).
+    </p>
+    @n "Components"
+    @n "ErrorString"
+    @n "FilePrefix"
+    @n "SelectedOutputHeadings".
+    @see
+    @ref RM_BmiGetOutputVarName,
+    @ref RM_BmiGetOutputItemCount,
+    @ref RM_BmiGetVarItemsize,
+    @ref RM_BmiGetVarNbytes,
+    @ref RM_BmiGetVarType,
+    @ref RM_BmiGetVarUnits.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    char string[256];
+    status = RM_BmiGetValueChar(id, "FilePrefix", string);
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root, workers must be in the loop of @a RM_MpiWorker.
+    */
+    IRM_DLL_EXPORT IRM_RESULT RM_BmiGetValueChar(int id, char* var, char* dest, int l);
+    // GetValuePtr
+    //IRM_DLL_EXPORT IRM_RESULT RM_BmiGetValuePtrInt(int id, char* var, int** dest);
+    //IRM_DLL_EXPORT IRM_RESULT RM_BmiGetValuePtrDouble(int id, char* var, double** dest);
+    //IRM_DLL_EXPORT IRM_RESULT RM_BmiGetValuePtrChar(int id, char* var, char** dest);
+    /**
+    @a RM_BmiGetValuePtr retrieves pointers to model variables. Only variables in the list
+    provided by @ref RM_BmiGetPointableVarName can be pointed to.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @param var    Name of the variable to retrieve.
+    @retval       Pointer to an up-to-date copy of the variable's data.
+    <p>
+    The following list gives the name in the second argument (@a var) and the
+    data type the pointer:
+    </p>
+    @n "ComponentCount"
+    @n "Concentrations"
+    @n "DensityCalculated"
+    @n "Gfw"
+    @n "GridCellCount"
+    @n "Porosity"
+    @n "Pressure"
+    @n "SaturationCalculated"
+    @n "SelectedOutputOn"
+    @n "SolutionVolume"
+    @n "Temperature"
+    @n "Time"
+    @n "TimeStep"
+    @n "Viscosity"
+    @par MPI:
+    Called by root, workers must be in the loop of @a RM_MpiWorker.
+    */
+    IRM_DLL_EXPORT void* RM_BmiGetValuePtr(int id, char* var);
+    /**
+    @a RM_BmiGetVarGrid returns a value of 1, indicating points.
+    BMIPhreeqcRM does not have a grid of its own. The cells
+    of BMIPhreeqcRM are associated with the user's model grid,
+    and all spatial characterists are assigned by the user's
+    model.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @param var   Varaiable name. (Return value is the same regardless of value of @ var.)
+    @retval      1 (points). BMIPhreeqcRM cells derive meaning from the user's model.
+    */
+    IRM_DLL_EXPORT int        RM_BmiGetVarGrid(int id, char* var);
+    /**
+    @a RM_BmiGetVarItemsize retrieves the size, in bytes, of a
+    variable that can be set with
+    @a RM_BmiSetValue methods, retrieved with @a RM_BmiGetValue methods, or pointed to with
+    @ref RM_BmiGetValuePtr.
+    Sizes may be the size of an integer, double,
+    or a character length for string variables.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @param name        Name of the variable to retrieve the item size.
+    @retval           Size, in bytes, of one element of the variable.
+    @see
+    @ref RM_BmiGetInputVarName,
+    @ref RM_BmiGetInputItemCount,
+    @ref RM_BmiGetOutputVarName,
+    @ref RM_BmiGetOutputItemCount,
+    @ref RM_BmiGetPointableVarName,
+    @ref RM_BmiGetPointableItemCount,
+    @ref RM_BmiGetValuePtr,
+    @ref RM_BmiGetVarNbytes,
+    @ref RM_BmiGetVarType,
+    @ref RM_BmiGetVarUnits.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    for(i = 0; i < GetInputVarCount(id); i++)
+    {
+        itemsize = GetVarItemsize(id, name);
+    }
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root.
+    */
+    IRM_DLL_EXPORT int        RM_BmiGetVarItemsize(int id, char* name);
+    /**
+    @a RM_BmiGetVarNbytes retrieves the total number of bytes needed for a
+    variable that can be set with
+    @a RM_BmiSetValue methods, retrieved with @a RM_BmiGetValue methods, or pointed to with
+    @ref RM_BmiGetValuePtr.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @param name     Name of the variable to retrieve the number of bytes needed to
+    retrieve or store the variable.
+    @retval        Total number of bytes needed for the variable.
+    @see
+    @ref RM_BmiGetInputVarName,
+    @ref RM_BmiGetInputItemCount,
+    @ref RM_BmiGetOutputVarName,
+    @ref RM_BmiGetOutputItemCount,
+    @ref RM_BmiGetPointableVarName,
+    @ref RM_BmiGetPointableItemCount,
+    @ref RM_BmiGetValuePtr,
+    @ref RM_BmiGetVarItemsize,
+    @ref RM_BmiGetVarType,
+    @ref RM_BmiGetVarUnits.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    for(i = 0; i < GetInputVarCount(id); i++)
+    {
+        nbytes = GetVarNbytes(id, name);
+    }
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root.
+    */
+    IRM_DLL_EXPORT int        RM_BmiGetVarNbytes(int id, char* name);
+    /**
+    @a RM_BmiGetVarType retrieves the type of a variable that can be set with
+    @a RM_BmiSetValue methods, retrieved with @a RM_BmiGetValue methods, or pointed to with
+    @ref RM_BmiGetValuePtr.
+    Types are "char", "double", or "int",
+    or an array of these types.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @param name   Name of the variable to retrieve the type.
+    @param vtype Type of the variable.
+    @param l Length of string buffer @a vtype.
+    @retval      0 is success, 1 is failure; negative indicates buffer is too small.
+    @see
+    @ref RM_BmiGetInputVarName,
+    @ref RM_BmiGetInputItemCount,
+    @ref RM_BmiGetOutputVarName,
+    @ref RM_BmiGetOutputItemCount,
+    @ref RM_BmiGetPointableVarName,
+    @ref RM_BmiGetPointableItemCount,
+    @ref RM_BmiGetValuePtr,
+    @ref RM_BmiGetVarItemsize,
+    @ref RM_BmiGetVarNbytes,
+    @ref RM_BmiGetVarUnits.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    char string[256];
+    for(i = 0; i < GetInputVarCount(id); i++)
+    {
+        status = GetVarType(id, i, string, 256);
+    }
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root.
+    */
+    IRM_DLL_EXPORT IRM_RESULT RM_BmiGetVarType(int id, char* name, char* vtype, int l);
+    /**
+    @a RM_BmiGetVarType retrieves the units of a variable that can be set with
+    @a RM_BmiSetValue methods, retrieved with @a RM_BmiGetValue methods, or pointed to with
+    @ref RM_BmiGetValuePtr.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @param name   Name of the variable to retrieve the type.
+    @param units Units of the variable.
+    @param l Length of string buffer @a units.
+    @retval      0 is success, 1 is failure; negative indicates buffer is too small.
+    @see
+    @ref RM_BmiGetInputVarName,
+    @ref RM_BmiGetInputItemCount,
+    @ref RM_BmiGetOutputVarName,
+    @ref RM_BmiGetOutputItemCount,
+    @ref RM_BmiGetPointableVarName,
+    @ref RM_BmiGetPointableItemCount,
+    @ref RM_BmiGetValuePtr,
+    @ref RM_BmiGetVarItemsize,
+    @ref RM_BmiGetVarNbytes,
+    @ref RM_BmiGetVarType.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    char string[256];
+    for(i = 0; i < GetInputVarCount(id); i++)
+    {
+        status = GetVarUnits(id, i, string, 256);
+    }
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root.
+    */
+    IRM_DLL_EXPORT IRM_RESULT RM_BmiGetVarUnits(int id, char* name, char* units, int l);
+    /**
+    @a RM_BmiInitialize uses a YAML file to initialize an instance of BMIPhreeqcRM.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @param config_file   String containing the YAML file name.
+    @retval              0 is success, 1 is failure.
+    <p>
+    The file contains a YAML map of PhreeqcRM methods
+    and the arguments corresponding to the methods.
+    For example,
+    </p>
+    @htmlonly
+    <CODE>
+    <PRE>
+    - key: LoadDatabase
+      database: phreeqc.dat
+    - key: RunFile
+      workers: true
+      initial_phreeqc: true
+      utility: true
+      chemistry_name: advect.pqi
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    <p>
+    @a RM_BmiInitialize will read the YAML file and execute the specified methods with
+    the specified arguments. Using YAML
+    terminology, the argument(s) for a method may be a scalar, a sequence, or a map,
+    depending if the argument is
+    a single item, a single vector, or there are multiple arguments.
+    In the case of a map, the name associated
+    with each argument (for example "chemistry_name" above) is arbitrary.
+    The names of the map keys for map
+    arguments are not used in parsing the YAML file; only the order of
+    the arguments is important.
+    </p>
+    <p>
+    The following list gives the PhreeqcRM methods that can be specified in a YAML file
+    and the arguments that are required. The arguments are described with C++ formats, which
+    are sufficient to identify which arguments are YAML scalars (single bool/logical,
+    int, double, string/character argument),
+    sequences (single vector argument), or maps (multiple arguments).
+    </p>
+    @htmlonly
+    <CODE>
+    <PRE>
+    CloseFiles();
+    CreateMapping(std::vector< int >& grid2chem);
+    DumpModule();
+    FindComponents();
+    InitialEquilibriumPhases2Module(std::vector< int > equilibrium_phases);
+    InitialExchanges2Module(std::vector< int > exchanges);
+    InitialGasPhases2Module(std::vector< int > gas_phases);
+    InitialKineticss2Module(std::vector< int > kinetics);
+    InitialSolidSolutions2Module(std::vector< int > solid_solutions);
+    InitialSolutions2Module(std::vector< int > solutions);
+    InitialSurfaces2Module(std::vector< int > surfaces);
+    InitialPhreeqc2Module(std::vector< int > initial_conditions1);
+    InitialPhreeqc2Module(std::vector< int > initial_conditions1,
+    std::vector< int > initial_conditions2, std::vector< double > fraction1);
+    InitialPhreeqcCell2Module(int n, std::vector< int > cell_numbers);
+    LoadDatabase(std::string database);
+    OpenFiles();
+    OutputMessage(std::string str);
+    RunCells();
+    RunFile(bool workers, bool initial_phreeqc, bool utility, std::string chemistry_name);
+    RunString(bool workers, bool initial_phreeqc, bool utility, std::string input_string);
+    ScreenMessage(std::string str);
+    SetComponentH2O(bool tf);
+    SetConcentrations(std::vector< double > c);
+    SetCurrentSelectedOutputUserNumber(int n_user);
+    SetDensityUser(std::vector< double > density);
+    SetDumpFileName(std::string dump_name);
+    SetErrorHandlerMode(int mode);
+    SetErrorOn(bool tf);
+    SetFilePrefix(std::string prefix);
+    SetGasCompMoles(std::vector< double > gas_moles);
+    SetGasPhaseVolume(std::vector< double > gas_volume);
+    SetPartitionUZSolids(bool tf);
+    SetPorosity(std::vector< double > por);
+    SetPressure(std::vector< double > p);
+    SetPrintChemistryMask(std::vector< int > cell_mask);
+    SetPrintChemistryOn(bool workers, bool initial_phreeqc, bool utility);
+    SetRebalanceByCell(bool tf);
+    SetRebalanceFraction(double f);
+    SetRepresentativeVolume(std::vector< double > rv);
+    SetSaturationUser(std::vector< double > sat);
+    SetScreenOn(bool tf);
+    SetSelectedOutputOn(bool tf);
+    SetSpeciesSaveOn(bool save_on);
+    SetTemperature(std::vector< double > t);
+    SetTime(double time);
+    SetTimeConversion(double conv_factor);
+    SetTimeStep(double time_step);
+    SetUnitsExchange(int option);
+    SetUnitsGasPhase(int option);
+    SetUnitsKinetics(int option);
+    SetUnitsPPassemblage(int option);
+    SetUnitsSolution(int option);
+    SetUnitsSSassemblage(int option);
+    SetUnitsSurface(int option);
+    SpeciesConcentrations2Module(std::vector< double > species_conc);
+    StateSave(int istate);
+    StateApply(int istate);
+    StateDelete(int istate);
+    UseSolutionDensityVolume(bool tf);
+    WarningMessage(std::string warnstr);
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    id = RM_BmiCreate(nxyz, nthreads);
+    status = RM_BmiInitializeYAML(id, "myfile.yaml");
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root, workers must be in the loop of @a RM_MpiWorker.
+    */
+    IRM_DLL_EXPORT IRM_RESULT RM_BmiInitialize(int id, char* config_file);
+    //
+    // SetValue methods
+    //
+    /**
+    @a RM_BmiSetValueChar sets model character variables. Only variables in the list
+    provided by @ref RM_BmiGetInputVarName can be set.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @param name    Name of variable to set.
+    @param src    Data to use to set the variable.
+    @retval       0 is success, 1 is failure.
+    <p>
+    Variable names for the second argument (@a var):
+    </p>
+    @n "FilePrefix"
+    @see
+    @ref RM_BmiGetInputVarName,
+    @ref RM_BmiGetInputItemCount,
+    @ref RM_BmiGetVarItemsize,
+    @ref RM_BmiGetVarNbytes,
+    @ref RM_BmiGetVarType,
+    @ref RM_BmiGetVarUnits.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    status = RM_BmiSetValueChar(id, "FilePrefix", "my_prefix");
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root, workers must be in the loop of @a RM_MpiWorker.
+    */
+    IRM_DLL_EXPORT IRM_RESULT RM_BmiSetValueChar(int id, char* name, const char* src);
+    /**
+    @a RM_BmiSetValueDouble sets model double variables. Only variables in the list
+    provided by @ref RM_BmiGetInputVarName can be set.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @param name    Name of variable to set.
+    @param src    Data to use to set the variable.
+    @retval       0 is success, 1 is failure.
+    <p>
+    Variable names for the second argument (@a var):
+    </p>
+    @n "Time"
+    @n "TimeStep".
+    @see
+    @ref RM_BmiGetInputVarName,
+    @ref RM_BmiGetInputItemCount,
+    @ref RM_BmiGetVarItemsize,
+    @ref RM_BmiGetVarNbytes,
+    @ref RM_BmiGetVarType,
+    @ref RM_BmiGetVarUnits.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    status = RM_BmiSetValueDouble(id, "TimeStep", 86400.0);
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root, workers must be in the loop of @a RM_MpiWorker.
+    */
+    IRM_DLL_EXPORT IRM_RESULT RM_BmiSetValueDouble(int id, char* name, double src);
+    /**
+    @a RM_BmiSetValueDoubleArray sets model double array variables. Only variables in the list
+    provided by @ref RM_BmiGetInputVarName can be set.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @param name   Name of variable to set.
+    @param src    Data to use to set the variable.
+    @retval       0 is success, 1 is failure.
+    <p>
+    Variable names for the second argument (@a var):
+    </p>
+    @n "Concentrations"
+    @n "DensityUser"
+    @n "Porosity"
+    @n "Pressure"
+    @n "SaturationUser"
+    @n "Temperature".
+    @see
+    @ref RM_BmiGetInputVarName,
+    @ref RM_BmiGetInputItemCount,
+    @ref RM_BmiGetVarItemsize,
+    @ref RM_BmiGetVarNbytes,
+    @ref RM_BmiGetVarType,
+    @ref RM_BmiGetVarUnits.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    tc = (double *)malloc(nxyz*sizeof(double));
+    for(i=0; i < nxyz; i++) tc[i] = 28.0e0;
+    status = RM_BmiSetValueDoubleArray(id, "Temperature", tc);
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root, workers must be in the loop of @a RM_MpiWorker.
+    */
+    IRM_DLL_EXPORT IRM_RESULT RM_BmiSetValueDoubleArray(int id, char* name, double* src);
+    /**
+    @a RM_BmiSetValueInt sets model int variables. Only variables in the list
+    provided by @ref RM_BmiGetInputVarName can be set.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @param name   Name of variable to set.
+    @param src    Data to use to set the variable.
+    @retval       0 is success, 1 is failure.
+    <p>
+    Variable names for the second argument (@a var):
+    </p>
+    @n "NthSelectedOutput"
+    @n "SelectedOutputOn".
+    @see
+    @ref RM_BmiGetInputVarName,
+    @ref RM_BmiGetInputItemCount,
+    @ref RM_BmiGetVarItemsize,
+    @ref RM_BmiGetVarNbytes,
+    @ref RM_BmiGetVarType,
+    @ref RM_BmiGetVarUnits.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    status = RM_BmiSetValueInt(id, "SelectedOutputOn", 1);
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root, workers must be in the loop of @a RM_MpiWorker.
+    */
+    IRM_DLL_EXPORT IRM_RESULT RM_BmiSetValueInt(int id, char* name, int src);
+#ifdef SKIP
+    /**
+    @a RM_BmiSetValueIntArray sets model int array variables. Only variables in the list
+    provided by @ref RM_BmiGetInputVarName can be set.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @param name   Name of variable to set.
+    @param src    Data to use to set the variable.
+    @retval       0 is success, 1 is failure.
+    <p>
+    Variable names for the second argument (@a var):
+    </p>
+    @n "Concentrations"
+    @n "DensityUser"
+    @n "FilePrefix"
+    @n "NthSelectedOutput"
+    @n "Porosity"
+    @n "Pressure"
+    @n "SaturationUser"
+    @n "SelectedOutputOn"
+    @n "Temperature"
+    @n "Time"
+    @n "TimeStep".
+    @see
+    @ref RM_BmiGetInputVarName,
+    @ref RM_BmiGetInputItemCount,
+    @ref RM_BmiGetVarItemsize,
+    @ref RM_BmiGetVarNbytes,
+    @ref RM_BmiGetVarType,
+    @ref RM_BmiGetVarUnits.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    tc = (double *)malloc(nxyz*sizeof(double));
+    for(i=0; i < nxyz; i++) tc[i] = 28.0e0;
+    status = RM_BmiSetValue(id, "Temperature", tc);
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root, workers must be in the loop of @a RM_MpiWorker.
+    */
+    IRM_DLL_EXPORT IRM_RESULT RM_BmiSetValueIntArray(int id, char* name, int* src);
+#endif
+    /**
+    @a RM_BmiUpdate runs a reaction step for all of the cells in the reaction module.
+    @param id Id number returned by @ref RM_BmiCreate.
+    @retval     0 is success, 1 is failure.
+    <p>
+    Tranported concentrations are transferred to the reaction cells
+    (@ref RM_BmiSetValueDoubleArray "Concentrations") before
+    reaction calculations are run. The length of time over which kinetic
+    reactions are integrated is set
+    by @ref RM_BmiSetValueDouble "TimeStep". Other properties that may need to be updated
+    as a result of the transport
+    calculations include
+    porosity,
+    pressure,
+    saturation,
+    temperature.
+    </p>
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    status = RM_BmiSetValue(id, "Porosity", por);                ! If pore volume changes
+    status = RM_BmiSetValue(id, "SaturationUser", sat);          ! If saturation changes
+    status = RM_BmiSetValue(id, "Temperature", temperature);     ! If temperature changes
+    status = RM_BmiSetValue(id, "Pressure", pressure);           ! If pressure changes
+    status = RM_BmiSetValue(id, "Concentrations", c);            ! Transported concentrations
+    status = RM_BmiSetValue(id, "TimeStep", time_step);          ! Time step for kinetic reactions
+    status = RM_BmiUpdate(id);
+    status = RM_BmiGetValue(id, "Concentrations", c);            ! Concentrations after reaction
+    status = RM_BmiGetValue(id, "DensityCalculated", density);   ! Density after reaction
+    status = RM_BmiGetValue(id, "SolutionVolume", volume);       ! Solution volume after reaction
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root, workers must be in the loop of @a RM_MpiWorker.
+    */
+    IRM_DLL_EXPORT IRM_RESULT RM_BmiUpdate(int id);
+    /**
+    @a RM_BmiUpdateUntil is the same as @ref RM_BmiUpdate, except the time step is calculated
+    from the argument @a end_time. The time step is calculated to be @a end_time minus
+    the current time (@ref RM_BmiGetCurrentTime).
+    @param id Id number returned by @ref RM_BmiCreate..
+    @param end_time Time at the end of the time step.
+    @see
+    @ref RM_BmiInitialize,
+    @ref RM_BmiUpdate.
+    @par C example:
+    @htmlonly
+    <CODE>
+    <PRE>
+    status = RM_BmiSetValue(id, "Time", time);
+    status = RM_BmiSetValue(id, "Concentrations", c);
+    status = RM_BmiUpdateUntil(id, time + 86400.0);
+    status = RM_BmiGetValue(id, "Concentrations", c);
+    </PRE>
+    </CODE>
+    @endhtmlonly
+    @par MPI:
+    Called by root, workers must be in the loop of @a RM_MpiWorker.
+    */
+    IRM_DLL_EXPORT IRM_RESULT RM_BmiUpdateUntil(int id, double end_time);
+    /**
+    @a RM_BmiGetValueAtIndices is not implemented
+    */
+    IRM_DLL_EXPORT void RM_BmiGetValueAtIndices(int id, char* name, void* dest, int* inds, int count);
+    /**
+    @a RM_BmiSetValueAtIndices is not implemented.
+    */
+    IRM_DLL_EXPORT void RM_BmiSetValueAtIndices(int id, char* name, int* inds, int count, void* src);
+    /**
+    @a RM_BmiGetGridShape is not implemented.
+    */
+    IRM_DLL_EXPORT void RM_BmiGetGridShape(int id, const int grid, int* shape);
+    /**
+    @a RM_BmiGetGridSpacing is not implemented.
+    */
+    IRM_DLL_EXPORT void RM_BmiGetGridSpacing(int id, const int grid, double* spacing);
+    /**
+    @a RM_BmiGetGridOrigin is not implemented.
+    */
+    IRM_DLL_EXPORT void RM_BmiGetGridOrigin(int id, const int grid, double* origin);
+    /**
+    @a RM_BmiGetGridX is not implemented.
+    */
+    IRM_DLL_EXPORT void RM_BmiGetGridX(int id, const int grid, double* x);
+    /**
+    @a RM_BmiGetGridY is not implemented.
+    */
+    IRM_DLL_EXPORT void RM_BmiGetGridY(int id, const int grid, double* y);
+    /**
+    @a RM_BmiGetGridZ is not implemented.
+    */
+    IRM_DLL_EXPORT void RM_BmiGetGridZ(int id, const int grid, double* z);
+    /**
+    @a RM_BmiGetGridNodeCount is not implemented.
+    */
+    IRM_DLL_EXPORT int RM_BmiGetGridNodeCount(int id, const int grid);
+    /**
+    @a RM_BmiGetGridEdgeCount is not implemented.
+    */
+    IRM_DLL_EXPORT int RM_BmiGetGridEdgeCount(int id, const int grid);
+    /**
+    @a RM_BmiGetGridFaceCount is not implemented.
+    */
+    IRM_DLL_EXPORT int RM_BmiGetGridFaceCount(int id, const int grid);
+    /**
+    @a RM_BmiGetGridEdgeNodes is not implemented.
+    */
+    IRM_DLL_EXPORT void RM_BmiGetGridEdgeNodes(int id, const int grid, int* edge_nodes);
+    /**
+    @a RM_BmiGetGridFaceEdges is not implemented.
+    */
+    IRM_DLL_EXPORT void RM_BmiGetGridFaceEdges(int id, const int grid, int* face_edges);
+    /**
+    @a RM_BmiGetGridFaceNodes is not implemented.
+    */
+    IRM_DLL_EXPORT void RM_BmiGetGridFaceNodes(int id, const int grid, int* face_nodes);
+    /**
+    @a RM_BmiGetGridNodesPerFace is not implemented.
+    */
+    IRM_DLL_EXPORT void RM_BmiGetGridNodesPerFace(int id, const int grid, int* nodes_per_face);
+
+
+
+
 /**
 Abort the program. @a Result will be interpreted as
 an IRM_RESULT value and decoded; @a err_str will be printed; and the reaction module
@@ -35,7 +1249,7 @@ IRM_BADINSTANCE, otherwise the program will exit with a return code of 4.
 <CODE>
 <PRE>
 iphreeqc_id = RM_Concentrations2Utility(id, c_well, 1, tc, p_atm);
-strcpy(str, "SELECTED_OUTPUT 5; -pH; RUN_CELLS; -cells 1");
+Utilities::strcpy_safe(str, MAX_LENGTH, "SELECTED_OUTPUT 5; -pH; RUN_CELLS; -cells 1");
 status = RunString(iphreeqc_id, str);
 if (status != 0) status = RM_Abort(id, status, "IPhreeqc RunString failed");
 </PRE>
@@ -74,7 +1288,8 @@ method is the mixing of solutions in wells, where it may be necessary to calcula
 (pH for example) or react the mixture to form scale minerals. The code fragments below make a mixture of
 concentrations and then calculate the pH of the mixture.
 @param id            The instance @a id returned from @ref RM_Create.
-@param c             Array of concentrations to be made SOLUTIONs in Utility IPhreeqc. Array storage is equivalent to Fortran (n,ncomps).
+@param c             Array of concentrations to be made SOLUTIONs in Utility IPhreeqc. Array storage is 
+n * ncomps.
 @param n             The number of sets of concentrations.
 @param tc            Array of temperatures to apply to the SOLUTIONs, in degree C. Array of size @a n.
 @param p_atm         Array of pressures to apply to the SOLUTIONs, in atm. Array of size n.
@@ -93,7 +1308,7 @@ p_atm = (double *) malloc((size_t) (1 * sizeof(double)));
 tc[0] = 15.0;
 p_atm[0] = 3.0;
 iphreeqc_id = RM_Concentrations2Utility(id, c_well, 1, tc, p_atm);
-strcpy(str, "SELECTED_OUTPUT 5; -pH; RUN_CELLS; -cells 1");
+Utilities::strcpy_safe(str, MAX_LENGTH, "SELECTED_OUTPUT 5; -pH; RUN_CELLS; -cells 1");
 status = RunString(iphreeqc_id, str);
 status = SetCurrentSelectedOutputUserNumber(iphreeqc_id, 5);
 status = GetSelectedOutputValue2(iphreeqc_id, 1, 0, &vtype, &pH, svalue, 100);
@@ -105,11 +1320,16 @@ Called only by root.
  */
 IRM_DLL_EXPORT int        RM_Concentrations2Utility(int id, double *c, int n, double *tc, double *p_atm);
 /**
-Creates a reaction module. If the code is compiled with
+Creates a reaction module without BMI methods. This method is <b>deprecated</b> and included only for
+backward compatibility. Use RM_BmiCreate to create a reaction module with access to all
+RM_Bmi methods.
+<p>
+If the code is compiled with
 the preprocessor directive USE_OPENMP, the reaction module is multithreaded.
 If the code is compiled with the preprocessor directive USE_MPI, the reaction
 module will use MPI and multiple processes. If neither preprocessor directive is used,
 the reaction module will be serial (unparallelized).
+</p>
 @param nxyz                   The number of grid cells in the user's model.
 @param nthreads (or @a comm, MPI)       When using OPENMP, the argument (@a nthreads) is the number of worker threads to be used.
 If @a nthreads <= 0, the number of threads is set equal to the number of processors of the computer.
@@ -316,7 +1536,7 @@ The lists are cumulative, including all reactants that were
 defined in the initial phreeqc instance at any time FindComponents was called.
 In addition, a list of phases is generated for which saturation indices may be calculated from the
 cumulative list of components.
-@see also
+@see 
 @ref RM_GetEquilibriumPhasesName,
 @ref RM_GetEquilibriumPhasesCount,
 @ref RM_GetExchangeName,
@@ -472,16 +1692,16 @@ the solution mass is used to calculate concentrations for @a c.
 Two options are available for the volume and mass of solution
 that are used in converting to transport concentrations: (1) the volume and mass of solution are
 calculated by PHREEQC, or
-(2) the volume of solution is the product of saturation (@ref RM_SetSaturation),
+(2) the volume of solution is the product of saturation (@ref RM_SetSaturationUser),
 porosity (@ref RM_SetPorosity), and representative volume (@ref RM_SetRepresentativeVolume),
-and the mass of solution is volume times density as defined by @ref RM_SetDensity.
+and the mass of solution is volume times density as defined by @ref RM_SetDensityUser.
 @ref RM_UseSolutionDensityVolume determines which option is used.
 For option 1, the databases that have partial molar volume definitions needed
 to accurately calculate solution volume are
 phreeqc.dat, Amm.dat, and pitzer.dat.
 
 @param id               The instance @a id returned from @ref RM_Create.
-@param c                Array to receive the concentrations. Dimension of the array is equivalent to Fortran (@a nxyz, @a ncomps),
+@param c                Array to receive the concentrations. Dimension of the array is @a nxyz * @a ncomps,
 where @a nxyz is the number of user grid cells and @a ncomps is the result of @ref RM_FindComponents or @ref RM_GetComponentCount.
 Values for inactive cells are set to 1e30.
 @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
@@ -489,11 +1709,11 @@ Values for inactive cells are set to 1e30.
 @see                    
 @ref RM_FindComponents, 
 @ref RM_GetComponentCount, 
-@ref RM_GetSaturation,
+@ref RM_GetSaturationCalculated,
 @ref RM_SetConcentrations, 
-@ref RM_SetDensity, 
+@ref RM_SetDensityUser, 
 @ref RM_SetRepresentativeVolume, 
-@ref RM_SetSaturation,
+@ref RM_SetSaturationUser,
 @ref RM_SetUnitsSolution, 
 @ref RM_UseSolutionDensityVolume.
 @par C Example:
@@ -511,8 +1731,180 @@ Called by root, workers must be in the loop of @ref RM_MpiWorker.
  */
 IRM_DLL_EXPORT IRM_RESULT RM_GetConcentrations(int id, double *c);
 /**
+Transfer the concentration from each cell for one component to the array given in the
+argument list (@a c). The concentrations are those resulting from the last call
+to @ref RM_RunCells. Units of concentration for @a c are defined by @ref RM_SetUnitsSolution.
+@param id               The instance @a id returned from @ref RM_Create.
+@param i                Zero-based index for the component to retrieve. Indices refer
+to the order produced by @ref RM_GetComponent. The total number of components is given by
+@ref RM_GetComponentCount.
+@param c                Allocated array to receive the component concentrations.
+Dimension of the array must be at least @a nxyz, where @a nxyz is the number of
+user grid cells (@ref RM_GetGridCellCount). Values for inactive cells are set to 1e30.
+@retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
+@see    @ref RM_FindComponents,
+@ref RM_GetComponent,
+@ref RM_GetComponentCount,
+@ref RM_GetConcentrations.
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+c = (double*)malloc(nxyz * sizeof(double));
+status = RM_RunCells(id);
+status = RM_GetIthConcentration(id, 0, c)
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref RM_MpiWorker.
+*/
+IRM_DLL_EXPORT IRM_RESULT RM_GetIthConcentration(int id, int i, double* c);
+/**
+Transfer the concentrations for one species from each cell to the array given in the
+argument list (@a c). The concentrations are those resulting from the last call
+to @ref RM_RunCells. Units of concentration for @a c are mol/L.
+To retrieve species concentrations, @ref RM_SetSpeciesSaveOn must be set to 1.
+This method is for use with multicomponent diffusion calculations.
+@param id               The instance @a id returned from @ref RM_Create.
+@param i                Zero-based index for the species to retrieve. Indices refer
+to the order given by @ref RM_GetSpeciesName. The total number of species is given
+by @ref RM_GetSpeciesCount.
+@param c                Allocated array to receive the species concentrations.
+Dimension of the array must be at least @a nxyz, where @a nxyz is the number of
+user grid cells (@ref RM_GetGridCellCount). Values for inactive cells are set to 1e30.
+@retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
+@see         @ref RM_FindComponents,
+@ref RM_GetSpeciesCount,
+@ref RM_GetSpeciesName,
+@ref RM_GetSpeciesConcentrations,
+@ref RM_SetSpeciesSaveOn.
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+c = (double*)malloc(nxyz*sizeof(double));
+status = RM_RunCells(id);
+status = RM_GetIthSpeciesConcentration(id, 0, c);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref RM_MpiWorker.
+*/
+IRM_DLL_EXPORT IRM_RESULT RM_GetIthSpeciesConcentration(int id, int i, double* c);
+/**
+Transfer the concentrations for one component given by the vector @a c
+to each reaction cell.
+Units of concentration for @a c are defined by @ref RM_SetUnitsSolution.
+It is required that  @a RM_SetIthConcentration be called for each component
+in the system before @ref RM_RunCells is called.
+@param id               The instance @a id returned from @ref RM_Create.
+@param i                Zero-based index for the component to transfer.
+Indices refer to the order produced by @ref RM_GetComponent. The total number
+of components is given by @ref RM_GetComponentCount.
+@param c                Array of concentrations to transfer to the reaction cells.
+Dimension of the vector is @a nxyz, where @a nxyz is the number of
+user grid cells (@ref RM_GetGridCellCount). Values for inactive cells are ignored.
+@retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
+@see
+@ref RM_FindComponents,
+@ref RM_GetComponentCount,
+@ref RM_GetComponent,
+@ref RM_SetConcentrations.
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+status = RM_SetIthConcentration(id, i, c); ! repeat for all components
+...
+status = phreeqc_rm.RunCells(id);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref RM_MpiWorker.
+*/
+IRM_DLL_EXPORT IRM_RESULT RM_SetIthConcentration(int id, int i, double* c);
+/**
+Transfer the concentrations for one aqueous species given by the vector
+@a c to each reaction cell.
+Units of concentration for @a c are mol/L. To set species concentrations,
+@ref RM_SetSpeciesSaveOn must be set to @a true. It is required that
+@a RM_SetIthSpeciesConcentration be called for each aqueous species in the
+system before @ref RM_RunCells is called. This method is for use with
+multicomponent diffusion calculations.
+@param id               The instance @a id returned from @ref RM_Create.
+@param i                Zero-based index for the species to transfer. Indices
+refer to the order produced by @ref RM_GetSpeciesName. The total number of
+species is given by @ref RM_GetSpeciesCount.
+@param c                Array of concentrations to transfer to the reaction cells.
+Dimension of the array is @a nxyz, where @a nxyz is the number of user grid
+cells (@ref RM_GetGridCellCount). Values for inactive cells are ignored.
+@retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
+@see
+@ref RM_FindComponents,
+@ref RM_GetSpeciesCount,
+@ref RM_GetSpeciesName,
+@ref RM_SpeciesConcentrations2Module,
+@ref RM_SetSpeciesSaveOn.
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+status = RM_SetIthSpeciesConcentration(id, i, c); ! repeat for all species
+...
+status = RM_RunCells(id);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref RM_MpiWorker.
+*/
+IRM_DLL_EXPORT IRM_RESULT RM_SetIthSpeciesConcentration(int id, int i, double* c);
+
+/**
+Returns the user number of the current selected-output definition.
+@ref RM_SetCurrentSelectedOutputUserNumber or @ref RM_SetNthSelectedOutput specifies which of the
+selected-output definitions is used.
+@retval                 User number of the the current selected-output definition,
+negative is failure (See @ref RM_DecodeError).
+@see
+@ref RM_GetNthSelectedOutputUserNumber,
+@ref RM_GetSelectedOutput,
+@ref RM_GetSelectedOutputColumnCount,
+@ref RM_GetSelectedOutputCount,
+@ref RM_GetSelectedOutputHeading,
+@ref RM_GetSelectedOutputRowCount,
+@ref RM_SetCurrentSelectedOutputUserNumber,
+@ref RM_SetNthSelectedOutput,
+@ref RM_SetSelectedOutputOn.
+@par C Example:
+	@htmlonly
+	<CODE>
+	<PRE>
+	for (isel = 0; isel < RM_GetSelectedOutputCount(id); isel++)
+	{
+	  status = RM_SetNthSelectedOutputUser(id, isel);
+	  n_user = RM_GetCurrentSelectedOutputUserNumber(id);
+	  col = RM_GetSelectedOutputColumnCount(id);
+	  selected_out = (double *) malloc((size_t) (col * nxyz * sizeof(double)));
+	  status = RM_GetSelectedOutput(id, selected_out);
+	  // Process results here
+	  free(selected_out);
+	}
+	</PRE>
+	</CODE>
+	@endhtmlonly
+	@par MPI:
+	Called by root.
+*/
+IRM_DLL_EXPORT int RM_GetCurrentSelectedOutputUserNumber(int id);
+
+/**
 Transfer solution densities from the reaction cells to the array given in the argument list (@a density).
-Densities are those calculated by the reaction module.
+Densities are those calculated by the reaction module. This method always 
+returns the calculated densities; @ref RM_SetDensityUser does not affect the result.
 Only the following databases distributed with PhreeqcRM have molar volume information needed to accurately calculate density:
 phreeqc.dat, Amm.dat, and pitzer.dat.
 
@@ -527,14 +1919,18 @@ where @a nxyz is the number of user grid cells (@ref RM_GetGridCellCount). Value
 <PRE>
 density = (double *) malloc((size_t) (nxyz * sizeof(double)));
 status = RM_RunCells(id);
-status = RM_GetDensity(id, density);
+status = RM_GetDensityCalculated(id, density);
 </PRE>
 </CODE>
 @endhtmlonly
 @par MPI:
 Called by root, workers must be in the loop of @ref RM_MpiWorker.
  */
-IRM_DLL_EXPORT IRM_RESULT RM_GetDensity(int id, double *density);
+IRM_DLL_EXPORT IRM_RESULT RM_GetDensityCalculated(int id, double *density);
+/**
+Deprecated equivalent of RM_GetDensityCalculated.
+*/
+IRM_DLL_EXPORT IRM_RESULT RM_GetDensity(int id, double* density);
 
 
 /**
@@ -576,12 +1972,12 @@ equilibrium phases.
 @htmlonly
 <CODE>
 <PRE>
-strcat(input, "  -equilibrium_phases\n");
+Utilities::strcat_safe(input, MAX_LENGTH, "  -equilibrium_phases\n");
 for (i = 0; i < RM_GetEquilibriumPhasesCount(id); i++)
 {
 status = RM_GetEquilibriumPhasesName(id, i, line1, 100);
 sprintf(line, "%4s%20s\n", "    ", line1);
-strcat(input, line);
+Utilities::strcat_safe(input, MAX_LENGTH, line);
 }
 </PRE>
 </CODE>
@@ -597,7 +1993,7 @@ the initial-phreeqc module.
 @ref RM_FindComponents must be called before @ref RM_GetEquilibriumPhasesName.
 This method may be useful when generating selected output definitions related to equilibrium phases.
 @param id               The instance @a id returned from @ref RM_Create.
-@param num              The number of the equilibrium phase name to be retrieved. Fortran, 1 based.
+@param num              The number of the equilibrium phase name to be retrieved. (0 basedindex.)
 @param name             The equilibrium phase name at number @a num.
 @param l1               The length of the maximum number of characters for @a name.
 @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
@@ -608,12 +2004,12 @@ This method may be useful when generating selected output definitions related to
 @htmlonly
 <CODE>
 <PRE>
-strcat(input, "  -equilibrium_phases\n");
+Utilities::strcat_safe(input, MAX_LENGTH, "  -equilibrium_phases\n");
 for (i = 0; i < RM_GetEquilibriumPhasesCount(id); i++)
 {
 status = RM_GetEquilibriumPhasesName(id, i, line1, 100);
 sprintf(line, "%4s%20s\n", "    ", line1);
-strcat(input, line);
+Utilities::strcat_safe(input, MAX_LENGTH, line);
 }
 </PRE>
 </CODE>
@@ -684,7 +2080,7 @@ The exchange names vector is the same length as the exchange species names vecto
 and provides the corresponding exchange site (for example, X corresponing to NaX).
 This method may be useful when generating selected output definitions related to exchangers.
 @param id               The instance @a id returned from @ref RM_Create.
-@param num              The number of the exchange name to be retrieved. Fortran, 1 based.
+@param num              The number of the exchange name to be retrieved. (0 based index.)
 @param name             The exchange name associated with exchange species @a num.
 @param l1               The length of the maximum number of characters for @a name.
 @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
@@ -697,11 +2093,11 @@ This method may be useful when generating selected output definitions related to
 <PRE>
 for (i = 0; i < RM_GetExchangeSpeciesCount(id); i++)
 {
-strcpy(line, "");
+Utilities::strcpy_safe(line, MAX_LENGTH, "");
 status = RM_GetExchangeSpeciesName(id, i, line1, 100);
 status = RM_GetExchangeName(id, i, line2, 100);
 sprintf(line, "%4s%20s%3s%20s\n", "    ", line1, " # ", line2);
-strcat(input, line);
+Utilities::strcat_safe(input, MAX_LENGTH, line);
 }
 </PRE>
 </CODE>
@@ -725,11 +2121,11 @@ This method may be useful when generating selected output definitions related to
 <PRE>
 for (i = 0; i < RM_GetExchangeSpeciesCount(id); i++)
 {
-strcpy(line, "");
+Utilities::strcpy_safe(line, MAX_LENGTH), "");
 status = RM_GetExchangeSpeciesName(id, i, line1, 100);
 status = RM_GetExchangeName(id, i, line2, 100);
 sprintf(line, "%4s%20s%3s%20s\n", "    ", line1, " # ", line2);
-strcat(input, line);
+Utilities::strcat_safe(input, MAX_LENGTH, line);
 }
 </PRE>
 </CODE>
@@ -746,7 +2142,7 @@ that are included in EXCHANGE definitions in the initial-phreeqc module.
 @ref RM_FindComponents must be called before @ref RM_GetExchangeSpeciesName.
 This method may be useful when generating selected output definitions related to exchangers.
 @param id               The instance @a id returned from @ref RM_Create.
-@param num              The number of the exchange species to be retrieved. Fortran, 1 based.
+@param num              The number of the exchange species to be retrieved. (0 based index.)
 @param name             The exchange species name at number @a num.
 @param l1               The length of the maximum number of characters for @a name.
 @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
@@ -759,11 +2155,11 @@ This method may be useful when generating selected output definitions related to
 <PRE>
 for (i = 0; i < RM_GetExchangeSpeciesCount(id); i++)
 {
-strcpy(line, "");
+Utilities::strcpy_safe(line, MAX_LENGTH, "");
 status = RM_GetExchangeSpeciesName(id, i, line1, 100);
 status = RM_GetExchangeName(id, i, line2, 100);
 sprintf(line, "%4s%20s%3s%20s\n", "    ", line1, " # ", line2);
-strcat(input, line);
+Utilities::strcat_safe(input, MAX_LENGTH, line);
 }
 </PRE>
 </CODE>
@@ -786,9 +2182,9 @@ Returns the reaction-module file prefix to the character argument (@a prefix).
 <PRE>
 char str[100], str1[200];
 status = RM_GetFilePrefix(id, str, 100);
-strcpy(str1, "File prefix: ");
-strcat(str1, str);
-strcat(str1, "\n");
+Utilities::strcpy_safe(str1, MAX_LENGTH, "File prefix: ");
+Utilities::strcat_safe(str1, MAX_LENGTH, str);
+Utilities::strcat_safe(str1, MAX_LENGTH, "\n");
 status = RM_OutputMessage(id, str1);
 </PRE>
 </CODE>
@@ -811,12 +2207,12 @@ gas phases.
 @htmlonly
 <CODE>
 <PRE>
-strcat(input, "  -gases\n");
+Utilities::strcat_safe(input, MAX_LENGTH, "  -gases\n");
 for (i = 0; i < RM_GetGasComponentsCount(id); i++)
 {
 status = RM_GetGasComponentsName(id, i, line1, 100);
 sprintf(line, "%4s%20s\n", "    ", line1);
-strcat(input, line);
+Utilities::strcat_safe(input, MAX_LENGTH, line);
 }
 </PRE>
 </CODE>
@@ -832,7 +2228,7 @@ the initial-phreeqc module.
 @ref RM_FindComponents must be called before @ref RM_GetGasComponentsName.
 This method may be useful when generating selected output definitions related to gas phases.
 @param id               The instance @a id returned from @ref RM_Create.
-@param num              The number of the gas component name to be retrieved. Fortran, 1 based.
+@param num              The number of the gas component name to be retrieved. (0 based index.)
 @param name             The gas component name at number @a num.
 @param l1               The length of the maximum number of characters for @a name.
 @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
@@ -843,12 +2239,12 @@ This method may be useful when generating selected output definitions related to
 @htmlonly
 <CODE>
 <PRE>
-strcat(input, "  -gases\n");
+Utilities::strcat_safe(input, MAX_LENGTH, "  -gases\n");
 for (i = 0; i < RM_GetGasComponentsCount(id); i++)
 {
 status = RM_GetGasComponentsName(id, i, line1, 100);
 sprintf(line, "%4s%20s\n", "    ", line1);
-strcat(input, line);
+Utilities::strcat_safe(input, MAX_LENGTH, line);
 }
 </PRE>
 </CODE>
@@ -1060,6 +2456,36 @@ status = RM_OutputMessage(id, str1);
 Called by root and (or) workers.
  */
 IRM_DLL_EXPORT int        RM_GetGridCellCount(int id);
+
+#ifdef USE_YAML
+/**
+@a GetGridCellCountYAML will read a YAML file and extract the value
+of GridCellCount, which can be used to construct a PhreeqcRM
+instance. @ref RM_Create requires a value for the number of cells.
+If a GUI or preprocessor is used to write a YAML file to initialize
+PhreeqcRM, the number of cells can be written to the YAML file
+and extracted with this method.
+@param config_file         String containing the YAML file name.
+@retval Number of grid cells specified in the YAML file; returns
+zero if GridCellCount is not defined.
+@see @ref RM_Create, and @ref RM_InitializeYAML.
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+int nthreads = 0;
+int nxyz;
+nxyz = RM_GetGridCellCountYAML("myfile.yaml");
+status = RM_Create(nxyz, nthreads);
+status = RM_InitializeYAML("myfile.yaml");
+</PRE>
+</CODE>
+@endhtmlonly
+@par Sequence:
+Called before RM_Create.
+*/
+IRM_DLL_EXPORT int        RM_GetGridCellCountYAML(const char* config_file);
+#endif
 /**
 Returns an IPhreeqc id for the @a ith IPhreeqc instance in the reaction module.
 
@@ -1108,12 +2534,12 @@ kinetic reactions.
 @htmlonly
 <CODE>
 <PRE>
-strcat(input, "  -kinetics\n");
+Utilities::strcat_safe(input, MAX_LENGTH, "  -kinetics\n");
 for (i = 0; i < RM_GetKineticReactionsCount(id); i++)
 {
 status = RM_GetKineticReactionsName(id, i, line1, 100);
 sprintf(line, "%4s%20s\n", "    ", line1);
-strcat(input, line);
+Utilities::strcat_safe(input, MAX_LENGTH, line);
 }
 </PRE>
 </CODE>
@@ -1129,7 +2555,7 @@ the initial-phreeqc module.
 @ref RM_FindComponents must be called before @ref RM_GetKineticReactionsName.
 This method may be useful when generating selected output definitions related to kinetic reactions.
 @param id               The instance @a id returned from @ref RM_Create.
-@param num              The number of the kinetic reaction name to be retrieved. Fortran, 1 based.
+@param num              The number of the kinetic reaction name to be retrieved. (0 based index.)
 @param name             The kinetic reaction name at number @a num.
 @param l1               The length of the maximum number of characters for @a name.
 @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
@@ -1140,12 +2566,12 @@ This method may be useful when generating selected output definitions related to
 @htmlonly
 <CODE>
 <PRE>
-strcat(input, "  -kinetics\n");
+Utilities::strcat_safe(input, MAX_LENGTH, "  -kinetics\n");
 for (i = 0; i < RM_GetKineticReactionsCount(id); i++)
 {
 status = RM_GetKineticReactionsName(id, i, line1, 100);
 sprintf(line, "%4s%20s\n", "    ", line1);
-strcat(input, line);
+Utilities::strcat_safe(input, MAX_LENGTH, line);
 }
 </PRE>
 </CODE>
@@ -1221,13 +2647,15 @@ that user number for selected-output processing.
 @param n                The sequence number of the selected-output definition for which the user number will be returned.
 C, 0 based.
 @retval                 The user number of the @a nth selected-output definition, negative is failure (See @ref RM_DecodeError).
-@see                    
+@see
+@ref RM_GetCurrentSelectedOutputUserNumber,
 @ref RM_GetSelectedOutput,
-@ref RM_GetSelectedOutputColumnCount, 
+@ref RM_GetSelectedOutputColumnCount,
 @ref RM_GetSelectedOutputCount,
 @ref RM_GetSelectedOutputHeading,
-@ref RM_GetSelectedOutputRowCount, 
-@ref RM_SetCurrentSelectedOutputUserNumber, 
+@ref RM_GetSelectedOutputRowCount,
+@ref RM_SetCurrentSelectedOutputUserNumber,
+@ref RM_SetNthSelectedOutput,
 @ref RM_SetSelectedOutputOn.
 @par C Example:
 @htmlonly
@@ -1252,17 +2680,66 @@ for (isel = 0; isel < RM_GetSelectedOutputCount(id); isel++)
 Called by root.
  */
 IRM_DLL_EXPORT int        RM_GetNthSelectedOutputUserNumber(int id, int n);
+/**
+Transfer current porosities to the array given in the argument list (@a porosity).
+Porosity is not changed by PhreeqcRM; the values are either the default values
+or the values set by the last call to @ref RM_SetPorosity.
+@param id                The instance @a id returned from @ref RM_Create.
+@param porosity           Array to receive the porosities. Dimension of the array
+must be @a nxyz, where @a nxyz is the number of user grid cells
+(@ref RM_GetGridCellCount). Values for inactive cells are set to 1e30.
+@retval IRM_RESULT          0 is success, negative is failure (See @ref RM_DecodeError).
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+porosity = (double*)malloc(nxyz*sizeof(double));
+status = RM_GetPorosity(id, porosity);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root.
+*/
+IRM_DLL_EXPORT IRM_RESULT RM_GetPorosity(int id, double* porosity);
+/**
+Transfer current pressures to the array given in the argument list (@a pressure).
+Pressure is not usually calculated by PhreeqcRM; the values are either the default values
+or the values set by the last call to @ref RM_SetPressure. Pressures can be calculated
+by PhreeqcRM if a fixed-volume GAS_PHASE is used.
+@param id              The instance @a id returned from @ref RM_Create.
+@param pressure        Array to receive the porosities. Dimension of the array must be
+@a nxyz, where @a nxyz is the number of user grid cells (@ref RM_GetGridCellCount).
+Values for inactive cells are set to 1e30.
+@retval IRM_RESULT          0 is success, negative is failure (See @ref RM_DecodeError).
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+pressure = (double*)malloc(nxyz*sizeof(double));
+status = RM_GetPressure(id, pressure);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root.
+*/
+IRM_DLL_EXPORT IRM_RESULT RM_GetPressure(int id, double* pressure);
 
 /**
 Returns a vector of saturations (@a sat) as calculated by the reaction module.
+This method always returns solution_volume/(rv * porosity); the method 
+@ref RM_SetSaturationUser has no effect on the values returned.
 Reactions will change the volume of solution in a cell.
-The transport code must decide whether to ignore or account for this change in solution volume due to reactions.
-Following reactions, the cell saturation is calculated as solution volume (@ref RM_GetSolutionVolume)
-divided by the product of representative volume (@ref RM_SetRepresentativeVolume) and the porosity (@ref RM_SetPorosity).
-The cell saturation returned by @a RM_GetSaturation may be less than or greater than the saturation set by the transport code
-(@ref RM_SetSaturation), and may be greater than or less than 1.0, even in fully saturated simulations.
-Only the following databases distributed with PhreeqcRM have molar volume information needed
-to accurately calculate solution volume and saturation: phreeqc.dat, Amm.dat, and pitzer.dat.
+The transport code must decide whether to ignore or account for this change in solution 
+volume due to reactions. Following reactions, the cell saturation is calculated as solution 
+volume (@ref RM_GetSolutionVolume) divided by the product of representative volume 
+(@ref RM_SetRepresentativeVolume) and the porosity (@ref RM_SetPorosity). The cell 
+saturation returned by @a RM_GetSaturationCalculated may be less than or greater 
+than the saturation set by the transport code (@ref RM_SetSaturationUser and may be 
+greater than or less than 1.0, even in fully saturated simulations. Only the following 
+databases distributed with PhreeqcRM have molar volume information needed to accurately 
+calculate solution volume and saturation: phreeqc.dat, Amm.dat, and pitzer.dat.
 
 @param id               The instance @a id returned from @ref RM_Create.
 @param sat_calc              Vector to receive the saturations. Dimension of the array is set to @a nxyz,
@@ -1274,37 +2751,43 @@ Values for inactive cells are set to 1e30.
 @ref RM_GetSolutionVolume, 
 @ref RM_SetPorosity, 
 @ref RM_SetRepresentativeVolume, 
-@ref RM_SetSaturation.
+@ref RM_SetSaturationUser.
 @par C Example:
 @htmlonly
 <CODE>
 <PRE>
 sat_calc = (double *) malloc((size_t) (nxyz * sizeof(double)));
 status = RM_RunCells(id);
-status = RM_GetSaturation(id, sat_calc);
+status = RM_GetSaturationCalculated(id, sat_calc);
 </PRE>
 </CODE>
 @endhtmlonly
 @par MPI:
 Called by root, workers must be in the loop of @ref RM_MpiWorker.
  */
-IRM_DLL_EXPORT IRM_RESULT               RM_GetSaturation(int id, double *sat_calc);
+IRM_DLL_EXPORT IRM_RESULT               RM_GetSaturationCalculated(int id, double *sat_calc);
+/**
+Deprecated equivalent of RM_GetSaturationCalculated.
+*/
+IRM_DLL_EXPORT IRM_RESULT               RM_GetSaturation(int id, double* sat_calc);
 
 /**
 Populates an array with values from the current selected-output definition. @ref RM_SetCurrentSelectedOutputUserNumber
 determines which of the selected-output definitions is used to populate the array.
 @param id               The instance @a id returned from @ref RM_Create.
-@param so               An array to contain the selected-output values. Size of the array is equivalent to Fortran (@a nxyz, @a col),
+@param so               An array to contain the selected-output values. Size of the array is @a nxyz x @a col,
 where @a nxyz is the number of grid cells in the user's model (@ref RM_GetGridCellCount), and @a col is the number of
 columns in the selected-output definition (@ref RM_GetSelectedOutputColumnCount).
 @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
-@see                    
+@see
+@ref RM_GetCurrentSelectedOutputUserNumber,
 @ref RM_GetNthSelectedOutputUserNumber,
-@ref RM_GetSelectedOutputColumnCount, 
-@ref RM_GetSelectedOutputCount, 
+@ref RM_GetSelectedOutputColumnCount,
+@ref RM_GetSelectedOutputCount,
 @ref RM_GetSelectedOutputHeading,
-@ref RM_GetSelectedOutputRowCount, 
-@ref RM_SetCurrentSelectedOutputUserNumber, 
+@ref RM_GetSelectedOutputRowCount,
+@ref RM_SetCurrentSelectedOutputUserNumber,
+@ref RM_SetNthSelectedOutput,
 @ref RM_SetSelectedOutputOn.
 @par C Example:
 @htmlonly
@@ -1333,13 +2816,15 @@ Returns the number of columns in the current selected-output definition. @ref RM
 determines which of the selected-output definitions is used.
 @param id               The instance @a id returned from @ref RM_Create.
 @retval                 Number of columns in the current selected-output definition, negative is failure (See @ref RM_DecodeError).
-@see                    
-@ref RM_GetNthSelectedOutputUserNumber, 
+@see
+@ref RM_GetCurrentSelectedOutputUserNumber,
+@ref RM_GetNthSelectedOutputUserNumber,
 @ref RM_GetSelectedOutput,
-@ref RM_GetSelectedOutputCount, 
+@ref RM_GetSelectedOutputCount,
 @ref RM_GetSelectedOutputHeading,
-@ref RM_GetSelectedOutputRowCount, 
-@ref RM_SetCurrentSelectedOutputUserNumber, 
+@ref RM_GetSelectedOutputRowCount,
+@ref RM_SetCurrentSelectedOutputUserNumber,
+@ref RM_SetNthSelectedOutput,
 @ref RM_SetSelectedOutputOn.
 @par C Example:
 @htmlonly
@@ -1367,13 +2852,15 @@ Returns the number of selected-output definitions. @ref RM_SetCurrentSelectedOut
 determines which of the selected-output definitions is used.
 @param id               The instance @a id returned from @ref RM_Create.
 @retval                 Number of selected-output definitions, negative is failure (See @ref RM_DecodeError).
-@see                    
-@ref RM_GetNthSelectedOutputUserNumber, 
+@see
+@ref RM_GetCurrentSelectedOutputUserNumber,
+@ref RM_GetNthSelectedOutputUserNumber,
 @ref RM_GetSelectedOutput,
-@ref RM_GetSelectedOutputColumnCount, 
+@ref RM_GetSelectedOutputColumnCount,
 @ref RM_GetSelectedOutputHeading,
-@ref RM_GetSelectedOutputRowCount, 
-@ref RM_SetCurrentSelectedOutputUserNumber, 
+@ref RM_GetSelectedOutputRowCount,
+@ref RM_SetCurrentSelectedOutputUserNumber,
+@ref RM_SetNthSelectedOutput,
 @ref RM_SetSelectedOutputOn.
 @par C Example:
 @htmlonly
@@ -1405,13 +2892,15 @@ determines which of the selected-output definitions is used.
 @param heading          A string buffer to receive the heading.
 @param length           The maximum number of characters that can be written to the string buffer.
 @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
-@see                    
-@ref RM_GetNthSelectedOutputUserNumber, 
+@see
+@ref RM_GetCurrentSelectedOutputUserNumber,
+@ref RM_GetNthSelectedOutputUserNumber,
 @ref RM_GetSelectedOutput,
-@ref RM_GetSelectedOutputColumnCount, 
+@ref RM_GetSelectedOutputColumnCount,
 @ref RM_GetSelectedOutputCount,
-@ref RM_GetSelectedOutputRowCount, 
-@ref RM_SetCurrentSelectedOutputUserNumber, 
+@ref RM_GetSelectedOutputRowCount,
+@ref RM_SetCurrentSelectedOutputUserNumber,
+@ref RM_SetNthSelectedOutput,
 @ref RM_SetSelectedOutputOn.
 @par C Example:
 @htmlonly
@@ -1442,13 +2931,15 @@ is included only for convenience; the number of rows is always equal to the numb
 grid cells in the user's model, and is equal to @ref RM_GetGridCellCount.
 @param id               The instance @a id returned from @ref RM_Create.
 @retval                 Number of rows in the current selected-output definition, negative is failure (See @ref RM_DecodeError).
-@see                    
-@ref RM_GetNthSelectedOutputUserNumber, 
-@ref RM_GetSelectedOutput, 
+@see
+@ref RM_GetCurrentSelectedOutputUserNumber,
+@ref RM_GetNthSelectedOutputUserNumber,
+@ref RM_GetSelectedOutput,
 @ref RM_GetSelectedOutputColumnCount,
-@ref RM_GetSelectedOutputCount, 
+@ref RM_GetSelectedOutputCount,
 @ref RM_GetSelectedOutputHeading,
-@ref RM_SetCurrentSelectedOutputUserNumber, 
+@ref RM_SetCurrentSelectedOutputUserNumber,
+@ref RM_SetNthSelectedOutput,
 @ref RM_SetSelectedOutputOn.
 @par C Example:
 @htmlonly
@@ -1496,12 +2987,12 @@ could be calculated.
 @htmlonly
 <CODE>
 <PRE>
-strcat(input, "  -saturation_indices\n");
+Utilities::strcat_safe(input, MAX_LENGTH, "  -saturation_indices\n");
 for (i = 0; i < RM_GetSICount(id); i++)
 {
 status = RM_GetSIName(id, i, line1, 100);
 sprintf(line, "%4s%20s\n", "    ", line1);
-strcat(input, line);
+Utilities::strcat_safe(input, MAX_LENGTH, line);
 }
 </PRE>
 </CODE>
@@ -1519,7 +3010,7 @@ it may be that one or more components are missing in any specific cell.
 @ref RM_FindComponents must be called before @ref RM_GetSIName.
 This method may be useful when generating selected output definitions related to saturation indices.
 @param id               The instance @a id returned from @ref RM_Create.
-@param num              The number of the saturation-index-phase name to be retrieved. Fortran, 1 based.
+@param num              The number of the saturation-index-phase name to be retrieved. (0 based index.)
 @param name             The saturation-index-phase name at number @a num.
 @param l1               The length of the maximum number of characters for @a name.
 @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
@@ -1530,12 +3021,12 @@ This method may be useful when generating selected output definitions related to
 @htmlonly
 <CODE>
 <PRE>
-strcat(input, "  -saturation_indices\n");
+Utilities::strcat_safe(input, MAX_LENGTH, "  -saturation_indices\n");
 for (i = 0; i < RM_GetSICount(id); i++)
 {
 status = RM_GetSIName(id, i, line1, 100);
 sprintf(line, "%4s%20s\n", "    ", line1);
-strcat(input, line);
+Utilities::strcat_safe(input, MAX_LENGTH, line);
 }
 </PRE>
 </CODE>
@@ -1558,13 +3049,13 @@ IRM_DLL_EXPORT IRM_RESULT RM_GetSIName(int id, int num, char *name, int l1);
  @htmlonly
  <CODE>
  <PRE>
- strcat(input, "  -solid_solutions\n");
+ Utilities::strcat_safe(input, MAX_LENGTH, "  -solid_solutions\n");
  for (i = 0; i < RM_GetSolidSolutionComponentsCount(id); i++)
  {
  status = RM_GetSolidSolutionComponentsName(id, i, line1, 100);
  status = RM_GetSolidSolutionName(id, i, line2, 100);
  sprintf(line, "%4s%20s%3s%20s\n", "    ", line1, " # ", line2);
- strcat(input, line);
+ Utilities::strcat_safe(input, MAX_LENGTH, line);
  }
  </PRE>
  </CODE>
@@ -1580,7 +3071,7 @@ the initial-phreeqc module.
 @ref RM_FindComponents must be called before @ref RM_GetSolidSolutionComponentsName.
 This method may be useful when generating selected output definitions related to solid solutions.
 @param id               The instance @a id returned from @ref RM_Create.
-@param num              The number of the solid solution components name to be retrieved. Fortran, 1 based.
+@param num              The number of the solid solution components name to be retrieved. (0 based index.)
 @param name             The solid solution compnent name at number @a num.
 @param l1               The length of the maximum number of characters for @a name.
 @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
@@ -1591,13 +3082,13 @@ This method may be useful when generating selected output definitions related to
 @htmlonly
 <CODE>
 <PRE>
-strcat(input, "  -solid_solutions\n");
+Utilities::strcat_safe(input, MAX_LENGTH, "  -solid_solutions\n");
 for (i = 0; i < RM_GetSolidSolutionComponentsCount(id); i++)
 {
 status = RM_GetSolidSolutionComponentsName(id, i, line1, 100);
 status = RM_GetSolidSolutionName(id, i, line2, 100);
 sprintf(line, "%4s%20s%3s%20s\n", "    ", line1, " # ", line2);
-strcat(input, line);
+Utilities::strcat_safe(input, MAX_LENGTH, line);
 }
 </PRE>
 </CODE>
@@ -1615,7 +3106,7 @@ and provides the corresponding name of solid solution containing the component.
 @ref RM_FindComponents must be called before @ref RM_GetSolidSolutionName.
 This method may be useful when generating selected output definitions related to solid solutions.
 @param id               The instance @a id returned from @ref RM_Create.
-@param num              The number of the solid solution name to be retrieved. Fortran, 1 based.
+@param num              The number of the solid solution name to be retrieved. (0 based index.)
 @param name             The solid solution name at number @a num.
 @param l1               The length of the maximum number of characters for @a name.
 @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
@@ -1626,13 +3117,13 @@ This method may be useful when generating selected output definitions related to
 @htmlonly
 <CODE>
 <PRE>
-strcat(input, "  -solid_solutions\n");
+Utilities::strcat_safe(input, MAX_LENGTH, "  -solid_solutions\n");
 for (i = 0; i < RM_GetSolidSolutionComponentsCount(id); i++)
 {
 status = RM_GetSolidSolutionComponentsName(id, i, line1, 100);
 status = RM_GetSolidSolutionName(id, i, line2, 100);
 sprintf(line, "%4s%20s%3s%20s\n", "    ", line1, " # ", line2);
-strcat(input, line);
+Utilities::strcat_safe(input, MAX_LENGTH, line);
 }
 </PRE>
 </CODE>
@@ -1654,7 +3145,7 @@ phreeqc.dat, Amm.dat, and pitzer.dat.
 where @a nxyz is the number of user grid cells. Values for inactive cells are set to 1e30.
 @retval IRM_RESULT         0 is success, negative is failure (See @ref RM_DecodeError).
 @see
-@ref RM_GetSaturation.
+@ref RM_GetSaturationCalculated.
 
 @par C Example:
 @htmlonly
@@ -2042,13 +3533,39 @@ Called by root and (or) workers.
  */
 IRM_DLL_EXPORT IRM_RESULT RM_GetStartCell(int id, int *sc);
 /**
+Returns an array of temperatures (@a temperature) from the reaction module.
+Reactions do not change the temperature, so the temperatures are either the
+temperatures at initialization, or the values set with the last call to
+@ref RM_SetTemperature.
+@param id               The instance @a id returned from @ref RM_Create.
+@param temperature      Allocatable array to receive the temperatures.
+Dimension of the array must be @a nxyz, where @a nxyz is the number of
+user grid cells (@ref RM_GetGridCellCount). Values for inactive cells are
+set to 1e30.
+@retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
+@see
+@ref RM_SetTemperature.
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+temperature = (double*)malloc(nxyz*sizeof(double));
+status = RM_GetTemperature(id, temperature);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref RM_MpiWorker.
+*/
+IRM_DLL_EXPORT IRM_RESULT RM_GetTemperature(int id, double* temperature);
+/**
 Retrieves the surface name (such as "Hfo") that corresponds with
 the surface species name.
 The lists of surface species names and surface names are the same length.
 @ref RM_FindComponents must be called before @ref RM_GetSurfaceName.
 This method may be useful when generating selected output definitions related to surfaces.
 @param id               The instance @a id returned from @ref RM_Create.
-@param num              The number of the surface name to be retrieved. Fortran, 1 based.
+@param num              The number of the surface name to be retrieved. (0 based index.)
 @param name             The surface name associated with surface species @a num.
 @param l1               The length of the maximum number of characters for @a name.
 @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
@@ -2065,7 +3582,7 @@ status = RM_GetSurfaceSpeciesName(id, i, line1, 100);
 status = RM_GetSurfaceType(id, i, line2, 100);
 status = RM_GetSurfaceName(id, i, line3, 100);
 sprintf(line, "%4s%20s%3s%20s%20s\n", "    ", line1, " # ", line2, line3);
-strcat(input, line);
+Utilities::strcat_safe(input, MAX_LENGTH, line);
 }
 </PRE>
 </CODE>
@@ -2093,7 +3610,7 @@ status = RM_GetSurfaceSpeciesName(id, i, line1, 100);
 status = RM_GetSurfaceType(id, i, line2, 100);
 status = RM_GetSurfaceName(id, i, line3, 100);
 sprintf(line, "%4s%20s%3s%20s%20s\n", "    ", line1, " # ", line2, line3);
-strcat(input, line);
+Utilities::strcat_safe(input, MAX_LENGTH, line);
 }
 </PRE>
 </CODE>
@@ -2110,7 +3627,7 @@ that are included in SURFACE definitions in the initial-phreeqc module.
 @ref RM_FindComponents must be called before @ref RM_GetSurfaceSpeciesName.
 This method may be useful when generating selected output definitions related to surfaces.
 @param id               The instance @a id returned from @ref RM_Create.
-@param num              The number of the surface type to be retrieved. Fortran, 1 based.
+@param num              The number of the surface type to be retrieved. (0 based index.)
 @param name             The surface species name at number @a num.
 @param l1               The length of the maximum number of characters for @a name.
 @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
@@ -2127,7 +3644,7 @@ status = RM_GetSurfaceSpeciesName(id, i, line1, 100);
 status = RM_GetSurfaceType(id, i, line2, 100);
 status = RM_GetSurfaceName(id, i, line3, 100);
 sprintf(line, "%4s%20s%3s%20s%20s\n", "    ", line1, " # ", line2, line3);
-strcat(input, line);
+Utilities::strcat_safe(input, MAX_LENGTH, line);
 }
 </PRE>
 </CODE>
@@ -2143,7 +3660,7 @@ The lists of surface species names and surface species types are the same length
 @ref RM_FindComponents must be called before @ref RM_GetSurfaceType.
 This method may be useful when generating selected output definitions related to surfaces.
 @param id               The instance @a id returned from @ref RM_Create.
-@param num              The number of the surface type to be retrieved. Fortran, 1 based.
+@param num              The number of the surface type to be retrieved. (0 based index.)
 @param name             The surface type associated with surface species @a num.
 @param l1               The length of the maximum number of characters for @a name.
 @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
@@ -2160,7 +3677,7 @@ status = RM_GetSurfaceSpeciesName(id, i, line1, 100);
 status = RM_GetSurfaceType(id, i, line2, 100);
 status = RM_GetSurfaceName(id, i, line3, 100);
 sprintf(line, "%4s%20s%3s%20s%20s\n", "    ", line1, " # ", line2, line3);
-strcat(input, line);
+Utilities::strcat_safe(input, MAX_LENGTH, line);
 }
 </PRE>
 </CODE>
@@ -2271,6 +3788,144 @@ Called by root and (or) workers.
  */
 IRM_DLL_EXPORT double     RM_GetTimeStep(int id);
 /**
+Transfer current viscosities to the array given in the argument list (@a viscosity).
+@param id                   The instance @a id returned from @ref RM_Create.
+@param viscosity            Allocated array to receive the viscosities. Dimension of
+the array must be @a nxyz, where @a nxyz is the number of user grid cells
+(@ref RM_GetGridCellCount). Values for inactive cells are set to 1e30.
+@retval IRM_RESULT          0 is success, negative is failure (See @ref RM_DecodeError).
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+viscosity = (double*)malloc(nxyz*sizeof(double));
+status = RM_GetViscosity(id, viscosity);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root.
+*/
+IRM_DLL_EXPORT IRM_RESULT RM_GetViscosity(int id, double* viscosity);
+#ifdef USE_YAML
+/**
+A YAML file can be used to initialize an instance of PhreeqcRM.
+@param id               The instance @a id returned from @ref RM_Create.
+@param yamlfile         String containing the YAML file name.
+@retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
+<p>
+The file contains a YAML map of PhreeqcRM methods
+and the arguments corresponding to the methods.
+Note that the PhreeqcRM methods do not have the "RM_" prefix
+and the id argument is not included.
+For example,
+</p>
+@htmlonly
+<CODE>
+<PRE>
+- key: LoadDatabase
+  database: phreeqc.dat
+- key: RunFile
+  workers: true
+  initial_phreeqc: true
+  utility: true
+  chemistry_name: advect.pqi
+</PRE>
+</CODE>
+@endhtmlonly
+<p>
+@ref RM_InitializeYAML will read the YAML file and execute the specified methods with
+the specified arguments. Using YAML
+terminology, the argument(s) for a method may be a scalar, a sequence, or a map,
+depending if the argument is
+a single item, a single vector, or there are multiple arguments.
+In the case of a map, the name associated
+with each argument (for example "chemistry_name" above) is arbitrary.
+The names of the map keys for map
+arguments are not used in parsing the YAML file; only the order of
+the arguments is important.
+</p>
+<p>
+The following list gives the PhreeqcRM methods that can be specified in a YAML file
+and the arguments that are required. The arguments are described with C++ formats, which
+are sufficient to identify which arguments are YAML scalars (single bool, int, double, string argument),
+sequences (single vector argument), or maps (multiple arguments).
+</p>
+@htmlonly
+<CODE>
+<PRE>
+CloseFiles(void);
+CreateMapping(std::vector< int >& grid2chem);
+DumpModule();
+FindComponents();
+InitialPhreeqc2Module(std::vector< int > initial_conditions1);
+InitialPhreeqc2Module(std::vector< int > initial_conditions1, std::vector< int > initial_conditions2, std::vector< double > fraction1);
+InitialPhreeqcCell2Module(int n, std::vector< int > cell_numbers);
+LoadDatabase(std::string database);
+OpenFiles(void);
+OutputMessage(std::string str);
+RunCells(void);
+RunFile(bool workers, bool initial_phreeqc, bool utility, std::string chemistry_name);
+RunString(bool workers, bool initial_phreeqc, bool utility, std::string input_string);
+ScreenMessage(std::string str);
+SetComponentH2O(bool tf);
+SetConcentrations(std::vector< double > c);
+SetCurrentSelectedOutputUserNumber(int n_user);
+SetDensityUser(std::vector< double > density);
+SetDumpFileName(std::string dump_name);
+SetErrorHandlerMode(int mode);
+SetErrorOn(bool tf);
+SetFilePrefix(std::string prefix);
+SetGasCompMoles(std::vector< double > gas_moles);
+SetGasPhaseVolume(std::vector< double > gas_volume);
+SetPartitionUZSolids(bool tf);
+SetPorosity(std::vector< double > por);
+SetPressure(std::vector< double > p);
+SetPrintChemistryMask(std::vector< int > cell_mask);
+SetPrintChemistryOn(bool workers, bool initial_phreeqc, bool utility);
+SetRebalanceByCell(bool tf);
+SetRebalanceFraction(double f);
+SetRepresentativeVolume(std::vector< double > rv);
+SetSaturationUser(std::vector< double > sat);
+SetScreenOn(bool tf);
+SetSelectedOutputOn(bool tf);
+SetSpeciesSaveOn(bool save_on);
+SetTemperature(std::vector< double > t);
+SetTime(double time);
+SetTimeConversion(double conv_factor);
+SetTimeStep(double time_step);
+SetUnitsExchange(int option);
+SetUnitsGasPhase(int option);
+SetUnitsKinetics(int option);
+SetUnitsPPassemblage(int option);
+SetUnitsSolution(int option);
+SetUnitsSSassemblage(int option);
+SetUnitsSurface(int option);
+SpeciesConcentrations2Module(std::vector< double > species_conc);
+StateSave(int istate);
+StateApply(int istate);
+StateDelete(int istate);
+UseSolutionDensityVolume(bool tf);
+WarningMessage(std::string warnstr);
+</PRE>
+</CODE>
+@endhtmlonly
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+		id = RM_Create(nxyz, MPI_COMM_WORLD)
+		status = RM_InitializeYAML(id, "myfile.yaml")
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref RM_MpiWorker.
+ */
+
+IRM_DLL_EXPORT IRM_RESULT RM_InitializeYAML(int id, const char* yamlfile);
+#endif
+/**
 Fills an array (@a c) with concentrations from solutions in the InitialPhreeqc instance.
 The method is used to obtain concentrations for boundary conditions. If a negative value
 is used for a cell in @a boundary_solution1, then the highest numbered solution in the InitialPhreeqc instance
@@ -2283,7 +3938,7 @@ no mixing is used; concentrations are derived from @a boundary_solution1 only.
 
 @param id                  The instance @a id returned from @ref RM_Create.
 @param c                   Array of concentrations extracted from the InitialPhreeqc instance.
-The dimension of @a c is equivalent to Fortran allocation (@a n_boundary, @a ncomp),
+The dimension of @a c is e@a n_boundary * @a ncomp,
 where @a ncomp is the number of components returned from @ref RM_FindComponents or @ref RM_GetComponentCount.
 @param n_boundary          The number of boundary condition solutions that need to be filled.
 @param boundary_solution1  Array of solution index numbers that refer to solutions in the InitialPhreeqc instance.
@@ -2327,6 +3982,265 @@ IRM_DLL_EXPORT IRM_RESULT RM_InitialPhreeqc2Concentrations(
                 int *boundary_solution1,
                 int *boundary_solution2,
                 double *fraction1);
+/**
+Transfer SOLUTION definitions from the InitialPhreeqc instance to the reaction-
+module workers.
+@a solutions is used to select SOLUTION definitions for each
+cell of the model. @a solutions is dimensioned @a nxyz, where @a nxyz is the
+number of grid cells in the  user's model (@ref RM_GetGridCellCount).
+@param id           The instance @a id returned from @ref RM_Create.
+@param solutions    Array of SOLUTION index numbers that refer to
+definitions in the InitialPhreeqc instance. Size is @a nxyz. Negative values
+are ignored, resulting in no transfer of a SOLUTION definition for that cell.
+(Note that all cells must have a SOLUTION definition, which could be defined
+by other calls to @a RM_InitialSolutions2Module, @ref RM_InitialPhreeqc2Module,
+or @ref RM_InitialPhreeqcCell2Module.)
+@retval IRM_RESULT  0 is success, negative is failure (See @ref RM_DecodeError).
+@see
+@ref RM_InitialEquilibriumPhases2Module,
+@ref RM_InitialExchanges2Module,
+@ref RM_InitialGasPhases2Module,
+@ref RM_InitialKinetics2Module,
+@ref RM_InitialSolidSolutions2Module,
+@ref RM_InitialSurfaces2Module,
+@ref RM_InitialPhreeqc2Module,
+@ref RM_InitialPhreeqcCell2Module.
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+solutions = (double*)malloc(nxyz*sizeof(double));
+for (i=0; i < nxyz; i++) solutions[i] = 1;
+status = RM_InitialSolutions2Module(id, solutions);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref RM_MpiWorker.
+*/
+IRM_DLL_EXPORT  IRM_RESULT RM_InitialSolutions2Module(int id, int* solutions);
+/**
+Transfer EQUILIBRIUM_PHASES definitions from the InitialPhreeqc instance to the
+reaction-module workers.
+@a equilibrium_phases is used to select EQUILIBRIUM_PHASES definitions for each
+cell of the model. @a equilibrium_phases is dimensioned @a nxyz, where @a nxyz is
+the number of grid cells in the  user's model (@ref RM_GetGridCellCount).
+@param id                 The instance @a id returned from @ref RM_Create.
+@param equilibrium_phases Array of EQUILIBRIUM_PHASES index numbers that refer to
+definitions in the InitialPhreeqc instance. Size is @a nxyz. Negative values are
+ignored, resulting in no transfer of an EQUILIBRIUM_PHASES definition for that cell.
+(Note that an EQUILIBRIUM_PHASES definition for a cell could be defined by other
+calls to @a RM_InitialEquilibriumPhases2Module, @ref RM_InitialPhreeqc2Module, or
+@ref RM_InitialPhreeqcCell2Module.)
+@retval IRM_RESULT    0 is success, negative is failure (See @ref RM_DecodeError).
+@see
+@ref RM_InitialSolutions2Module,
+@ref RM_InitialExchanges2Module,
+@ref RM_InitialGasPhases2Module,
+@ref RM_InitialKinetics2Module,
+@ref RM_InitialSolidSolutions2Module,
+@ref RM_InitialSurfaces2Module,
+@ref RM_InitialPhreeqc2Module,
+@ref RM_InitialPhreeqcCell2Module.
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+equilibrium_phases = (double*)malloc(nxyz*sizeof(double));
+for (i=0; i < nxyz; i++) equilibrium_phases[i] = 1;
+status = RM_InitialEquilibriumPhases2Module(id, equilibrium_phases);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref RM_MpiWorker.
+*/
+IRM_DLL_EXPORT  IRM_RESULT RM_InitialEquilibriumPhases2Module(int id, int* equilibrium_phases);
+/**
+Transfer EXCHANGE definitions from the InitialPhreeqc instance to the
+reaction-module workers.
+@a exchanges is used to select EXCHANGE definitions for each cell of the model.
+@a exchanges is dimensioned @a nxyz, where @a nxyz is the number of grid cells
+in the user's model (@ref RM_GetGridCellCount).
+@param id           The instance @a id returned from @ref RM_Create.
+@param exchanges    Vector of EXCHANGE index numbers that refer to
+definitions in the InitialPhreeqc instance. Size is @a nxyz. Negative values
+are ignored, resulting in no transfer of an EXCHANGE definition for that cell.
+(Note that an EXCHANGE definition for a cell could be defined by other
+calls to @a RM_InitialExchanges2Module, @ref RM_InitialPhreeqc2Module, or
+@ref RM_InitialPhreeqcCell2Module.)
+@retval IRM_RESULT  0 is success, negative is failure (See @ref RM_DecodeError).
+@see
+@ref RM_InitialSolutions2Module,
+@ref RM_InitialEquilibriumPhases2Module,
+@ref RM_InitialGasPhases2Module,
+@ref RM_InitialKinetics2Module,
+@ref RM_InitialSolidSolutions2Module,
+@ref RM_InitialSurfaces2Module,
+@ref RM_InitialPhreeqc2Module,
+@ref RM_InitialPhreeqcCell2Module.
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+exchanges = (double*)malloc(nxyz*sizeof(double));
+for (i=0; i < nxyz; i++) exchanges[i] = 1;
+status = RM_InitialExchanges2Module(id, exchanges);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref RM_MpiWorker.
+*/
+IRM_DLL_EXPORT  IRM_RESULT RM_InitialExchanges2Module(int id, int* exchanges);
+/**
+Transfer SURFACE definitions from the InitialPhreeqc instance to the
+reaction-module workers.
+@a surfaces is used to select SURFACE definitions for each cell of the model.
+@a surfaces is dimensioned @a nxyz, where @a nxyz is the number of grid cells
+in the user's model (@ref RM_GetGridCellCount).
+@param id          The instance @a id returned from @ref RM_Create.
+@param surfaces    Array of SURFACE index numbers that refer to
+definitions in the InitialPhreeqc instance. Size is @a nxyz. Negative values
+are ignored, resulting in no transfer of a SURFACE definition for that cell.
+(Note that an SURFACE definition for a cell could be defined by other
+calls to @a RM_InitialSurfaces2Module, @ref RM_InitialPhreeqc2Module, or
+@ref RM_InitialPhreeqcCell2Module.)
+@retval IRM_RESULT  0 is success, negative is failure (See @ref RM_DecodeError).
+@see
+@ref RM_InitialSolutions2Module,
+@ref RM_InitialEquilibriumPhases2Module,
+@ref RM_InitialExchanges2Module,
+@ref RM_InitialGasPhases2Module,
+@ref RM_InitialKinetics2Module,
+@ref RM_InitialSolidSolutions2Module,
+@ref RM_InitialPhreeqc2Module,
+@ref RM_InitialPhreeqcCell2Module.
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+surfaces = (double*)malloc(nxyz*sizeof(double));
+for (i=0; i < nxyz; i++) surfaces[i] = 1;
+status = RM_InitialSurfaces2Module(id, surfaces);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref RM_MpiWorker.
+*/
+IRM_DLL_EXPORT  IRM_RESULT RM_InitialSurfaces2Module(int id, int* surfaces);
+/**
+Transfer GAS_PHASE definitions from the InitialPhreeqc instance to the
+reaction-module workers.
+@a gas_phases is used to select GAS_PHASE definitions for each cell of the model.
+@a gas_phases is dimensioned @a nxyz, where @a nxyz is the number of grid cells
+in the user's model (@ref RM_GetGridCellCount).
+@param id           The instance @a id returned from @ref RM_Create.
+@param gas_phases   Vector of GAS_PHASE index numbers that refer to
+definitions in the InitialPhreeqc instance.Size is @a nxyz. Negative values are
+ignored, resulting in no transfer of a GAS_PHASE definition for that cell.
+(Note that an GAS_PHASE definition for a cell could be defined by other
+calls to @a RM_InitialGasPhases2Module, @ref RM_InitialPhreeqc2Module, or
+@ref RM_InitialPhreeqcCell2Module.)
+@retval IRM_RESULT  0 is success, negative is failure (See @ref RM_DecodeError).
+@see
+@ref RM_InitialSolutions2Module,
+@ref RM_InitialEquilibriumPhases2Module,
+@ref RM_InitialExchanges2Module,
+@ref RM_InitialKinetics2Module,
+@ref RM_InitialSolidSolutions2Module,
+@ref RM_InitialSurfaces2Module,
+@ref RM_InitialPhreeqc2Module,
+@ref RM_InitialPhreeqcCell2Module.
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+gas_phases = (double*)malloc(nxyz*sizeof(double));
+for (i=0; i < nxyz; i++) gas_phases[i] = 1;
+status = RM_InitialGasPhases2Module(id, gas_phases);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref RM_MpiWorker.
+*/
+IRM_DLL_EXPORT  IRM_RESULT RM_InitialGasPhases2Module(int id, int* gas_phases);
+/**
+Transfer SOLID_SOLUTIONS definitions from the InitialPhreeqc instance to the
+reaction-module workers.
+@a solid_solutions is used to select SOLID_SOLUTIONS definitions for each cell
+of the model. @a solid_solutions is dimensioned @a nxyz, where @a nxyz is the
+number of grid cells in the user's model (@ref RM_GetGridCellCount).
+@param id              The instance @a id returned from @ref RM_Create.
+@param solid_solutions Array of SOLID_SOLUTIONS index numbers that refer to
+definitions in the InitialPhreeqc instance. Size is @a nxyz. Negative values
+are ignored, resulting in no transfer of a SOLID_SOLUTIONS definition for that cell.
+(Note that an SOLID_SOLUTIONS definition for a cell could be defined by other
+calls to @a RM_InitialSolidSolutions2Module, @ref RM_InitialPhreeqc2Module, or
+@ref RM_InitialPhreeqcCell2Module.)
+@retval IRM_RESULT  0 is success, negative is failure (See @ref RM_DecodeError).
+@see
+@ref RM_InitialSolutions2Module,
+@ref RM_InitialEquilibriumPhases2Module,
+@ref RM_InitialExchanges2Module,
+@ref RM_InitialGasPhases2Module,
+@ref RM_InitialKinetics2Module,
+@ref RM_InitialSurfaces2Module,
+@ref RM_InitialPhreeqc2Module,
+@ref RM_InitialPhreeqcCell2Module.
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+solid_solutions = (double*)malloc(nxyz*sizeof(double));
+for (i=0; i < nxyz; i++) solid_solutions[i] = 1;
+status = RM_InitialSolidSolutions2Module(id, solid_solutions);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref RM_MpiWorker.
+*/
+IRM_DLL_EXPORT  IRM_RESULT RM_InitialSolidSolutions2Module(int id, int* solid_solutions);
+/**
+Transfer KINETICS definitions from the InitialPhreeqc instance to the
+reaction-module workers.
+@a kinetics is used to select KINETICS definitions for each cell of the model.
+@a kinetics is dimensioned @a nxyz, where @a nxyz is the number of grid cells in the
+user's model (@ref RM_GetGridCellCount).
+@param id          The instance @a id returned from @ref RM_Create.
+@param kinetics    Array of KINETICS index numbers that refer to
+definitions in the InitialPhreeqc instance. Size is @a nxyz. Negative values are
+ignored, resulting in no transfer of a KINETICS definition for that cell.
+(Note that an KINETICS definition for a cell could be defined by other
+calls to @a RM_InitialKinetics2Module, @ref RM_InitialPhreeqc2Module, or
+@ref RM_InitialPhreeqcCell2Module.)
+@retval IRM_RESULT  0 is success, negative is failure (See @ref RM_DecodeError).
+@see
+@ref RM_InitialSolutions2Module,
+@ref RM_InitialEquilibriumPhases2Module,
+@ref RM_InitialExchanges2Module,
+@ref RM_InitialGasPhases2Module,
+@ref RM_InitialSolidSolutions2Module,
+@ref RM_InitialSurfaces2Module,
+@ref RM_InitialPhreeqc2Module,
+@ref RM_InitialPhreeqcCell2Module.
+@par C Example:
+@htmlonly
+<CODE>
+<PRE>
+kinetics = (double*)malloc(nxyz*sizeof(double));
+for (i=0; i < nxyz; i++) kinetics[i] = 1;
+status = RM_InitialKinetics2Module(id, kinetics);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref RM_MpiWorker.
+*/
+IRM_DLL_EXPORT  IRM_RESULT RM_InitialKinetics2Module(int id, int* kinetics);
 /**
 Transfer solutions and reactants from the InitialPhreeqc instance to the reaction-module workers, possibly with mixing.
 In its simplest form, @a initial_conditions1 is used to select initial conditions, including solutions and reactants,
@@ -2427,7 +4341,7 @@ no mixing is used; concentrations are derived from @a boundary_solution1 only.
 
 @param id                  The instance @a id returned from @ref RM_Create.
 @param species_c           Array of aqueous concentrations extracted from the InitialPhreeqc instance.
-The dimension of @a species_c is equivalent to Fortran allocation (@a n_boundary, @a nspecies),
+The dimension of @a species_c is @a n_boundary * @a nspecies,
 where @a nspecies is the number of aqueous species returned from @ref RM_GetSpeciesCount.
 @param n_boundary          The number of boundary condition solutions that need to be filled.
 @param boundary_solution1  Array of solution index numbers that refer to solutions in the InitialPhreeqc instance.
@@ -2685,7 +4599,7 @@ Runs a reaction step for all of the cells in the reaction module.
 Normally, tranport concentrations are transferred to the reaction cells (@ref RM_SetConcentrations) before
 reaction calculations are run. The length of time over which kinetic reactions are integrated is set
 by @ref RM_SetTimeStep. Other properties that may need to be updated as a result of the transport
-calculations include porosity (@ref RM_SetPorosity), saturation (@ref RM_SetSaturation),
+calculations include porosity (@ref RM_SetPorosity), saturation (@ref RM_SetSaturationUser),
 temperature (@ref RM_SetTemperature), and pressure (@ref RM_SetPressure).
 @param id               The instance @a id returned from @ref RM_Create.
 @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
@@ -2693,7 +4607,7 @@ temperature (@ref RM_SetTemperature), and pressure (@ref RM_SetPressure).
 @ref RM_SetConcentrations,  
 @ref RM_SetPorosity,
 @ref RM_SetPressure, 
-@ref RM_SetSaturation, 
+@ref RM_SetSaturationUser, 
 @ref RM_SetTemperature, 
 @ref RM_SetTimeStep.
 @par C Example:
@@ -2701,14 +4615,14 @@ temperature (@ref RM_SetTemperature), and pressure (@ref RM_SetPressure).
 <CODE>
 <PRE>
 status = RM_SetPorosity(id, por);              // If porosity changes
-status = RM_SetSaturation(id, sat);            // If saturation changes
+status = RM_SetSaturationUser(id, sat);            // If saturation changes
 status = RM_SetTemperature(id, temperature);   // If temperature changes
 status = RM_SetPressure(id, pressure);         // If pressure changes
 status = RM_SetConcentrations(id, c);          // Transported concentrations
 status = RM_SetTimeStep(id, time_step);        // Time step for kinetic reactions
 status = RM_RunCells(id);
 status = RM_GetConcentrations(id, c);          // Concentrations after reaction
-status = RM_GetDensity(id, density);           // Density after reaction
+status = RM_GetDensityCalculated(id, density);           // Density after reaction
 status = RM_GetSolutionVolume(id, volume);     // Solution volume after reaction
 </PRE>
 </CODE>
@@ -2764,7 +4678,7 @@ be run by the InitialPhreeqc instance.
 @htmlonly
 <CODE>
 <PRE>
-strcpy(str, "DELETE; -all");
+Utilities::strcpy_safe(str, MAX_LENGTH, "DELETE; -all");
 status = RM_RunString(id, 1, 0, 1, str);	// workers, initial_phreeqc, utility
 </PRE>
 </CODE>
@@ -2830,23 +4744,23 @@ Called by root, workers must be in the loop of @ref RM_MpiWorker.
 IRM_DLL_EXPORT IRM_RESULT RM_SetComponentH2O(int id, int tf);
 /**
 Use the vector of concentrations (@a c) to set the moles of components in each reaction cell.
-The volume of water in a cell is the product of porosity (@ref RM_SetPorosity), saturation (@ref RM_SetSaturation),
-and reference volume (@ref RM_SetRepresentativeVolume).
+The volume of water in a cell is the product of porosity (@ref RM_SetPorosity), 
+saturation (@ref RM_SetSaturationUser), and reference volume (@ref RM_SetRepresentativeVolume).
 The moles of each component are determined by the volume of water and per liter concentrations.
 If concentration units (@ref RM_SetUnitsSolution) are mass fraction, the
-density (as specified by @ref RM_SetDensity) is used to convert from mass fraction to per mass per liter.
+density (as specified by @ref RM_SetDensityUser) is used to convert from mass fraction to per mass per liter.
 
 @param id               The instance @a id returned from @ref RM_Create.
-@param c                Array of component concentrations. Size of array is equivalent to
-Fortran (@a nxyz, @a ncomps), where @a nxyz is the number
+@param c                Array of component concentrations. Size of array is @a nxyz * @a ncomps,
+where @a nxyz is the number
 of grid cells in the user's model (@ref RM_GetGridCellCount), and @a ncomps is the number of components as determined
 by @ref RM_FindComponents or @ref RM_GetComponentCount.
 @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
 @see                    
-@ref RM_SetDensity, 
+@ref RM_SetDensityUser, 
 @ref RM_SetPorosity, 
 @ref RM_SetRepresentativeVolume,
-@ref RM_SetSaturation, 
+@ref RM_SetSaturationUser, 
 @ref RM_SetUnitsSolution.
 
 @par C Example:
@@ -2857,7 +4771,7 @@ c = (double *) malloc((size_t) (ncomps * nxyz * sizeof(double)));
 ...
 advect_c(c, bc_conc, ncomps, nxyz, nbound);
 status = RM_SetPorsity(id, por);               // If porosity changes
-status = RM_SetSaturation(id, sat);            // If saturation changes
+status = RM_SetSaturationUser(id, sat);            // If saturation changes
 status = RM_SetTemperature(id, temperature);   // If temperature changes
 status = RM_SetPressure(id, pressure);         // If pressure changes
 status = RM_SetConcentrations(id, c);          // Transported concentrations
@@ -2865,7 +4779,7 @@ status = RM_SetTimeStep(id, time_step);        // Time step for kinetic reaction
 status = RM_SetTime(id, time);                 // Current time
 status = RM_RunCells(id);
 status = RM_GetConcentrations(id, c);          // Concentrations after reaction
-status = RM_GetDensity(id, density);           // Density after reaction
+status = RM_GetDensityCalculated(id, density);           // Density after reaction
 status = RM_GetSolutionVolume(id, volume);     // Solution volume after reaction
 </PRE>
 </CODE>
@@ -2882,13 +4796,15 @@ for selected-output operations.
 @param id               The instance @a id returned from @ref RM_Create.
 @param n_user           User number of the SELECTED_OUTPUT data block that is to be used.
 @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
-@see                    
-@ref RM_GetNthSelectedOutputUserNumber, 
-@ref RM_GetSelectedOutput, 
+@see
+@ref RM_GetCurrentSelectedOutputUserNumber,
+@ref RM_GetNthSelectedOutputUserNumber,
+@ref RM_GetSelectedOutput,
 @ref RM_GetSelectedOutputColumnCount,
-@ref RM_GetSelectedOutputCount, 
-@ref RM_GetSelectedOutputHeading, 
+@ref RM_GetSelectedOutputCount,
+@ref RM_GetSelectedOutputHeading,
 @ref RM_GetSelectedOutputRowCount,
+@ref RM_SetNthSelectedOutput,
 @ref RM_SetSelectedOutputOn.
 @par C Example:
 @htmlonly
@@ -2937,14 +4853,19 @@ for (i = 0; i < nxyz; i++)
 {
 	density[i] = 1.0;
 }
-status = RM_SetDensity(id, density);
+status = RM_SetDensityUser(id, density);
 </PRE>
 </CODE>
 @endhtmlonly
 @par MPI:
 Called by root, workers must be in the loop of @ref RM_MpiWorker.
  */
-IRM_DLL_EXPORT IRM_RESULT RM_SetDensity(int id, double *density);
+IRM_DLL_EXPORT IRM_RESULT RM_SetDensityUser(int id, double *density);
+/**
+Deprecated equivalent of RM_SetDensityUser.
+*/
+IRM_DLL_EXPORT IRM_RESULT RM_SetDensity(int id, double* density);
+
 /**
 Set the name of the dump file. It is the name used by @ref RM_DumpModule.
 @param id               The instance @a id returned from @ref RM_Create.
@@ -3283,6 +5204,46 @@ Called by workers, before call to @ref RM_MpiWorker.
  */
 IRM_DLL_EXPORT IRM_RESULT RM_SetMpiWorkerCallbackCookie(int id, void *cookie);
 /**
+Specify the current selected output by sequence number. The user may define multiple SELECTED_OUTPUT
+data blocks for the workers. A user number is specified for each data block, and the blocks are
+stored in user-number order. The value of
+the argument @a n selects the sequence number of the SELECTED_OUTPUT definition that will be used
+for selected-output operations.
+@param id               The instance id returned from @ref RM_Create.
+@param n           Sequence number of the SELECTED_OUTPUT data block that is to be used.
+@retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
+@see
+@ref RM_GetCurrentSelectedOutputUserNumber,
+@ref RM_GetNthSelectedOutputUserNumber,
+@ref RM_GetSelectedOutput,
+@ref RM_GetSelectedOutputColumnCount,
+@ref RM_GetSelectedOutputCount,
+@ref RM_GetSelectedOutputHeading,
+@ref RM_GetSelectedOutputRowCount,
+@ref RM_SetCurrentSelectedOutputUserNumber,
+@ref RM_SetSelectedOutputOn.
+	@par C Example:
+	@htmlonly
+	<CODE>
+	<PRE>
+	for (isel = 0; isel < RM_GetSelectedOutputCount(id); isel++)
+	{
+	  status = RM_SetNthSelectedOutputUser(id, isel);
+	  n_user = RM_GetCurrentSelectedOutputUserNumber(id);
+	  col = RM_GetSelectedOutputColumnCount(id);
+	  selected_out = (double *) malloc((size_t) (col * nxyz * sizeof(double)));
+	  status = RM_GetSelectedOutput(id, selected_out);
+	  // Process results here
+	  free(selected_out);
+	}
+	</PRE>
+	</CODE>
+	@endhtmlonly
+	@par MPI:
+	Called by root.
+*/
+IRM_DLL_EXPORT IRM_RESULT RM_SetNthSelectedOutput(int id, int n);
+/**
 Sets the property for partitioning solids between the saturated and unsaturated
 parts of a partially saturated cell.
 
@@ -3323,15 +5284,15 @@ IRM_DLL_EXPORT IRM_RESULT RM_SetPartitionUZSolids(int id, int tf);
 /**
 Set the porosity for each reaction cell.
 The volume of water in a reaction cell is the product of the porosity, the saturation
-(@ref RM_SetSaturation), and the representative volume (@ref RM_SetRepresentativeVolume).
+(@ref RM_SetSaturationUser), and the representative volume (@ref RM_SetRepresentativeVolume).
 @param id               The instance @a id returned from @ref RM_Create.
 @param por              Array of porosities, unitless. Default is 0.1. Size of array is @a nxyz, where @a nxyz is the number
 of grid cells in the user's model (@ref RM_GetGridCellCount).
 @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
 @see                    
-@ref RM_GetSaturation, 
+@ref RM_GetSaturationCalculated, 
 @ref RM_SetRepresentativeVolume, 
-@ref RM_SetSaturation.
+@ref RM_SetSaturationUser.
 @par C Example:
 @htmlonly
 <CODE>
@@ -3499,7 +5460,7 @@ IRM_DLL_EXPORT IRM_RESULT RM_SetRebalanceFraction(int id, double f);
 Set the representative volume of each reaction cell.
 By default the representative volume of each reaction cell is 1 liter.
 The volume of water in a reaction cell is determined by the procuct of the representative volume,
-the porosity (@ref RM_SetPorosity), and the saturation (@ref RM_SetSaturation).
+the porosity (@ref RM_SetPorosity), and the saturation (@ref RM_SetSaturationUser).
 The numerical method of PHREEQC is more robust if the water volume for a reaction cell is
 within a couple orders of magnitude of 1.0.
 Small water volumes caused by small porosities and (or) small saturations (and (or) small representative volumes)
@@ -3516,7 +5477,7 @@ of grid cells in the user's model (@ref RM_GetGridCellCount).
 @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
 @see                    
 @ref RM_SetPorosity, 
-@ref RM_SetSaturation.
+@ref RM_SetSaturationUser.
 
 @par C Example:
 @htmlonly
@@ -3535,21 +5496,23 @@ Called by root, workers must be in the loop of @ref RM_MpiWorker.
 IRM_DLL_EXPORT IRM_RESULT RM_SetRepresentativeVolume(int id, double *rv);
 /**
 Set the saturation of each reaction cell. Saturation is a fraction ranging from 0 to 1.
-The volume of water in a cell is the product of porosity (@ref RM_SetPorosity), saturation (@a RM_SetSaturation),
-and representative volume (@ref RM_SetRepresentativeVolume). As a result of a reaction calculation,
-solution properties (density and volume) will change;
-the databases phreeqc.dat, Amm.dat, and pitzer.dat have the molar volume data to calculate these changes.
-The methods @ref RM_GetDensity, @ref RM_GetSolutionVolume, and @ref RM_GetSaturation
+The volume of water in a cell is the product of porosity (@ref RM_SetPorosity), 
+saturation (@a RM_SetSaturationUser),
+and representative volume (@ref RM_SetRepresentativeVolume). As a result of a reaction 
+calculation, solution properties (density and volume) will change; the databases phreeqc.dat, 
+Amm.dat, and pitzer.dat have the molar volume data to calculate these changes. The methods 
+@ref RM_GetDensityCalculated, @ref RM_GetSolutionVolume, and @ref RM_GetSaturationCalculated
 can be used to account for these changes in the succeeding transport calculation.
-@a RM_SetRepresentativeVolume should be called before initial conditions are defined for the reaction cells.
+@a RM_SetRepresentativeVolume should be called before initial conditions are defined for 
+the reaction cells.
 
 @param id               The instance @a id returned from @ref RM_Create.
 @param sat              Array of saturations, unitless. Size of array is @a nxyz, where @a nxyz is the number
 of grid cells in the user's model (@ref RM_GetGridCellCount).
 @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
 @see                    
-@ref RM_GetDensity, 
-@ref RM_GetSaturation, 
+@ref RM_GetDensityCalculated, 
+@ref RM_GetSaturationCalculated, 
 @ref RM_GetSolutionVolume,
 @ref RM_SetPorosity, 
 @ref RM_SetRepresentativeVolume.
@@ -3560,14 +5523,18 @@ of grid cells in the user's model (@ref RM_GetGridCellCount).
 <PRE>
 sat = (double *) malloc((size_t) (nxyz * sizeof(double)));
 for (i = 0; i < nxyz; i++) sat[i] = 1.0;
-status = RM_SetSaturation(id, sat);
+status = RM_SetSaturationUser(id, sat);
 </PRE>
 </CODE>
 @endhtmlonly
 @par MPI:
 Called by root, workers must be in the loop of @ref RM_MpiWorker.
  */
-IRM_DLL_EXPORT IRM_RESULT RM_SetSaturation(int id, double *sat);
+IRM_DLL_EXPORT IRM_RESULT RM_SetSaturationUser(int id, double *sat);
+/**
+Deprecated equivalent of RM_SetSaturationUser.
+*/
+IRM_DLL_EXPORT IRM_RESULT RM_SetSaturation(int id, double* sat);
 /**
 Set the property that controls whether messages are written to the screen.
 Messages include information about rebalancing during @ref RM_RunCells, and
@@ -3601,9 +5568,16 @@ be accumulated during @ref RM_RunCells.
 @param id               The instance @a id returned from @ref RM_Create.
 @param selected_output  0, disable selected output; 1, enable selected output.
 @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
-@see                    
-@ref RM_GetSelectedOutput, 
-@ref RM_SetPrintChemistryOn.
+@see
+@ref RM_GetCurrentSelectedOutputUserNumber,
+@ref RM_GetNthSelectedOutputUserNumber,
+@ref RM_GetSelectedOutput,
+@ref RM_GetSelectedOutputColumnCount,
+@ref RM_GetSelectedOutputCount,
+@ref RM_GetSelectedOutputHeading,
+@ref RM_GetSelectedOutputRowCount,
+@ref RM_SetCurrentSelectedOutputUserNumber,
+@ref RM_SetNthSelectedOutput.
 
 @par C Example:
 @htmlonly
@@ -3842,7 +5816,7 @@ For option 1, the number of moles of kinetic reactants will be vary directly wit
 For option 2, the number of moles of kinetic reactants will vary directly with rock volume and inversely with porosity.
 
 Note that the volume of water in a cell in the reaction module is equal to the product of
-porosity (@ref RM_SetPorosity), the saturation (@ref RM_SetSaturation), and representative volume (@ref
+porosity (@ref RM_SetPorosity), the saturation (@ref RM_SetSaturationUser), and representative volume (@ref
 RM_SetRepresentativeVolume), which is usually less than 1 liter. It is important to write the RATES
 definitions for homogeneous (aqueous) kinetic reactions to account for the current volume of
 water, often by calculating the rate of reaction per liter of water and multiplying by the volume
@@ -3862,7 +5836,7 @@ reactant (Basic function M) in RATES to obtain the surface area.
 @ref RM_InitialPhreeqcCell2Module,
 @ref RM_SetPorosity, 
 @ref RM_SetRepresentativeVolume, 
-@ref RM_SetSaturation.
+@ref RM_SetSaturationUser.
 
 @par C Example:
 @htmlonly
@@ -3923,14 +5897,14 @@ element in the solution.
 To convert from mg/L to moles
 of element in the representative volume of a reaction cell, mg/L is converted to mol/L and
 multiplied by the solution volume,
-which is the product of porosity (@ref RM_SetPorosity), saturation (@ref RM_SetSaturation),
+which is the product of porosity (@ref RM_SetPorosity), saturation (@ref RM_SetSaturationUser),
 and representative volume (@ref RM_SetRepresentativeVolume).
 To convert from mol/L to moles
 of element in the representative volume of a reaction cell, mol/L is
 multiplied by the solution volume.
 To convert from mass fraction to moles
 of element in the representative volume of a reaction cell, kg/kgs is converted to mol/kgs, multiplied by density
-(@ref RM_SetDensity) and
+(@ref RM_SetDensityUser) and
 multiplied by the solution volume.
 
 To convert from moles
@@ -3945,18 +5919,18 @@ by the total mass of the solution.
 Two options are available for the volume and mass of solution
 that are used in converting to transport concentrations: (1) the volume and mass of solution are
 calculated by PHREEQC, or (2) the volume of solution is the product of porosity (@ref RM_SetPorosity),
-saturation (@ref RM_SetSaturation), and representative volume (@ref RM_SetRepresentativeVolume),
-and the mass of solution is volume times density as defined by @ref RM_SetDensity.
+saturation (@ref RM_SetSaturationUser), and representative volume (@ref RM_SetRepresentativeVolume),
+and the mass of solution is volume times density as defined by @ref RM_SetDensityUser.
 Which option is used is determined by @ref RM_UseSolutionDensityVolume.
 
 @param id               The instance @a id returned from @ref RM_Create.
 @param option           Units option for solutions: 1, 2, or 3, default is 1, mg/L.
 @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
 @see                    
-@ref RM_SetDensity, 
+@ref RM_SetDensityUser, 
 @ref RM_SetPorosity, 
 @ref RM_SetRepresentativeVolume, 
-@ref RM_SetSaturation,
+@ref RM_SetSaturationUser,
 @ref RM_UseSolutionDensityVolume.
 
 @par C Example:
@@ -4111,7 +6085,7 @@ A state is identified by an integer, and multiple states can be saved.
 @see                    @ref RM_DumpModule,
 @ref RM_StateApply, and
 @ref RM_StateDelete.
-@par C++ Example:
+@par C Example:
 @htmlonly
 <CODE>
 <PRE>
@@ -4142,7 +6116,7 @@ The state to be applied is identified by an integer.
 @retval IRM_RESULT      0 is success, negative is failure(See @ref RM_DecodeError).
 @see                    @ref RM_StateSave and
 @ref RM_StateDelete.
-@par C++ Example:
+@par C Example:
 @htmlonly
 <CODE>
 <PRE>
@@ -4165,7 +6139,7 @@ Delete a state previously saved with @ref RM_StateSave.
 @retval IRM_RESULT      0 is success, negative is failure(See @ref RM_DecodeError).
 @see                    @ref RM_StateSave and
 ref RM_StateApply.
-@par C++ Example:
+@par C Example:
 @htmlonly
 <CODE>
 <PRE>
@@ -4185,9 +6159,9 @@ Determines the volume and density to use when converting from the reaction-modul
 to transport concentrations (@ref RM_GetConcentrations).
 Two options are available to convert concentration units:
 (1) the density and solution volume calculated by PHREEQC are used, or
-(2) the specified density (@ref RM_SetDensity)
+(2) the specified density (@ref RM_SetDensityUser)
 and solution volume are defined by the product of
-saturation (@ref RM_SetSaturation), porosity (@ref RM_SetPorosity),
+saturation (@ref RM_SetSaturationUser), porosity (@ref RM_SetPorosity),
 and representative volume (@ref RM_SetRepresentativeVolume).
 Transport models that consider density-dependent flow will probably use the
 PHREEQC-calculated density and solution volume (default),
@@ -4200,15 +6174,15 @@ Density is only used when converting to transport units of mass fraction.
 @param id               The instance @a id returned from @ref RM_Create.
 @param tf               @a True indicates that the solution density and volume as
 calculated by PHREEQC will be used to calculate concentrations.
-@a False indicates that the solution density set by @ref RM_SetDensity and the volume determined by the
-product of  @ref RM_SetSaturation, @ref RM_SetPorosity, and @ref RM_SetRepresentativeVolume,
+@a False indicates that the solution density set by @ref RM_SetDensityUser and the volume determined by the
+product of  @ref RM_SetSaturationUser, @ref RM_SetPorosity, and @ref RM_SetRepresentativeVolume,
 will be used to calculate concentrations retrieved by @ref RM_GetConcentrations.
 @see                    
 @ref RM_GetConcentrations, 
-@ref RM_SetDensity,
+@ref RM_SetDensityUser,
 @ref RM_SetPorosity, 
 @ref RM_SetRepresentativeVolume, 
-@ref RM_SetSaturation.
+@ref RM_SetSaturationUser.
 @par C Example:
 @htmlonly
 <CODE>
