@@ -12,6 +12,8 @@ Clone or download this repository and **run `startup.m` first in every MATLAB se
 
 `PhreeqcMatlab` pins **PhreeqcRM / IPhreeqc 3.8.6** (`3.8.6-17100`). For each library, `startup.m` resolves it in this order: (1) a correctly versioned file already in `libs/`; (2) a local install — the `PHREEQCMATLAB_LIB_PATH` environment variable, else `/usr/local/lib`; (3) download from the [`simulkade/PhreeqcRM`](https://github.com/simulkade/PhreeqcRM) releases. The binaries are not committed.
 
+Downloaded libraries are checked against the release `SHA256SUMS.txt`. A corrupt or tampered download is discarded rather than installed, and `startup.m` retries on the next run. Libraries taken from a local install are not checksummed, since a source build legitimately differs from the released binary.
+
 - **Linux — launch via [`./run_matlab.sh`](run_matlab.sh).** The 3.8.6 binaries are built with a modern GCC and need a newer `libstdc++` (`GLIBCXX_3.4.32`) than MATLAB bundles. `run_matlab.sh` sets `LD_PRELOAD` to the system `libstdc++.so.6` (and `PHREEQCMATLAB_LIB_PATH`) so `loadlibrary` succeeds — e.g. `./run_matlab.sh -batch "runtests('tests')"`. Without it you'll see a `GLIBCXX_... not found` error.
 - **Windows** requires the [Visual C++ Redistributable for VC 2019](https://www.microsoft.com/en-us/download/details.aspx?id=48145) and a configured [C/C++ compiler](https://www.mathworks.com/matlabcentral/fileexchange/52848-matlab-support-for-mingw-w64-c-c-compiler) (MinGW-w64).
 - **macOS** is unsupported (no prebuilt binary); compile PhreeqcRM yourself and point `PHREEQCMATLAB_LIB_PATH` at the resulting `.dylib`.

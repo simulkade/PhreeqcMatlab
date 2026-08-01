@@ -198,6 +198,34 @@ classdef PhreeqcMatlabTest < matlab.unittest.TestCase
             tc.verifyEqual(map_value(m, 'missing', 0), 0);
         end
 
+        function sha256FileDigest(tc)
+            % sha256_file backs startup.m's verification of downloaded
+            % libraries against the release SHA256SUMS.txt, so a wrong digest
+            % would either reject good binaries or accept bad ones.
+            % Golden values are the published SHA-256 test vectors.
+            tmp = [tempname '.bin'];
+            closer = onCleanup(@() delete(tmp)); %#ok<NASGU>
+
+            % Written as raw bytes so the digest is not platform-dependent
+            % (no newline translation).
+            fid = fopen(tmp, 'w');
+            fwrite(fid, uint8('abc'), 'uint8');
+            fclose(fid);
+            tc.verifyEqual(sha256_file(tmp), ...
+                'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad', ...
+                'SHA-256 of "abc" should match the published test vector');
+
+            % Empty input: the other standard vector.
+            fid = fopen(tmp, 'w'); fclose(fid);
+            tc.verifyEqual(sha256_file(tmp), ...
+                'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', ...
+                'SHA-256 of the empty file should match the published test vector');
+
+            % A missing file yields '' ("cannot verify") rather than throwing,
+            % which is what lets startup.m degrade gracefully.
+            tc.verifyEmpty(sha256_file([tempname '.missing']));
+        end
+
         function solutionRunResults(tc)
             % Solution.run() -> SolutionResult via results_from_phreeqcrm
             % (header-keyed parsing). Verifies the PhreeqcRM object path and

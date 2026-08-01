@@ -3,6 +3,25 @@
 All notable changes to PhreeqcMatlab are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased] — SHA-256 verification of downloaded libraries
+
+### Added
+- `startup.m` now verifies every library it *downloads* against the release `SHA256SUMS.txt`
+  (published from 3.8.6 onward). The checksum file is fetched once per release URL and cached, so
+  the 2 (Linux) or 4 (Windows) downloads share a single request.
+- `src/Tools/sha256_file.m` — SHA-256 digest of a file via the JVM's `MessageDigest`, falling back
+  to `sha256sum`/`certutil` for `-nojvm` sessions. Returns `''` when it cannot hash, so callers can
+  treat "cannot verify" as a degraded case rather than a failure. Covered by the new
+  `sha256FileDigest` test against the published SHA-256 test vectors.
+
+### Changed
+- A checksum mismatch deletes the downloaded file and skips the version stamp, so a corrupt or
+  tampered binary is never left where `loadlibrary` could find it and the next `startup` retries.
+  Cases where verification is impossible — a release with no `SHA256SUMS.txt` (3.7, 3.7.1) or no
+  digest backend — warn and install, keeping older releases usable.
+- Libraries picked up from a local install are deliberately **not** verified: a source build is a
+  different binary from the released one (different toolchain, unstripped) and would never match.
+
 ## [Unreleased] — Surface.equilibrate_with refactor
 
 ### Fixed

@@ -184,11 +184,22 @@ fprintf('Downloading %s from %s ...\n', file_name, url);
 try
     options = weboptions('Timeout', timeout);
     websave(dest, url, options);
-    write_stamp(stamp, file_name, version);
-    fprintf('%s downloaded successfully.\n', file_name);
 catch
     warning('PhreeqcMatlab: could not download %s. Please download it manually from %s and copy it to the libs folder.', file_name, url);
+    return;
 end
+% Only downloads are checksum-verified. A locally compiled library is a
+% different binary from the released one (different toolchain, unstripped) and
+% would never match the published sums, so the local-install path above is
+% deliberately left unverified.
+if ~verify_download(dest, url, url_base, timeout)
+    if isfile(dest)
+        delete(dest); % never leave a suspect binary where loadlibrary can find it
+    end
+    return; % stamp not written, so the next startup retries
+end
+write_stamp(stamp, file_name, version);
+fprintf('%s downloaded successfully.\n', file_name);
 end
 
 % -------------------------------------------------------------------------
@@ -230,6 +241,79 @@ switch file_name
     case 'libiphreeqc.lib'
         url = [url_base '/IPhreeqc.lib'];
 end
+end
+
+% -------------------------------------------------------------------------
+function ok = verify_download(dest, url, url_base, timeout)
+%VERIFY_DOWNLOAD checks a freshly downloaded file against the release SHA256SUMS.txt.
+% Returns true when the file matches, and also when no reference checksum is
+% available at all -- releases before 3.8.6 publish no SHA256SUMS.txt, and an
+% offline or JVM-less session cannot verify either. Those cases warn and install
+% anyway; only a genuine mismatch (the corrupt/tampered case) returns false.
+ok = true;
+[~, name, ext] = fileparts(url);
+asset = [name ext];
+
+sums = get_release_sums(url_base, timeout);
+if isempty(sums) || ~isKey(sums, asset)
+    warning(['PhreeqcMatlab: no published SHA-256 for %s, so it was installed ' ...
+        'unverified. Releases before 3.8.6 do not ship SHA256SUMS.txt.'], asset);
+    return;
+end
+
+actual = sha256_file(dest);
+if isempty(actual)
+    warning(['PhreeqcMatlab: could not compute a SHA-256 for %s (no digest ' ...
+        'backend available), so it was installed unverified.'], asset);
+    return;
+end
+
+expected = sums(asset);
+ok = strcmpi(actual, expected);
+if ok
+    fprintf('%s checksum verified (SHA-256).\n', asset);
+else
+    warning(['PhreeqcMatlab: SHA-256 MISMATCH for %s -- the download is corrupt ' ...
+        'or has been tampered with.\n  expected: %s\n  actual:   %s\n' ...
+        'The file was discarded and nothing was installed. Re-run startup to retry, ' ...
+        'or download it manually from %s and check it against %s/SHA256SUMS.txt.'], ...
+        asset, expected, actual, url, url_base);
+end
+end
+
+% -------------------------------------------------------------------------
+function sums = get_release_sums(url_base, timeout)
+%GET_RELEASE_SUMS map of asset name -> expected SHA-256 for a release.
+% SHA256SUMS.txt is fetched once per release URL and cached for the rest of the
+% session, so the 2 (Linux) or 4 (Windows) library downloads share one request.
+% An empty map means the release publishes no checksums or the fetch failed.
+persistent cache
+if isempty(cache)
+    cache = containers.Map('KeyType', 'char', 'ValueType', 'any');
+end
+if isKey(cache, url_base)
+    sums = cache(url_base);
+    return;
+end
+
+sums = containers.Map('KeyType', 'char', 'ValueType', 'char');
+try
+    txt = webread([url_base '/SHA256SUMS.txt'], ...
+        weboptions('Timeout', timeout, 'ContentType', 'text'));
+catch
+    txt = ''; % no checksum file published, or offline
+end
+
+% Lines are "<64 hex>  <name>", where the name may carry a "./" or "*" prefix.
+lines = strsplit(char(txt), newline);
+for i = 1:numel(lines)
+    parts = strsplit(strtrim(lines{i}));
+    if numel(parts) >= 2 && numel(parts{1}) == 64
+        asset = regexprep(parts{end}, '^[\*\./]+', '');
+        sums(asset) = lower(parts{1});
+    end
+end
+cache(url_base) = sums;
 end
 
 % -------------------------------------------------------------------------
