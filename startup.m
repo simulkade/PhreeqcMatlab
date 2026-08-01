@@ -226,9 +226,9 @@ switch file_name
     case 'libphreeqcrm.lib'
         url = [url_base '/PhreeqcRM.lib'];
     case 'libiphreeqc.dll'
-        url = [url_base '/IPhreeqcd.dll'];
+        url = [url_base '/IPhreeqc.dll'];
     case 'libiphreeqc.lib'
-        url = [url_base '/IPhreeqcd.lib'];
+        url = [url_base '/IPhreeqc.lib'];
 end
 end
 
