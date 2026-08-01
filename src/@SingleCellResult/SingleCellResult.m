@@ -1,23 +1,31 @@
-classdef SingleCellResults
-    %SINGLECELLRESULTS Summary of this class goes here
-    %   Detailed explanation goes here
-    
+classdef SingleCellResult
+    % SingleCellResult holds the parsed output of running a @SingleCell in
+    % PhreeqcRM. It always carries the post-reaction aqueous SolutionResult,
+    % and — when the cell contained them — the per-phase PhaseResult and the
+    % SurfaceResult.
+    %
+    % NOTE: the classdef name must match the @SingleCellResult folder, or
+    % MATLAB cannot load the class.
+    %
+    % See also SingleCell/run, SolutionResult, PhaseResult, SurfaceResult.
+
     properties
-        Property1
+        name(1,1) string
+        temperature(1,1) double
+        pressure(1,1) double
+        solution                % SolutionResult (aqueous phase after reaction)
+        phase                   % PhaseResult, or [] if the cell had no phases
+        surface                 % SurfaceResult, or [] if the cell had no surface
     end
-    
+
     methods
-        function obj = SingleCellResults(inputArg1,inputArg2)
-            %SINGLECELLRESULTS Construct an instance of this class
-            %   Detailed explanation goes here
-            obj.Property1 = inputArg1 + inputArg2;
-        end
-        
-        function outputArg = method1(obj,inputArg)
-            %METHOD1 Summary of this method goes here
-            %   Detailed explanation goes here
-            outputArg = obj.Property1 + inputArg;
+        function obj = SingleCellResult(cell)
+            % creates an (empty) result object, optionally seeded from a SingleCell
+            if nargin > 0
+                obj.name = cell.name;
+                obj.temperature = cell.temperature;
+                obj.pressure = cell.pressure;
+            end
         end
     end
 end
-

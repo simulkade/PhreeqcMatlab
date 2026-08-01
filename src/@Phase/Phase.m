@@ -1,6 +1,6 @@
-classdef Phase
+classdef Phase < Reactant
     %{
-    PHASE 
+    PHASE
     define a new phase (e.g. a mineral) that is in equilibrium with a
     solution defined by @solution class
     for gas phases, use gas class
@@ -15,8 +15,7 @@ classdef Phase
         precipitate_only(1,:) logical
     %}
     properties
-        name(1,1) string
-        number(1,1) double {mustBeNonnegative, mustBeInteger}
+        % name, number inherited from Reactant
         phase_names(1,:) string
         alternative_formula(1,:) string
         moles(1,:) double
@@ -41,39 +40,37 @@ classdef Phase
             obj.precipitate_only = [];
         end
         
+        function slot = ic_slot(~)
+            %IC_SLOT a Phase occupies the EQUILIBRIUM_PHASES slot.
+            slot = InitialConditions.EQUILIBRIUM_PHASES;
+        end
+
         function phase_string = phreeqc_string(obj)
             % phase_string = phreeqc_phase(obj) 
             % converts a phase object to a phreeqc string
-            n_phase = length(obj.phase_names);
-            if n_phase==0
-                phase string = "\n";
-            else
-                phase_string = strjoin(["EQUILIBRIUM_PHASE " num2str(obj.number) " " obj.name "\n"]);
-                for i = 1:n_phase
-                    phase_string = strjoin([phase_string obj.phase_names(i)]); % phase name
-                    phase_string = strjoin([phase_string "  " num2str(obj.saturation_indices(i))]); % saturation index
-                    if ~isempty(obj.alternative_formula)
-                        if  obj.alternative_formula(i)~=""
-                            phase_string = strjoin([phase_string "  " obj.alternative_formula(i)]);
-                        end
-                    end
-                    phase_string = strjoin([phase_string "  " num2str(obj.moles(i))]);
-                    if ~isempty(obj.precipitate_only)
-                        if obj.precipitate_only(i)
-                            phase_string = strjoin([phase_string "  precipitate_only"]);
-                        elseif ~isempty(obj.dissolve_only)
-                            if obj.dissolve_only(i)
-                                phase_string = strjoin([phase_string "  dissolve_only"]);
-                            end
-                        end
-                    end
-                    phase_string = strjoin([phase_string "\n"]);
-                    if ~isempty(obj.force_equality) && obj.force_equality(i)
-                        phase_string = strjoin([phase_string "-force_equality \n"]);
-                    end
+            if isempty(obj.phase_names)
+                phase_string = '';
+                return;
+            end
+            b = PhreeqcBlock("EQUILIBRIUM_PHASES", obj.number, obj.name);
+            for i = 1:numel(obj.phase_names)
+                % line format: phase  SI  [alt_formula]  moles  [modifier]
+                alt = "";
+                if ~isempty(obj.alternative_formula) && obj.alternative_formula(i) ~= ""
+                    alt = obj.alternative_formula(i);
+                end
+                modifier = "";
+                if ~isempty(obj.precipitate_only) && obj.precipitate_only(i)
+                    modifier = "precipitate_only";
+                elseif ~isempty(obj.dissolve_only) && obj.dissolve_only(i)
+                    modifier = "dissolve_only";
+                end
+                b = b.kv(obj.phase_names(i), obj.saturation_indices(i), alt, obj.moles(i), modifier);
+                if ~isempty(obj.force_equality) && obj.force_equality(i)
+                    b = b.line("-force_equality");
                 end
             end
-            phase_string = sprintf(char(phase_string));
+            phase_string = b.char();
         end
         
         function so_obj = selected_output_object(obj)
@@ -112,9 +109,9 @@ classdef Phase
             so_obj.name = "Phase";
             so_obj.number = obj.number;
             so_obj.content(1) = "-high_precision    true";
-            so_obj.content(1) = "-reset    false";
-            so_obj.content(1) = strjoin(["-equilibrium_phases   " obj.phase_names]);
-            so_obj.content(1) = strjoin(["-saturation_indices   " obj.phase_names]);
+            so_obj.content(2) = "-reset    false";
+            so_obj.content(3) = strjoin(["-equilibrium_phases   " obj.phase_names]);
+            so_obj.content(4) = strjoin(["-saturation_indices   " obj.phase_names]);
         end
 
         function so_string = selected_output_string(obj)
@@ -188,24 +185,57 @@ classdef Phase
             try
                 out_string = iph.RunPhreeqcString(iph_string, database_file(data_file));
                 iph.DestroyIPhreeqc();
-            catch
+            catch ME
                 out_string = 0;
-                disp('An error occured running Phreeqc. Please check the solution and phase definition');
+                warning('PhreeqcMatlab:runFailed', ...
+                    'Error running Phreeqc (check the solution and phase definition): %s', ME.message);
                 iph.DestroyIPhreeqc();
             end
         end
 
-        function equilibrate_with(obj, solution, varargin)
-            % equilibrates the phase with a solution
-            % TBD
-            if nargin>1
-                data_file = varargin{end};
+        function [PR, solution_result] = equilibrate_with(obj, solution, varargin)
+            % [phase_result, solution_result] = equilibrate_with(obj, solution, [database])
+            % equilibrates this equilibrium-phase assemblage with a solution in
+            % PhreeqcRM and returns a PhaseResult (final moles, moles
+            % transferred and saturation index per phase) plus the aqueous
+            % SolutionResult. Uses the shared Reactant.run_with_solution helper.
+            if ~isempty(varargin)
+                data_file = char(varargin{end});
             else
                 data_file = 'phreeqc.dat';
             end
-            phreeqc_rm = PhreeqcRM(1, 1); % one cell, one thread
-            phreeqc_rm = phreeqc_rm.RM_Create(); % create a PhreeqcRM instance
-            iph_string = phreeqc_string(obj);
+            % One SELECTED_OUTPUT (numbered after the solution) carrying both
+            % the aqueous properties and this assemblage's moles/SI columns, so
+            % the two blocks never collide on the same number.
+            so_obj = solution.selected_output_object();
+            so_obj.number = solution.number;
+            so_obj.content(end+1) = strjoin(["-equilibrium_phases" obj.phase_names]);
+            so_obj.content(end+1) = strjoin(["-saturation_indices" obj.phase_names]);
+            so_string = so_obj.phreeqc_string();
+
+            phreeqc_rm = obj.run_with_solution(solution, so_string, data_file);
+            try
+                t_out = phreeqc_rm.GetSelectedOutputTable(solution.number);
+                PR = PhaseResult(obj);
+                PR.phase_names = obj.phase_names;
+                n = numel(obj.phase_names);
+                PR.saturation_indices = nan(1, n);
+                PR.moles = nan(1, n);
+                PR.moles_transferred = nan(1, n);
+                for i = 1:n
+                    ph = char(obj.phase_names(i));
+                    % PHREEQC SELECTED_OUTPUT header names: <phase> (moles),
+                    % d_<phase> (moles transferred), si_<phase> (saturation index).
+                    PR.moles(i)              = map_value(t_out, ph);
+                    PR.moles_transferred(i)  = map_value(t_out, ['d_' ph]);
+                    PR.saturation_indices(i) = map_value(t_out, ['si_' ph]);
+                end
+                solution_result = solution.results_from_phreeqcrm(phreeqc_rm);
+            catch ME
+                phreeqc_rm.RM_Destroy();
+                rethrow(ME);
+            end
+            phreeqc_rm.RM_Destroy();
         end
         
         function out_string = combine_phase_solution_string(obj, solution)
@@ -260,42 +290,23 @@ classdef Phase
          end
          
          function obj = read_json(phase_field)
-            % creates a phase object from an input JSON
+            % creates a phase object from a decoded JSON entry. Scalar/array
+            % fields are copied via assign_json_fields; Composition is expanded
+            % into phase_names/moles.
             obj = Phase();
-             
-            if isfield(phase_field, 'Name')
-                obj.name = phase_field.Name;
-            end
-
-            if isfield(phase_field, 'Number')
-                obj.number = phase_field.Number;
-            end
-
+            map = [ "Name",               "name"; ...
+                    "Number",             "number"; ...
+                    "AlternativeFormula", "alternative_formula"; ...
+                    "SaturationIndices",  "saturation_indices"; ...
+                    "ForceEquality",      "force_equality"; ...
+                    "DissolveOnly",       "dissolve_only"; ...
+                    "PrecipitateOnly",    "precipitate_only" ];
+            obj = assign_json_fields(obj, phase_field, map);
             if isfield(phase_field, 'Composition')
-                obj.components = fieldnames(phase_field.Composition); % get the list of phases
-                obj.moles = cellfun(@(x)getfield(phase_field.Composition, {1}, x), obj.components); % get the moles
+                comp_names = fieldnames(phase_field.Composition); % cell column of phase names
+                obj.phase_names = string(comp_names(:))';         % row string array
+                obj.moles = cellfun(@(x)getfield(phase_field.Composition, {1}, x), comp_names)'; % row of moles
             end
-            
-            if isfield(phase_field, 'AlternativeFormula')
-                obj.alternative_formula = phase_field.AlternativeFormula;
-            end
-            
-            if isfield(phase_field, 'SaturationIndices')
-                obj.saturation_indices = phase_field.SaturationIndices;
-            end
-            
-            if isfield(phase_field, 'ForceEquality')
-                obj.force_equality = phase_field.ForceEquality;
-            end
-            
-            if isfield(phase_field, 'DissolveOnly')
-                obj.dissolve_only = phase_field.DissolveOnly;
-            end
-            
-            if isfield(phase_field, 'PrecipitateOnly')
-                obj.precipitate_only = phase_field.PrecipitateOnly;
-            end
-            
          end
          
      end

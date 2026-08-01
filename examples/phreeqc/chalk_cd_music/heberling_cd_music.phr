@@ -1,0 +1,80 @@
+# CD-MUSIC surface-complexation model of calcite (chalk).
+# Heberling et al. (2011), J. Colloid Interface Sci. 354, 843-857 — a 3-plane
+# charge-distribution (CD-MUSIC) model with two sites, >Ca (Calc_ca_) and
+# >CO3 (Calc_carb_), including inner- and outer-sphere Na/Ca/Cl/carbonate
+# complexes. The calcite surface is equilibrated with a NaCl solution held at
+# calcite + CO2(g) equilibrium. Runs with phreeqc.dat.
+Solution 1
+temp 25
+units mol/L
+pH 7
+Na 0.1
+Cl 0.1
+
+equilibrium_phases
+Calcite 0 20
+CO2(g) -3.44
+
+SAVE SOLUTION 1
+
+SURFACE_MASTER_SPECIES
+Calc_ca_ Calc_ca_OH1.5
+Calc_carb_ Calc_carb_H0.5
+
+SURFACE_SPECIES
+Calc_ca_OH1.5 = Calc_ca_OH1.5
+-cd_music 0 0 0
+log_k 0.0
+Calc_carb_H0.5 = Calc_carb_H0.5
+-cd_music 0 0 0
+log_k 0.0
+
+#dummy reactions producing surface species with fractional charges
+Calc_ca_OH1.5 = Calc_ca_OH-0.5 + 0.5 H+
+-cd_music -0.5 0 0
+log_k 20
+Calc_carb_H0.5 = Calc_carb_-0.5 + 0.5 H+
+-cd_music -0.5 0 0
+log_k 20
+
+#inner sphere reactions
+Calc_ca_OH-0.5 + H+ = Calc_ca_OH2+0.5
+-cd_music 1 0 0
+log_K 0.501
+
+#outer sphere reactions
+Calc_ca_OH-0.5 + Na+ = Calc_ca_OHNa+0.5
+-cd_music 0 1 0
+log_K 0.56
+Calc_ca_OH-0.5 + Ca+2 = Calc_ca_OHCa+1.5
+-cd_music 0 2 0
+log_K 1.68
+Calc_ca_OH2+0.5 + Cl- = Calc_ca_OH2Cl-0.5
+-cd_music 0 -1 0
+log_K -0.05
+Calc_ca_OH2+0.5 + HCO3- = Calc_ca_OH3CO3-0.5
+-cd_music 0 -1 0
+log_K 0.04
+Calc_ca_OH2+0.5 + HCO3- = Calc_ca_OH2CO3-1.5 + H+
+-cd_music 0 -2 0
+log_K -7.07
+
+Calc_carb_-0.5 + Na+ = Calc_carb_Na+0.5
+-cd_music 0 1 0
+log_K 0.56
+Calc_carb_-0.5 + Ca+2 = Calc_carb_Ca+1.5
+-cd_music 0 2 0
+log_K 1.68
+
+SURFACE 1
+-sites_units density
+Calc_ca_OH1.5 4.95 1 1
+Calc_carb_H0.5 4.95 1 1
+-capacitance 0.45 999.99
+-equilibrate 1
+-cd_music
+SAVE SURFACE 1
+END
+USE SOLUTION 1
+USE SURFACE 1
+END

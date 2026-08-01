@@ -1,4 +1,4 @@
-classdef Solution
+classdef Solution < Reactant
     %SOLUTION Summary of this class goes here
     %    name(1,1) string
     %    number(1,1) double {mustBeNonnegative, mustBeInteger}
@@ -17,8 +17,7 @@ classdef Solution
     %    temperature {mustBeScalarOrEmpty}
     
     properties
-        name(1,1) string
-        number(1,1) double {mustBeNonnegative, mustBeInteger}
+        % name, number inherited from Reactant
         unit(1,1) string
         components(1,:) string
         concentrations(1,:) double
@@ -46,46 +45,46 @@ classdef Solution
             obj.pressure = 1.0;     % atmosphere
         end
                 
+        function slot = ic_slot(~)
+            %IC_SLOT a Solution occupies the SOLUTION initial-condition slot.
+            slot = InitialConditions.SOLUTION;
+        end
+
         function solution_string = phreeqc_string(obj)
-            % phreeqc_string returns a string of phreeqc format for the
-            % defined PhreeqcMatlab solution
-            % NOTE: at this stage, a phreeqc string can contain more
-            % details than the equivalent PhreeqcMatlab solution
-            % object
-            % Note: still not smart enough to filter out the nonspecified
-            % fields; requires some if then else.
-            n_comp = length(obj.components);
-            % solution_cell = cell(n_comp, 1);
-            % solution_cell{1} = ['SOLUTION ' obj.name];
-            solution_string = strjoin(["SOLUTION " num2str(obj.number) obj.name "\n"]);
-            solution_string = strjoin([solution_string 'units' obj.unit "\n"]);
-            solution_string = strjoin([solution_string 'pressure' num2str(obj.pressure) "\n"]);
-            solution_string = strjoin([solution_string 'temp' num2str(obj.temperature) "\n"]);
+            % phreeqc_string returns a Phreeqc SOLUTION block for this object.
+            % Unspecified fields (empty pH/pe/density/unit/alkalinity) are
+            % omitted rather than emitted as malformed lines. Built with the
+            % shared PhreeqcBlock builder (see PhreeqcBlock).
+            b = PhreeqcBlock("SOLUTION", obj.number, obj.name);
+            b = b.kv("units", obj.unit);
+            b = b.kv("pressure", obj.pressure);
+            b = b.kv("temp", obj.temperature);
             if obj.ph_charge_balance
-                solution_string = strjoin([solution_string 'pH' num2str(obj.pH) "  charge" "\n"]);
+                b = b.kv("pH", obj.pH, "charge");
             else
-                solution_string = strjoin([solution_string 'pH' num2str(obj.pH) "\n"]);
+                b = b.kv("pH", obj.pH);
             end
-            solution_string = strjoin([solution_string 'pe' num2str(obj.pe) "\n"]);
-            solution_string = strjoin([solution_string 'density' num2str(obj.density) "\n"]);
-            for i=1:n_comp
-                % pH charge balance has priority over component charge
-                % balance
+            b = b.kv("pe", obj.pe);
+            if ~isempty(obj.density) && obj.density > 0   % 0 = unset; omit
+                b = b.kv("density", obj.density);
+            end
+            for i = 1:numel(obj.components)
+                % pH charge balance has priority over component charge balance
                 if strcmpi(obj.charge_balance_component, obj.components(i)) && ~obj.ph_charge_balance
-                    solution_string = strjoin([solution_string obj.components(i) "  " num2str(obj.concentrations(i)) "  charge" "\n"]);
+                    b = b.kv(obj.components(i), obj.concentrations(i), "charge");
                 else
-                    solution_string = strjoin([solution_string obj.components(i) "  " num2str(obj.concentrations(i)) "\n"]);
+                    b = b.kv(obj.components(i), obj.concentrations(i));
                 end
             end
             if ~isempty(obj.alkalinity)
-                if obj.alkalinity_component~=""
-                    solution_string = strjoin([solution_string 'Alkalinity' num2str(obj.alkalinity) "  as  " obj.alkalinity_component "\n"]);
+                if obj.alkalinity_component ~= ""
+                    b = b.kv("Alkalinity", obj.alkalinity, "as", obj.alkalinity_component);
                 else
-                    solution_string = strjoin([solution_string 'Alkalinity' num2str(obj.alkalinity) "\n"]);
+                    b = b.kv("Alkalinity", obj.alkalinity);
                 end
             end
-            solution_string = strjoin([solution_string 'END' "\n"]);
-            solution_string = sprintf(char(solution_string));
+            b = b.flag("END");
+            solution_string = b.char();
         end
         
         function out_string = run_in_phreeqc(obj, varargin)
@@ -102,9 +101,10 @@ classdef Solution
             try
                 out_string = iph.RunPhreeqcString(iph_string, database_file(data_file));
                 iph.DestroyIPhreeqc();
-            catch
+            catch ME
                 out_string = 0;
-                disp('An error occured running Phreeqc. Please check the solution definition');
+                warning('PhreeqcMatlab:runFailed', ...
+                    'Error running Phreeqc (check the solution definition): %s', ME.message);
                 iph.DestroyIPhreeqc();
             end
         end
@@ -168,11 +168,10 @@ classdef Solution
         function SR = run(obj, varargin)
             % runs the function in a PhreeqcRM instance, and store the
             % results in a SolutionResult object
-            phreeqc_rm = PhreeqcRM(1, 1); % one cell, one thread
-            phreeqc_rm = phreeqc_rm.RM_Create(); % create a PhreeqcRM instance
+            phreeqc_rm = PhreeqcRM(1, 1); % one cell, one thread (constructor also calls RM_Create)
             iph_string = phreeqc_string(obj);
             % add a selected output block to the string before running
-            iph_string = [iph_string selected_output_string(obj)];
+            iph_string = combine_phreeqc_strings(iph_string, selected_output_string(obj));
             if nargin>1
                 data_file = varargin{end};
             else
@@ -185,27 +184,32 @@ classdef Solution
                 phreeqc_rm.RM_SetComponentH2O(true);
                 phreeqc_rm.RM_SetUnitsSolution(2);
                 phreeqc_rm.RM_SetSpeciesSaveOn(true);
-                ic1 = -1*ones(7, 1);
-                ic2 = -1*ones(7, 1);
-                f1 = ones(7, 1);
-                ic1(1) = obj.number;              % Solution 1
+                phreeqc_rm.RM_FindComponents();   % required before RunCells (allocates component arrays)
+                ic1 = -1*ones(InitialConditions.N_REACTANTS, 1);
+                ic2 = -1*ones(InitialConditions.N_REACTANTS, 1);
+                f1 = ones(InitialConditions.N_REACTANTS, 1);
+                ic1(InitialConditions.SOLUTION) = obj.number;
                 phreeqc_rm.RM_InitialPhreeqc2Module(ic1, ic2, f1);
                 phreeqc_rm.RM_RunCells();
 
                 SR = results_from_phreeqcrm(obj, phreeqc_rm);
                 
                 phreeqc_rm.RM_Destroy();
-            catch
+            catch ME
                 SR = 0;
-                disp('An error occured running PhreeqcRM. Please check the solution definition');
+                warning('PhreeqcMatlab:runFailed', ...
+                    'Error running PhreeqcRM (check the solution definition): %s', ME.message);
                 phreeqc_rm.RM_Destroy();
             end
         end
 
         function SR = results_from_phreeqcrm(obj, phreeqc_rm)
+            % Parse a run into a SolutionResult. SELECTED_OUTPUT columns are
+            % looked up by their PHREEQC header via map_value, so a
+            % renamed/absent column yields NaN for that field rather than
+            % throwing and discarding the entire result.
             t_out = phreeqc_rm.GetSelectedOutputTable(obj.number);
             SR = SolutionResult(obj);
-            SR.temperature = t_out('temp(C)');
             SR.components = string(phreeqc_rm.GetComponents())';
             SR.concentrations = phreeqc_rm.GetConcentrations();
             SR.species = string(phreeqc_rm.GetSpeciesNames())';
@@ -213,19 +217,20 @@ classdef Solution
             SR.species_molalities = 10.^phreeqc_rm.GetSpeciesLog10Molalities();
             SR.species_activity_coef = 10.^phreeqc_rm.GetSpeciesLog10Gammas();
             SR.species_charge = phreeqc_rm.GetSpeciesZ();
-            SR.alkalinity = t_out('Alk(eq/kgw)');
-            SR.pH = t_out('pH');
-            SR.pe = t_out('pe');
-            SR.ionic_strength = t_out('mu');
-            SR.water_mass = t_out('mass_H2O');
-            SR.charge_balance = t_out('charge(eq)');
             SR.density = phreeqc_rm.GetDensity();
-            SR.percent_error = t_out('pct_err');
-            SR.water_density = t_out('density_w');
-            SR.specific_conductance = t_out('conductance_r'); 
-            SR.relative_dielectric_constant = t_out('eps_r'); 
-            SR.osmotic_coefficient = t_out('osmotic'); 
-            SR.viscosity = t_out('viscosity');
+            SR.temperature                  = map_value(t_out, 'temp(C)');
+            SR.alkalinity                   = map_value(t_out, 'Alk(eq/kgw)');
+            SR.pH                           = map_value(t_out, 'pH');
+            SR.pe                           = map_value(t_out, 'pe');
+            SR.ionic_strength               = map_value(t_out, 'mu');
+            SR.water_mass                   = map_value(t_out, 'mass_H2O');
+            SR.charge_balance               = map_value(t_out, 'charge(eq)');
+            SR.percent_error                = map_value(t_out, 'pct_err');
+            SR.water_density                = map_value(t_out, 'density_w');
+            SR.specific_conductance         = map_value(t_out, 'conductance_r');
+            SR.relative_dielectric_constant = map_value(t_out, 'eps_r');
+            SR.osmotic_coefficient          = map_value(t_out, 'osmotic');
+            SR.viscosity                    = map_value(t_out, 'viscosity');
         end
     end
     
@@ -250,68 +255,82 @@ classdef Solution
         end
         
         function obj = read_json(sol)
-            % read_json creates a Solution object from a decoded JSON
-            % string
-            % input:
-            %       sol: decoded JSON string to a Matlab structure
+            % read_json creates a Solution object from a decoded JSON entry
+            % (a struct from jsondecode). Scalar fields are copied via the
+            % shared assign_json_fields helper; Composition is expanded into
+            % the components/concentrations arrays.
             obj = Solution();
-
-            if isfield(sol, 'Name')
-                obj.name = sol.Name;
-            end
-
-            if isfield(sol, 'Number')
-                obj.number = sol.Number;
-            end
-
-            if isfield(sol, 'Unit')
-                obj.unit = sol.Unit;
-            end
-
+            obj = assign_json_fields(obj, sol, Solution.json_field_map());
             if isfield(sol, 'Composition')
-                obj.components = fieldnames(sol.Composition); % get the list of components
-                obj.concentrations = cellfun(@(x)getfield(sol.Composition, {1}, x), obj.components); % get the compositions
+                comp = fieldnames(sol.Composition);
+                obj.components = string(comp(:))';                                  % row string
+                obj.concentrations = cellfun(@(x)getfield(sol.Composition,{1},x), comp)'; % row
             end
+        end
 
-            if isfield(sol, 'Charge')
-                obj.ph_charge_balance = sol.Charge;
+        function obj = from_json(name, varargin)
+            % from_json builds a Solution from a named entry in a JSON file.
+            %   Solution.from_json("NorthSeawater")                 % solutions.json
+            %   Solution.from_json("NorthSeawater", "solutions.json")
+            if nargin < 2; file = 'solutions.json'; else; file = varargin{1}; end
+            data = jsondecode(fileread(database_file(file)));
+            key = char(name);
+            if ~isfield(data, key)
+                error('PhreeqcMatlab:jsonEntryNotFound', ...
+                    'No entry "%s" in %s.', key, file);
             end
+            obj = Solution.read_json(data.(key));
+        end
 
-            if isfield(sol, 'ChargeComponent')
-                obj.charge_balance_component = sol.ChargeComponent;
-            end
+        function m = json_field_map()
+            % JSON field <-> Solution property mapping (scalar fields only;
+            % Composition is handled separately). Used by read_json/to_struct.
+            m = [ "Name",                "name"; ...
+                  "Number",              "number"; ...
+                  "Unit",                "unit"; ...
+                  "Charge",              "ph_charge_balance"; ...
+                  "ChargeComponent",     "charge_balance_component"; ...
+                  "Density",             "density"; ...
+                  "DensityCalculation",  "density_calculation"; ...
+                  "Alkalinity",          "alkalinity"; ...
+                  "AlkalinityComponent", "alkalinity_component"; ...
+                  "pe",                  "pe"; ...
+                  "Pressure",            "pressure"; ...
+                  "Temperature",         "temperature"; ...
+                  "pH",                  "pH" ];
+        end
+    end
 
-            if isfield(sol, 'Density')
-                obj.density = sol.Density;
+    methods
+        function s = to_struct(obj)
+            % to_struct produces a decoded-JSON-style struct for this solution
+            % (inverse of read_json). Empty/unset scalar fields are omitted.
+            % Composition is a containers.Map so component names such as
+            % "S(6)" survive (a plain struct cannot hold them as field names).
+            s = struct();
+            m = Solution.json_field_map();
+            for i = 1:size(m,1)
+                v = obj.(char(m(i,2)));
+                if ~(isempty(v) || ((isstring(v)||ischar(v)) && strlength(string(v))==0))
+                    s.(char(m(i,1))) = v;
+                end
             end
+            if ~isempty(obj.components)
+                s.Composition = containers.Map(cellstr(obj.components), ...
+                    num2cell(double(obj.concentrations)));
+            end
+        end
 
-            if isfield(sol, 'DensityCalculation')
-                obj.density_calculation = sol.DensityCalculation;
+        function write_json(obj, filename)
+            % write_json serializes this solution to a JSON file (round-trips
+            % with read_json for simple element names).
+            txt = jsonencode(obj.to_struct(), 'PrettyPrint', true);
+            fid = fopen(filename, 'w');
+            if fid == -1
+                error('PhreeqcMatlab:cannotWrite', 'Cannot open %s for writing.', filename);
             end
-
-            if isfield(sol, 'Alkalinity')
-                obj.alkalinity = sol.Alkalinity;
-            end
-
-            if isfield(sol, 'AlkalinityComponent')
-                obj.alkalinity_component = sol.AlkalinityComponent;
-            end
-
-            if isfield(sol, 'pe')
-                obj.pe = sol.pe;
-            end
-
-            if isfield(sol, 'Pressure')
-                obj.pressure = sol.Pressure;
-            end
-
-            if isfield(sol, 'Temperature')
-                obj.temperature = sol.Temperature;
-            end
-
-            if isfield(sol, 'pH')
-                obj.pH = sol.pH;
-            end
+            cleaner = onCleanup(@() fclose(fid));
+            fwrite(fid, txt, 'char');
         end
     end
 end

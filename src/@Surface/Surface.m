@@ -1,11 +1,10 @@
-classdef Surface
+classdef Surface < Reactant
     %SURFACE defines a surface species that can be equilibrated with a
     %solution object. Each surface object should contain only one surface
     %(with or without different types)
-    
+
     properties
-        name(1,1) string
-        number(1,1) double {mustBeNonnegative, mustBeInteger}
+        % name, number inherited from Reactant
         mass(1,1) double
         scm(1,1) string
         site_density(:,1) double
@@ -28,6 +27,19 @@ classdef Surface
             obj.name = "surface";
             obj.number = 1;
         end
+
+        function slot = ic_slot(~)
+            %IC_SLOT a Surface occupies the SURFACE slot.
+            slot = InitialConditions.SURFACE;
+        end
+
+        function str = input_string(obj)
+            %INPUT_STRING assemble the three surface blocks into one string,
+            % ordered SURFACE_MASTER_SPECIES, SURFACE_SPECIES, then SURFACE.
+            [surface_string, surface_master_string, surface_species_string] = obj.phreeqc_string();
+            str = char(strjoin([string(surface_master_string) ...
+                string(surface_species_string) string(surface_string)], newline));
+        end
         
         function [surface_string, surface_master_string, surface_species_string] = phreeqc_string(obj)
             % phreeqc_string returns a string in phreeqc format based on
@@ -40,50 +52,55 @@ classdef Surface
             % important is a substantial amount of the surface dissolves or
             % precipitate. For, e.g. flow in a chalk reservoir, it is not
             % significant
-            surface_master_string = "SURFACE_MASTER_SPECIES \n";
-            for i = 1:length(obj.surface_master_species)
-                surface_master_string = strjoin([surface_master_string obj.surface_master_species(i) "\n"]);
+            % SURFACE_MASTER_SPECIES block
+            bm = PhreeqcBlock("SURFACE_MASTER_SPECIES");
+            for i = 1:numel(obj.surface_master_species)
+                bm = bm.line(obj.surface_master_species(i));
             end
-            surface_master_string = sprintf(char(surface_master_string));
+            surface_master_string = bm.char();
 
-            surface_species_string = "SURFACE_SPECIES \n";
-            for i = 1:length(obj.surface_species_reactions)
-                surface_species_string = strjoin([surface_species_string obj.surface_species_reactions(i) "\n log_k" num2str(obj.log_k(i)) "\n delta_h" num2str(obj.dh(i)) "\n"]);
+            % SURFACE_SPECIES block
+            bs = PhreeqcBlock("SURFACE_SPECIES");
+            for i = 1:numel(obj.surface_species_reactions)
+                bs = bs.line(obj.surface_species_reactions(i));
+                bs = bs.kv("log_k", obj.log_k(i));
+                bs = bs.kv("delta_h", obj.dh(i));
                 if strcmpi(obj.scm, 'cd_music')
-                    surface_species_string = strjoin([surface_species_string "-cd_music" num2str(obj.cd_music_coeffs(i,:)) "\n"]);
+                    bs = bs.kv("-cd_music", obj.cd_music_coeffs(i,:));
                 end
             end
-            surface_species_string = sprintf(char(surface_species_string));
+            surface_species_string = bs.char();
 
-            surface_string = ["SURFACE" num2str(obj.number) obj.name "\n"];
+            % SURFACE block
+            bf = PhreeqcBlock("SURFACE", obj.number, obj.name);
             if strcmpi(obj.scm, 'cd_music')
-                surface_string = strjoin([surface_string "-cd_music \n"]);
+                bf = bf.flag("-cd_music");
             end
             if strcmpi(obj.sites_units, 'absolute')
-                surface_string = strjoin([surface_string "-sites_units absolute \n"]);
+                bf = bf.kv("-sites_units", "absolute");
             else
-                surface_string = strjoin([surface_string "-sites_units density \n"]);
+                bf = bf.kv("-sites_units", "density");
             end
             ms = strsplit(obj.surface_master_species(1), ' ');
-            surface_string = strjoin([surface_string ms(1) num2str(obj.site_density(1)) num2str(obj.specific_surface_area) num2str(obj.mass) "\n"]);
-            for i = 2:length(obj.surface_master_species)
+            bf = bf.kv(ms(1), obj.site_density(1), obj.specific_surface_area, obj.mass);
+            for i = 2:numel(obj.surface_master_species)
                 ms = strsplit(obj.surface_master_species(i), ' ');
-                surface_string = strjoin([surface_string ms(1) num2str(obj.site_density(i)) "\n"]);
+                bf = bf.kv(ms(1), obj.site_density(i));
             end
             if strcmpi(obj.scm, 'cd_music')
-                surface_string = strjoin([surface_string "-capacitances " num2str(obj.capacitances') "\n"]);
+                bf = bf.kv("-capacitances", obj.capacitances');
             end
             if strcmpi(obj.edl_model, 'diffuse_layer')
-                surface_string = strjoin([surface_string "-diffuse_layer " num2str(obj.edl_thickness) "\n"]);
+                bf = bf.kvopt("-diffuse_layer", obj.edl_thickness);
             elseif strcmpi(obj.edl_model, 'Donnan') || strcmpi(obj.edl_model, 'Donan')
-                surface_string = strjoin([surface_string "-Donnan " num2str(obj.edl_thickness) "\n"]);
+                bf = bf.kvopt("-Donnan", obj.edl_thickness);
             elseif strcmpi(obj.edl_model, 'no_edl')
-                surface_string = strjoin([surface_string "-no_edl \n"]);
+                bf = bf.flag("-no_edl");
             end
             if obj.only_counter_ions
-                surface_string = strjoin([surface_string "-only_counter_ions true \n"]);
+                bf = bf.kv("-only_counter_ions", "true");
             end
-            surface_string = sprintf(char(surface_string));
+            surface_string = bf.char();
         end
 
         function [sol_so_obj, surf_so_obj, dl_so_obj] = selected_output_object(obj, solution, varargin)
@@ -178,9 +195,15 @@ classdef Surface
             surf_string = surf_so_obj.phreeqc_string();
             dl_string = dl_so_obj.phreeqc_string();
 
-            all_string = sprintf([sol_so_obj.phreeqc_string_without_end ...
-                surf_so_obj.phreeqc_string_without_end ...
-                dl_so_obj.phreeqc_string_without_end '\nEND\n']);
+            % Join the three SELECTED_OUTPUT/USER_PUNCH blocks with newlines and
+            % one terminating END. A bare concatenation would glue one block's
+            % last USER_PUNCH line onto the next block's SELECTED_OUTPUT header,
+            % and PHREEQC would read the following block's content as USER_PUNCH.
+            all_string = char(strjoin([ ...
+                string(sol_so_obj.phreeqc_string_without_end); ...
+                string(surf_so_obj.phreeqc_string_without_end); ...
+                string(dl_so_obj.phreeqc_string_without_end); ...
+                "END"], newline));
         end
     
         function out_string = equilibrate_in_phreeqc(obj, solution, varargin)
@@ -203,9 +226,10 @@ classdef Surface
             try
                 out_string = iph.RunPhreeqcString(iph_string, database_file(data_file));
                 iph.DestroyIPhreeqc();
-            catch
+            catch ME
                 out_string = 0;
-                disp('An error occured running Phreeqc. Please check the solution and surface definition');
+                warning('PhreeqcMatlab:runFailed', ...
+                    'Error running Phreeqc (check the solution and surface definition): %s', ME.message);
                 iph.DestroyIPhreeqc();
             end
         end
@@ -235,57 +259,73 @@ classdef Surface
             phreeqc_rm.RM_SetComponentH2O(true);
             phreeqc_rm.RM_SetUnitsSolution(2);
             phreeqc_rm.RM_SetSpeciesSaveOn(1);
-            ic1 = -1*ones(7, 1);
-            ic2 = -1*ones(7, 1);
-            % 1 solution, 2 eq phase, 3 exchange, 4 surface, 5 gas, 6 solid solution, 7 kinetic
-            f1 = ones(7, 1);
-            ic1(1) = solution.number;              % Solution seawater
-            ic1(4) = obj.number;         % Surface calcite
+            ic1 = -1*ones(InitialConditions.N_REACTANTS, 1);
+            ic2 = -1*ones(InitialConditions.N_REACTANTS, 1);
+            f1 = ones(InitialConditions.N_REACTANTS, 1);
+            ic1(InitialConditions.SOLUTION) = solution.number;
+            ic1(InitialConditions.SURFACE)  = obj.number;
             phreeqc_rm.RM_InitialPhreeqc2Module(ic1, ic2, f1);
             phreeqc_rm.RM_RunCells();
-%             t_out_solution = phreeqc_rm.GetSelectedOutputTable(obj.number);
-            t_out_surface = phreeqc_rm.GetSelectedOutputTable(obj.number+1);
+            % Read the surface selected output as an ORDERED headings+values
+            % pair rather than the containers.Map from GetSelectedOutputTable:
+            % that Map sorts its keys alphabetically, which is what made the old
+            % positional slicing fragile. In punch order the columns are
+            % -molalities (m_<species>), then -activities (la_<species>), both in
+            % surface-species order, then the USER_PUNCH surface-element columns.
+            % The m_/la_ headers can be width-truncated, so groups are selected
+            % by their "m_"/"la_" prefix, not by matching each species header.
+            surf_headings = string(phreeqc_rm.GetSelectedOutputHeadings(obj.number+1));
+            surf_headings = surf_headings(:)';
+            surf_values = phreeqc_rm.GetSelectedOutput(obj.number+1);
+            surf_values = surf_values(:)';
             t_out_dl = phreeqc_rm.GetSelectedOutputTable(obj.number+2);
-%             v_out= phreeqc_rm.GetSelectedOutput(obj.number);
-%             h_out = phreeqc_rm.GetSelectedOutputHeadings(obj.number);
-%             v_out= phreeqc_rm.GetSelectedOutput(obj.number);
-%             h_out = phreeqc_rm.GetSelectedOutputHeadings(obj.number);
-%             v_out_dl = phreeqc_rm.GetSelectedOutput(obj.number+2);
-%             h_out_dl = phreeqc_rm.GetSelectedOutputHeadings(obj.number+2);
-            
-            % prepare the output for the surface (as a SurfaceResults
-            % class)
+
+            % prepare the output for the surface (as a SurfaceResult class)
             surface_result = SurfaceResult(obj);
             surface_result.surface_species = string(phreeqc_rm.GetSurfaceSpeciesNames())';
-            n_surf_species = length(surface_result.surface_species);
-            h = t_out_surface.keys;
-            surf_elements = h(1:end-2*n_surf_species);
-            surface_result.surface_elements = string(surf_elements);
-            surf_composition = cell2mat(t_out_surface.values); % surface species composition
-            surface_result.surface_species_molalities = surf_composition(end-n_surf_species+1:end);
-            surface_result.surface_species_mole_fraction = surface_result.surface_species_molalities/sum(surface_result.surface_species_molalities);
-            surface_result.surface_species_log_activity = surf_composition(end-2*n_surf_species+1:end-n_surf_species);
 
-            n_elements = length(surf_elements);
-            dl_moles = zeros(1,n_elements);
-            for i = 1:n_elements
-                dl_moles(i) = t_out_dl(surf_elements{i});
+            is_mol  = startsWith(surf_headings, "m_");
+            is_act  = startsWith(surf_headings, "la_");
+            is_elem = ~(is_mol | is_act);
+            molalities = surf_values(is_mol);   % one per surface species, in species order
+            activities = surf_values(is_act);
+            surface_result.surface_species_molalities   = molalities;
+            surface_result.surface_species_log_activity = activities(:);
+            total_mol = sum(molalities);
+            if total_mol > 0
+                surface_result.surface_species_mole_fraction = molalities / total_mol;
+            else
+                surface_result.surface_species_mole_fraction = zeros(size(molalities));
             end
-            surface_result.elements_edl = string(surf_elements);
+
+            % Surface-bound element amounts (the SURF() USER_PUNCH columns).
+            surf_elements = surf_headings(is_elem);
+            surface_result.surface_elements = surf_elements;
+            surface_result.surface_elements_moles = surf_values(is_elem);
+
+            % Double-layer element amounts, looked up by element name (robust to
+            % the containers.Map key ordering).
+            dl_moles = zeros(1, numel(surf_elements));
+            for i = 1:numel(surf_elements)
+                dl_moles(i) = map_value(t_out_dl, char(surf_elements(i)), 0);
+            end
+            surface_result.elements_edl = surf_elements;
             surface_result.element_moles_edl = dl_moles;
             % TODO: add surface species to the results
             % needs basid function EDL_SPECIES and more information about
             % the double layer thickness and surface area of the solid
-            surface_result.charge_plane_0 = t_out_dl('Charge');
-            surface_result.charge_plane_1 = t_out_dl('Charge1');
-            surface_result.charge_plane_2 = t_out_dl('Charge2');
-            surface_result.charge_density_plane_0 = t_out_dl('sigma');
-            surface_result.charge_density_plane_1 = t_out_dl('sigma1');
-            surface_result.charge_density_plane_2 = t_out_dl('sigma2');
-            surface_result.potential_plane_0 = t_out_dl('psi');
-            surface_result.potential_plane_1 = t_out_dl('psi1');
-            surface_result.potential_plane_2 = t_out_dl('psi2');
-            surface_result.water_mass_dl = t_out_dl('water');
+            % EDL charges/potentials looked up by header (NaN if the chosen EDL
+            % model did not emit that plane) so missing columns don't crash.
+            surface_result.charge_plane_0 = map_value(t_out_dl, 'Charge');
+            surface_result.charge_plane_1 = map_value(t_out_dl, 'Charge1');
+            surface_result.charge_plane_2 = map_value(t_out_dl, 'Charge2');
+            surface_result.charge_density_plane_0 = map_value(t_out_dl, 'sigma');
+            surface_result.charge_density_plane_1 = map_value(t_out_dl, 'sigma1');
+            surface_result.charge_density_plane_2 = map_value(t_out_dl, 'sigma2');
+            surface_result.potential_plane_0 = map_value(t_out_dl, 'psi');
+            surface_result.potential_plane_1 = map_value(t_out_dl, 'psi1');
+            surface_result.potential_plane_2 = map_value(t_out_dl, 'psi2');
+            surface_result.water_mass_dl = map_value(t_out_dl, 'water');
 
             % Get solution results from phreeqcrm
             solution_result = solution.results_from_phreeqcrm(phreeqc_rm);
@@ -293,11 +333,22 @@ classdef Surface
         end
 
         function out_string = combine_surface_solution_string(obj, solution)
-            % combines the phreeqc string of a solution and a surface to be equilibrated with each other
+            % Combine the solution and surface into one Phreeqc input, ordered
+            % SURFACE_MASTER_SPECIES, SURFACE_SPECIES, SOLUTION, SURFACE. The
+            % SURFACE block is equilibrated with the solution (-equilibrate N)
+            % so its initial composition is defined. Blocks are joined with
+            % newlines (a bare strjoin would glue keywords onto one line and
+            % PHREEQC would misparse the SURFACE_SPECIES block).
             sol_string = solution.phreeqc_string();
             [surf_string, surf_master_string, surf_sp_string] = obj.phreeqc_string();
-            out_string = strjoin([surf_master_string, surf_sp_string, sol_string, surf_string, "-equilibrate ", num2str(solution.number), "\nEND\n"]);
-            out_string = sprintf(char(out_string));
+            surf_block = string(surf_string) + newline + ...
+                "    -equilibrate " + PhreeqcBlock.fmt(solution.number);
+            parts = [ string(surf_master_string); ...
+                      string(surf_sp_string); ...
+                      string(sol_string); ...
+                      surf_block; ...
+                      "END" ];
+            out_string = char(strjoin(parts, newline));
         end
     end
 
@@ -366,25 +417,18 @@ classdef Surface
             %       sol: decoded JSON string to a Matlab structure
             obj = Surface();
 
-            if isfield(surf_struct, 'Name')
-                obj.name = surf_struct.Name;
-            end
-
-            if isfield(surf_struct, 'Number')
-                obj.number = surf_struct.Number;
-            end
-
-            if isfield(surf_struct, 'Mass')
-                obj.mass = surf_struct.Mass;
-            end
-
-            if isfield(surf_struct, 'SCM')
-                obj.scm = surf_struct.SCM;
-            end
-
-            if isfield(surf_struct, 'SpecificArea')
-                obj.specific_surface_area = surf_struct.SpecificArea;
-            end
+            % Scalar 1:1 fields (SCM is set here so the Reactions block below
+            % can test it for cd_music). MasterSpecies/Reactions are expanded
+            % separately.
+            obj = assign_json_fields(obj, surf_struct, [ ...
+                "Name",         "name"; ...
+                "Number",       "number"; ...
+                "Mass",         "mass"; ...
+                "SCM",          "scm"; ...
+                "SpecificArea", "specific_surface_area"; ...
+                "SitesUnits",   "sites_units"; ...
+                "EDL",          "edl_model"; ...
+                "Capacitances", "capacitances" ]);
 
             if isfield(surf_struct, 'MasterSpecies')
                 f_names = fieldnames(surf_struct.MasterSpecies); % get the list of components
@@ -429,14 +473,6 @@ classdef Surface
                 obj.cd_music_coeffs = cdm;
             end
 
-            if isfield(surf_struct, 'SitesUnits')
-                obj.sites_units = surf_struct.SitesUnits;
-            end
-
-            if isfield(surf_struct, 'EDL')
-                obj.edl_model = surf_struct.EDL;
-            end
-
             if isfield(surf_struct, 'EDL_thickness')
                 obj.edl_thickness = surf_struct.EDL_thickness;
             else
@@ -448,10 +484,7 @@ classdef Surface
             else
                 obj.only_counter_ions = false;
             end
-
-            if isfield(surf_struct, 'Capacitances')
-                obj.capacitances = surf_struct.Capacitances;
-            end
+            % Capacitances, if present, are set by the assign_json_fields call above.
         end
     end
 end

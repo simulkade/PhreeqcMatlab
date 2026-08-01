@@ -28,52 +28,19 @@ ncomps = phreeqc_rm.RM_FindComponents();
 % I'm assuming that if a keyword exist in the input file, nxyz block of
 % that keyword is defined in the input file. Later, I will think of a
 % better method (probably a matlab expression in the transport input file)
-ic1 = -1*ones(nxyz, 7);
-ic2 = -1*ones(nxyz, 7);
-f1 = ones(nxyz, 7);
-
 C = ReadPhreeqcFile(input_file); % read and clean the input file
 
 if any(contains(C, 'SELECTED_OUTPUT')) % Selected output
     status = phreeqc_rm.RM_SetSelectedOutputOn(true);
 end
 
-if ~any(contains(C, 'SOLUTION'))
+% Assume one block of each present reactant per cell (block i -> cell i).
+% See InitialConditions for the reactant slot mapping.
+present = InitialConditions.detect(C);
+if ~present(InitialConditions.SOLUTION)
     error('PhreeqcMatlab: SOLUTION must be defined in the input file.');
-else
-    ic1(:,1) = 1:nxyz;              % Solution 1-n
 end
-
-% in phreeqc: EQUILIBRIUM_PHASES is the keyword for the data block. Optionally, EQUILIBRIUM , EQUILIBRIA , PURE_PHASES , PURE .
-if any(contains(C, 'EQUILIBRIUM_PHASES')) ||  any(contains(C, 'EQUILIBRIUM')) || any(contains(C, ' EQUILIBRIA')) || any(contains(C, ' PURE_PHASES')) || any(contains(C, ' PURE'))
-    ic1(:,2) = 1:nxyz;      % Equilibrium phases
-end
-
-% Exchange species
-if any(contains(C, 'EXCHANGE'))
-    ic1(:,3) = 1:nxyz;     % Exchange 1
-end
-
-% Surface species
-
-if any(contains(C, 'SURFACE')) 
-    ic1(:,4) = 1:nxyz; % Surface 1
-end
-
-% Gas phase
-if any(contains(C, 'GAS_PHASE')) % Surface 1
-    ic1(:,5) = 1:nxyz;    % Gas phase 1
-end
-
-% Solid solution
-if any(contains(C, 'SOLID_SOLUTION')) % Surface 1
-    ic1(:,6) = 1:nxyz;    % Solid solutions 1
-end
-
-% Kinetics
-if any(contains(C, 'KINETICS')) % Surface 1
-    ic1(:,7) = 1:nxyz;    % Kinetics 1
-end
+[ic1, ic2, f1] = InitialConditions.vectors(present, nxyz);
 
 status = phreeqc_rm.RM_InitialPhreeqc2Module(ic1, ic2, f1);
 

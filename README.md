@@ -7,7 +7,30 @@
 `PhreeqcMatlab` is a wrapper for the [PhreeqcRM](https://www.usgs.gov/software/phreeqc-version-3) [C interface](https://wwwbrr.cr.usgs.gov/projects/GWC_coupled/phreeqcrm/_r_m__interface___c_8h.html) and [IPhreeqc](https://wwwbrr.cr.usgs.gov/projects/GWC_coupled/iphreeqc/IPhreeqc_8h.html). Most of the functions are wrapped, with the exception of MPI function (that I neither use nor know how to wrap). In general, the C++ interface of PhreeqcRM has more functionality and is easier to call. Therefore, I have implemented several classes and functions to make the usage of this package more convenient, similar to its c++ interface and better. All the original PhreeqcRM functions start with `RM_`. The additional utility functions that I have added do not have this extra `RM_`.
 
 # Installation
-`PhreeqcMatlab` automatically downloads the latest compiled phreeqcRM `.dll` on Windows and `.so` on Linux machines, from [this](https://github.com/simulkade/PhreeqcRM) repository. I don't have access to macOS; hence, no library there and you'll have to compile PhreeqcRM yourself for mac. On Windows, you will need to have [Visual C++ Redistributable for VC 2019](https://www.microsoft.com/en-us/download/details.aspx?id=48145) installed. All you need to do is to download or clone this repository and run the `startup.m` file. Before running the example, make sure that [C/C++ compiler](https://www.mathworks.com/matlabcentral/fileexchange/52848-matlab-support-for-mingw-w64-c-c-compiler) is already installed in your Matlab. Please let me know if you have any error messages when running the file.  
+
+Clone or download this repository and **run `startup.m` first in every MATLAB session**. It adds the source folders to the path and makes sure the native libraries are present in `libs/`.
+
+`PhreeqcMatlab` pins **PhreeqcRM / IPhreeqc 3.8.6** (`3.8.6-17100`). For each library, `startup.m` resolves it in this order: (1) a correctly versioned file already in `libs/`; (2) a local install — the `PHREEQCMATLAB_LIB_PATH` environment variable, else `/usr/local/lib`; (3) download from the [`simulkade/PhreeqcRM`](https://github.com/simulkade/PhreeqcRM) releases. The binaries are not committed.
+
+- **Linux — launch via [`./run_matlab.sh`](run_matlab.sh).** The 3.8.6 binaries are built with a modern GCC and need a newer `libstdc++` (`GLIBCXX_3.4.32`) than MATLAB bundles. `run_matlab.sh` sets `LD_PRELOAD` to the system `libstdc++.so.6` (and `PHREEQCMATLAB_LIB_PATH`) so `loadlibrary` succeeds — e.g. `./run_matlab.sh -batch "runtests('tests')"`. Without it you'll see a `GLIBCXX_... not found` error.
+- **Windows** requires the [Visual C++ Redistributable for VC 2019](https://www.microsoft.com/en-us/download/details.aspx?id=48145) and a configured [C/C++ compiler](https://www.mathworks.com/matlabcentral/fileexchange/52848-matlab-support-for-mingw-w64-c-c-compiler) (MinGW-w64).
+- **macOS** is unsupported (no prebuilt binary); compile PhreeqcRM yourself and point `PHREEQCMATLAB_LIB_PATH` at the resulting `.dylib`.
+
+## ⚠️ Two things that bite everyone
+
+**1. This is a *value-class* library — reassign or your change is lost.** The wrapper objects are MATLAB value classes, not handles. A mutating method returns a *new* object; if you don't capture it, nothing changes:
+
+```matlab
+phrm = phrm.RM_SetComponentH2O(true);   % ✅ correct — reassign
+phrm.RM_SetComponentH2O(true);          % ❌ wrong — the result is discarded
+```
+
+**2. Destroy instances explicitly** to free the native side (`unloadlibrary` is intentionally *not* called — it crashes the library):
+
+```matlab
+phrm.RM_Destroy();       % PhreeqcRM
+iph.DestroyIPhreeqc();   % IPhreeqc
+```
 
 # Test cases
 
@@ -83,11 +106,40 @@ ylabel('SI');
 status = phreeqc_rm.RM_Destroy();
 ```  
 
+## High-level object model
+Instead of hand-writing Phreeqc input strings, you can build geochemical entities as MATLAB objects and let them generate the input for you. Every definition class (`Solution`, `Phase`, `Surface`, `Gas`, `Exchange`, `Kinetics`) subclasses `Reactant`: it has a `phreeqc_string()` that serializes its properties to a Phreeqc keyword block, an `equilibrate_with(solution)` that runs it in PhreeqcRM, and `read_json`/`from_json` factories that build objects from the JSON templates in `database/`.
+
+```matlab
+% Equilibrate seawater with a gypsum/anhydrite assemblage
+ph = Phase();
+ph.phase_names = ["Gypsum" "Anhydrite"];
+ph.saturation_indices = [0 0];
+ph.moles = [1 1];
+[phase_result, solution_result] = ph.equilibrate_with(Solution());
+phase_result.saturation_indices     % ~[0, -0.30]
+solution_result.pH                  % aqueous result after reaction
+
+% Or assemble a batch reactor from several reactants and run it in one cell
+sc = SingleCell(Solution.seawater(), ...
+                'equilibrium_phase', Phase.chalk(), ...
+                'gas_phase', Gas.damp_CO2());
+R = sc.run();          % -> SingleCellResult (R.solution, R.phase)
+```
+
+Results come back as typed objects (`SolutionResult`, `PhaseResult`, `SurfaceResult`, `SingleCellResult`). See [`docs/object-model.md`](docs/object-model.md) for the full reference, and [`docs/architecture.md`](docs/architecture.md) for how the layers fit together.
+
+## Running the tests
+The assertion suite (`tests/PhreeqcMatlabTest.m`, physically-grounded golden values) is the regression gate:
+```bash
+./run_matlab.sh -batch "addpath('tests'); run_all_tests"   # errors on any failure
+```
+or, from inside MATLAB, `runtests('tests')`. The demo scripts (`tests/main.m`) run the advection/species/gas examples with plots.
+
 ## And more
 Look at the [example folder](https://github.com/simulkade/PhreeqcMatlab/tree/master/examples) for many more examples of batch and transport geochemical calculations.  
 
 # Reactive transport
-I'm writing several examples that calls this package from my finite volume package [FVTool](https://github.com/simulkade/FVTool). You can help me by providing reactive transport cases with analytical solutions.
+1D advection is built in (`PhreeqcAdvection`, no external dependency). Multi-dimensional reactive transport couples PhreeqcRM to the finite-volume package [FVTool](https://github.com/FiniteVolumeTransportPhenomena/FVTool) via `PhreeqcFVToolTransport` (operator splitting). FVTool is provisioned automatically: `startup.m` clones it into `external/FVTool` on first run (when git and network are available) and adds it to the path. Transport runs are configured with a small `.pqm` control file; a worked 2D example (a CaCl₂ flush of a Na/K exchanger) is in [`examples/transport/reactive_transport_2d.m`](examples/transport/reactive_transport_2d.m). You can help by contributing reactive-transport cases with analytical solutions.
 
 # Other packages you might like
 There are at least two more packages that have some of the functionalities of `PhreeqcMatlab`, and inspired me to write this package.
@@ -95,18 +147,8 @@ There are at least two more packages that have some of the functionalities of `P
   + [TReacLab](https://github.com/TReacLab/TReacLab)
   + [CRP](https://github.com/nbengdahl/CRP)
 
-# To do list
-This package probably won't be broken by sudden changes. So you can start using it. Here's a list of near future activities. You contributions/suggestions are more than welcome :-)  
-
-  + ~~Wrap IPhreeqc functions~~
-  + ~~More utility/helper functions~~
-  + ~~More tests~~
-  + Documentation (please help)
-  + New classes for solution, phases, surfaces, etc (in progress)
-  + Utility functions for the IPhreeqc wrapper (in progress)
-  + More examples for both IPhreeqc and PhreeqcRM (in progress)
-  + More keywords in the new input file specific to PhreeqcMatlab
-  + Simple GUI (in progress as part of a DOTC project)
+# Roadmap & contributing
+The refactoring/continuation plan and its progress live in [`ROADMAP.md`](ROADMAP.md); notable changes are tracked in [`CHANGELOG.md`](CHANGELOG.md). Milestones 1–4 (library bump to 3.8.6, object-model refactor on the `Reactant` base class, completed definition classes, the new 3.8.6 API wrappers and the `.pqm`/FVTool transport path) are done; the remaining work (BMI binding, more examples, GUI) is listed there. Contributions and suggestions are very welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md) for setup, the coding conventions (the `RM_` naming rule, the value-class idiom) and how to add a wrapper or a test.
 
 # Author
 The original package was written by [Ali A. Eftekhari](https://www.dtu.dk/english/Person/ali-akbar-eftekhari?id=112240&entity=profile) in his free time. It is/will be used in some of the projects/publications at the [Danish Offshore Technology Centre](https://offshore.dtu.dk/) (DOTC) at the [Technical University of Denmark](https://www.dtu.dk/). Some of the current development is done as part of an ongoing project at the DOTC.

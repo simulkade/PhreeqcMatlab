@@ -1,0 +1,51 @@
+# CD-MUSIC surface-complexation model of calcite (chalk).
+# Wolthers, Charlet & Van Cappellen (2008), Am. J. Sci. 308, 905-941 —
+# a 5-plane charge-distribution multi-site complexation (CD-MUSIC) model with
+# two surface sites: >Ca (Surf_ca) and >CO3 (Surf_co).
+# Runs with phreeqc.dat. Reproduces the "Surface composition" section
+# (per-plane surface charge) used by examples/phreeqc/chalk_cd_music/chalk_cd_music.m.
+SURFACE_MASTER_SPECIES
+    Surf_ca Surf_caOH-0.667
+    Surf_co Surf_coH+0.667
+SURFACE_SPECIES
+    # Wolthers08
+    Surf_coH+0.667 = Surf_coH+0.667
+    log_k 0.0
+    -cd_music 0 0 0 0 0
+    Surf_coH+0.667 = Surf_co-0.333 + H+
+    log_k -3.58
+    -cd_music -1 0 0 0 0
+    Surf_coH+0.667 + Ca+2 = Surf_coCa+1.667 + H+
+    log_k -2.8
+    -cd_music -1 2 0 0 0
+    Surf_caOH-0.667 = Surf_caOH-0.667
+    log_k 0.0
+    -cd_music 0 0 0 0 0
+    Surf_caOH-0.667 + H+ = Surf_caOH2+0.333
+    log_k 12.85
+    -cd_music 1 0 0 0 0
+    Surf_caOH-0.667 = Surf_caO-1.667 + H+
+    log_k -24.73
+    -cd_music -1 0 0 0 0
+    Surf_caOH-0.667 + CO3-2 + H+ = Surf_caHCO3-0.667 + OH-
+    log_k 10.15
+    -cd_music .6 -.6 0 0 0
+    Surf_caOH-0.667 + CO3-2 = Surf_caCO3-1.667 + OH-
+    log_k 1.55
+    -cd_music .6 -1.6 0 0 0
+SOLUTION 1
+    Pe 12
+    temp 21
+    pH 7.05
+    Ca  17.83
+    Alkalinity 1.13
+    Cl 34.02
+    P 0.13e-3
+EQUILIBRIUM_PHASES
+    CO2(g) -2.31
+SURFACE
+    -cd_music
+    Surf_co 179e-6 .22 100
+    Surf_ca 179e-6
+    -capacitance 1.3 4.5
+END
